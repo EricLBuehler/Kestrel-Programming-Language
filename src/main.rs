@@ -3,9 +3,11 @@ use inkwell::context::Context;
 use inkwell::execution_engine::{ExecutionEngine, JitFunction};
 use inkwell::module::Module;
 use inkwell::OptimizationLevel;
-use inkwell::values::FunctionValue;
+use inkwell::values::{FunctionValue, AnyValue};
 
 use std::error::Error;
+use std::fs;
+use std::io::Write;
 
 type SumFunc = unsafe extern "C" fn(f64, f64, f64) -> f64;
 
@@ -20,7 +22,7 @@ impl<'ctx> CodeGen<'ctx> {
     fn compile(&self) -> Option<(FunctionValue, JitFunction<SumFunc>)> {
         let f64_type = self.context.f64_type();
         let fn_type = f64_type.fn_type(&[f64_type.into(), f64_type.into(), f64_type.into()], false);
-        let function = self.module.add_function("sum", fn_type, None);
+        let function = self.module.add_function("main", fn_type, None);
         let basic_block = self.context.append_basic_block(function, "entry");
 
         self.builder.position_at_end(basic_block);
@@ -34,13 +36,13 @@ impl<'ctx> CodeGen<'ctx> {
 
         self.builder.build_return(Some(&sum));
 
-        return Some((function, unsafe { self.execution_engine.get_function("sum").ok()? }));
+        return Some((function, unsafe { self.execution_engine.get_function("main").ok()? }));
     }
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
     let context = Context::create();
-    let module = context.create_module("sum");
+    let module = context.create_module("module");
     let execution_engine = module.create_jit_execution_engine(OptimizationLevel::None)?;
     let codegen = CodeGen {
         context: &context,
@@ -51,8 +53,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let (func, sum) = codegen.compile().ok_or("Unable to JIT compile function")?;
 
-    func.print_to_stderr();
-
     let x = 1f64;
     let y = 2f64;
     let z = 3f64;
@@ -61,6 +61,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("{} + {} + {} = {}", x, y, z, sum.call(x, y, z));
         assert_eq!(sum.call(x, y, z), x + y + z);
     }
+
+    let output = func.print_to_string();
+
+    let mut file = fs::File::create("output.ll")?;
+    write!(file, "{}", output.to_string()).expect("Unable to write output to file.");
+    drop(file);
 
     Ok(())
 }
