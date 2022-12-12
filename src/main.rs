@@ -9,7 +9,7 @@ use std::error::Error;
 use std::fs;
 use std::io::Write;
 
-type SumFunc = unsafe extern "C" fn(f64, f64, f64) -> f64;
+type SumFunc = unsafe extern "C" fn(u64, u64, u64) -> u64;
 
 struct CodeGen<'ctx> {
     context: &'ctx Context,
@@ -20,8 +20,8 @@ struct CodeGen<'ctx> {
 
 impl<'ctx> CodeGen<'ctx> {
     fn compile(&self) -> Option<(FunctionValue, JitFunction<SumFunc>)> {
-        let f64_type = self.context.f64_type();
-        let fn_type = f64_type.fn_type(&[f64_type.into(), f64_type.into(), f64_type.into()], false);
+        let u64_type = self.context.u64_type();
+        let fn_type = u64_type.fn_type(&[u64_type.into(), u64_type.into(), u64_type.into()], false);
         let function = self.module.add_function("main", fn_type, None);
         let basic_block = self.context.append_basic_block(function, "entry");
 
@@ -53,9 +53,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let (func, sum) = codegen.compile().ok_or("Unable to JIT compile function")?;
 
-    let x = 1f64;
-    let y = 2f64;
-    let z = 3f64;
+    let x = 1u64;
+    let y = 2u64;
+    let z = 3u64;
 
     unsafe {
         println!("{} + {} + {} = {}", x, y, z, sum.call(x, y, z));
