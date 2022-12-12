@@ -3,13 +3,10 @@ use inkwell::context::Context;
 use inkwell::execution_engine::{ExecutionEngine, JitFunction};
 use inkwell::module::Module;
 use inkwell::OptimizationLevel;
+use inkwell::values::FunctionValue;
 
 use std::error::Error;
 
-/// Convenience type alias for the `sum` function.
-///
-/// Calling this is innately `unsafe` because there's no guarantee it doesn't
-/// do `unsafe` operations internally.
 type SumFunc = unsafe extern "C" fn(f64, f64, f64) -> f64;
 
 struct CodeGen<'ctx> {
@@ -20,7 +17,7 @@ struct CodeGen<'ctx> {
 }
 
 impl<'ctx> CodeGen<'ctx> {
-    fn jit_compile_sum(&self) -> Option<JitFunction<SumFunc>> {
+    fn compile(&self) -> Option<(FunctionValue, JitFunction<SumFunc>)> {
         let f64_type = self.context.f64_type();
         let fn_type = f64_type.fn_type(&[f64_type.into(), f64_type.into(), f64_type.into()], false);
         let function = self.module.add_function("sum", fn_type, None);
@@ -37,7 +34,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         self.builder.build_return(Some(&sum));
 
-        unsafe { self.execution_engine.get_function("sum").ok() }
+        return Some((function, unsafe { self.execution_engine.get_function("sum").ok()? }));
     }
 }
 
@@ -52,7 +49,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         execution_engine,
     };
 
-    let sum = codegen.jit_compile_sum().ok_or("Unable to JIT compile `sum`")?;
+    let (func, sum) = codegen.compile().ok_or("Unable to JIT compile function")?;
+
+    func.print_to_stderr();
 
     let x = 1f64;
     let y = 2f64;
