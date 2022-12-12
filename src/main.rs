@@ -9,7 +9,7 @@ use std::error::Error;
 use std::fs;
 use std::io::Write;
 
-type SumFunc = unsafe extern "C" fn(u64, u64, u64) -> u64;
+type SumFunc = unsafe extern "C" fn(i64, i64, i64) -> i64;
 
 struct CodeGen<'ctx> {
     context: &'ctx Context,
@@ -20,19 +20,19 @@ struct CodeGen<'ctx> {
 
 impl<'ctx> CodeGen<'ctx> {
     fn compile(&self) -> Option<(FunctionValue, JitFunction<SumFunc>)> {
-        let u64_type = self.context.u64_type();
-        let fn_type = u64_type.fn_type(&[u64_type.into(), u64_type.into(), u64_type.into()], false);
+        let i64_type = self.context.i64_type();
+        let fn_type = i64_type.fn_type(&[i64_type.into(), i64_type.into(), i64_type.into()], false);
         let function = self.module.add_function("main", fn_type, None);
         let basic_block = self.context.append_basic_block(function, "entry");
 
         self.builder.position_at_end(basic_block);
 
-        let x = function.get_nth_param(0)?.into_float_value();
-        let y = function.get_nth_param(1)?.into_float_value();
-        let z = function.get_nth_param(2)?.into_float_value();
+        let x = function.get_nth_param(0)?.into_int_value();
+        let y = function.get_nth_param(1)?.into_int_value();
+        let z = function.get_nth_param(2)?.into_int_value();
 
-        let sum = self.builder.build_float_add(x, y, "sum");
-        let sum = self.builder.build_float_add(sum, z, "sum");
+        let sum = self.builder.build_int_add(x, y, "sum");
+        let sum = self.builder.build_int_add(sum, z, "sum");
 
         self.builder.build_return(Some(&sum));
 
@@ -53,9 +53,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let (func, sum) = codegen.compile().ok_or("Unable to JIT compile function")?;
 
-    let x = 1u64;
-    let y = 2u64;
-    let z = 3u64;
+    let x = 1i64;
+    let y = 2i64;
+    let z = 3i64;
 
     unsafe {
         println!("{} + {} + {} = {}", x, y, z, sum.call(x, y, z));
