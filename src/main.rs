@@ -1,22 +1,17 @@
 use inkwell::builder::Builder;
 use inkwell::context::Context;
-use inkwell::execution_engine::{ExecutionEngine, JitFunction};
 use inkwell::module::Module;
-use inkwell::OptimizationLevel;
 
 use std::error::Error;
-
-type SumFunc = unsafe extern "C" fn(u8) -> u8;
 
 struct CodeGen<'ctx> {
     context: &'ctx Context,
     module: Module<'ctx>,
     builder: Builder<'ctx>,
-    execution_engine: ExecutionEngine<'ctx>,
 }
 
 impl<'ctx> CodeGen<'ctx> {
-    fn compile(&self) -> Option<JitFunction<SumFunc>> {
+    fn compile(&self) {
         let i8_type = self.context.i8_type();
         let i32_type = self.context.i32_type();
         let char_ptr= i8_type.ptr_type(inkwell::AddressSpace::Generic);
@@ -71,23 +66,24 @@ impl<'ctx> CodeGen<'ctx> {
         self.builder.build_call(printf, &[value.into()], "printf");
 
         self.builder.build_return(Some(&i32_type.const_int(0, false),));
-
-        unsafe { self.execution_engine.get_function("main").ok() }
     }
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
     let context = Context::create();
     let module = context.create_module("module");
-    let execution_engine = module.create_jit_execution_engine(OptimizationLevel::None)?;
     let codegen = CodeGen {
         context: &context,
         module: module,
         builder: context.create_builder(),
-        execution_engine,
     };
 
-    let _ = codegen.compile().ok_or("Unable to JIT compile function")?;
+    let pass_manager_builder = inkwell::passes::PassManagerBuilder::create();
+    pass_manager_builder.set_optimization_level(inkwell::OptimizationLevel::Aggressive);
+    let manager = inkwell::passes::PassManager::create(&codegen.module);
+    pass_manager_builder.populate_function_pass_manager(&manager);
+
+    codegen.compile();
 
     codegen.module.print_to_file(std::path::Path::new("output.ll"))?;
 
