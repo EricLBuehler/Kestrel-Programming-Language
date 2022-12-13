@@ -38,17 +38,21 @@ impl<'ctx> CodeGen<'ctx> {
 
         self.builder.position_at_end(basic_block);    
         
-        
+        let stdin = std::io::stdin();
+        let mut msg = String::from("");
+        println!("Enter something to print: ");
+        stdin.read_line(&mut msg).expect("Unable to read user input.");
+        println!("");
+        msg.push('\0');
 
-        const MESSAGE: &str = "Hello, world!\n\0";
-        let arr_type = self.context.i8_type().array_type(MESSAGE.len()  as u32);
+        let arr_type = self.context.i8_type().array_type(msg.len()  as u32);
         
         
         let global = self.module.add_global(arr_type, None, "mystring");
         
         
         let mut arr = Vec::new();
-        for chr in MESSAGE.as_bytes() {
+        for chr in msg.as_bytes() {
             arr.push(chr.clone());
         }
 
