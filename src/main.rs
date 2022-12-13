@@ -1,8 +1,11 @@
 use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
+use inkwell::passes::PassManagerSubType;
 
 use std::error::Error;
+
+extern crate guess_host_triple;
 
 struct CodeGen<'ctx> {
     context: &'ctx Context,
@@ -37,7 +40,6 @@ impl<'ctx> CodeGen<'ctx> {
         let mut msg = String::from("");
         println!("Enter something to print: ");
         stdin.read_line(&mut msg).expect("Unable to read user input.");
-        println!("");
         msg.push('\0');
 
         let arr_type = self.context.i8_type().array_type(msg.len()  as u32);
@@ -72,6 +74,15 @@ impl<'ctx> CodeGen<'ctx> {
 fn main() -> Result<(), Box<dyn Error>> {
     let context = Context::create();
     let module = context.create_module("module");
+    
+    let mut triple = String::from("");
+    guess_host_triple::guess_host_triple()
+    .map(|t| triple = String::from(t))
+    .unwrap_or_else(|| triple = String::from("unknown-unknown-unknown"));
+
+    module.set_triple(&inkwell::targets::TargetTriple::create(triple.as_str()));
+    module.set_source_file_name("<module>");
+
     let codegen = CodeGen {
         context: &context,
         module: module,
@@ -80,10 +91,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let pass_manager_builder = inkwell::passes::PassManagerBuilder::create();
     pass_manager_builder.set_optimization_level(inkwell::OptimizationLevel::Aggressive);
-    let manager = inkwell::passes::PassManager::create(&codegen.module);
-    pass_manager_builder.populate_function_pass_manager(&manager);
+    let manager = inkwell::passes::PassManager::create(());
+    pass_manager_builder.populate_module_pass_manager(&manager);
 
     codegen.compile();
+
+    unsafe { codegen.module.run_in_pass_manager(&manager) };
 
     codegen.module.print_to_file(std::path::Path::new("output.ll"))?;
 
