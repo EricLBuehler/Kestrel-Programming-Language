@@ -1,4 +1,9 @@
+use fileinfo::FileInfo;
+
+mod fileinfo;
+mod errors;
 mod lexer;
+mod parser;
 mod codegen;
 
 fn main() {
@@ -25,16 +30,30 @@ fn main() {
 
     let file_data_bytes: &[u8] = file_data.as_bytes();
 
-    let lexer: lexer::Lexer = lexer::Lexer{
+    let file_info: FileInfo = FileInfo {
+        data: file_data_bytes.clone(),
+        name: filename.clone(),
+    };
+
+    let mut lexer: lexer::Lexer = lexer::Lexer {
         idx: 0,
         data: file_data_bytes,
         current: file_data_bytes[0] as char,
         len: file_data_bytes.len(),
+        line: 0,
+        col: 0,
     };
 
-    let (ntok, tokens) = lexer::generate_tokens(lexer);
+    let (_, tokens) = lexer::generate_tokens(&mut lexer);
 
-    lexer::print_tokens(ntok, tokens);
+    let mut parser: parser::Parser = parser::Parser {
+        tokens: &tokens,
+        idx: 1,
+        current: tokens.get(0).unwrap().to_owned(),
+        info: &file_info,
+    };
+
+    parser.genreate_ast();
 
     let res: Result<(), Box<dyn std::error::Error>> = codegen::generate_code("module", filename.as_str());
 

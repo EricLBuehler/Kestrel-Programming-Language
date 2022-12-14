@@ -1,21 +1,29 @@
 //Generate tokens from text
 
+#[derive(Clone, PartialEq)]
 pub enum TokenType {
     INT,
     PLUS,
     NEWLINE,
+    EOF,
 }
 
-pub struct Lexer <'life> {
+pub struct Lexer<'life> {
     pub idx: usize,
     pub data: &'life [u8],
     pub current: char,
     pub len: usize,
+    pub line: usize,
+    pub col: usize,
 }
 
+#[derive(Clone)]
 pub struct Token {
     pub data: String,
     pub tp: TokenType,
+    pub line: usize,
+    pub startcol: usize, //Inclusive
+    pub endcol: usize, //Exclusive
 }
 
 impl std::fmt::Display for Token {
@@ -30,6 +38,7 @@ impl std::fmt::Display for TokenType {
            TokenType::INT => write!(f, "INT"),
            TokenType::PLUS => write!(f, "PLUS"),
            TokenType::NEWLINE => write!(f, "NEWLINE"),
+           TokenType::EOF => write!(f, "EOF"),
        }
     }
 }
@@ -37,60 +46,82 @@ impl std::fmt::Display for TokenType {
 fn advance(lexer: &mut Lexer) {
     lexer.idx+=1;
 
+    lexer.col+=1;
+
     if lexer.idx == lexer.len {
         lexer.current = '\0';
         return;
     }
     
     lexer.current = lexer.data[lexer.idx] as char;
+
+    if lexer.current == '\n' || lexer.current == '\r' {
+        lexer.line+=1;
+        lexer.col=0;
+    }
 }
 
-pub fn print_tokens(len: usize, tokens: Vec<Token>){
-    println!("========================");
+#[allow(dead_code)]
+pub fn print_tokens(len: usize, tokens: &Vec<Token>) {
+    println!("\n\nGenerated tokens:\n========================");
     println!("Token list ({} tokens)", len);
     println!("------------------------");
     let mut idx: usize = 1;
     for tok in tokens{
-        let repr: String = format!("{} | {}", idx, tok);
-        println!("| {:<21}|", repr);
+        println!("{} | {}", idx, tok);
         idx+=1;
     }
     println!("========================");
 }
 
-pub fn generate_tokens(mut lexer: Lexer) -> (usize, Vec<Token>) {  
+pub fn generate_tokens(lexer: &mut Lexer) -> (usize, Vec<Token>) {  
     let mut vector: Vec<Token> = Vec::new();
 
     for _ in 0 .. lexer.data.len() {
         let cur: char = lexer.current;
         
         if cur.is_numeric() {
-            vector.push(make_number(&mut lexer));
+            vector.push(make_number(lexer));
         }
         else if cur == '+' {
             vector.push(Token {
                 data: String::from("+"),
                 tp: TokenType::PLUS,
+                line: lexer.line,
+                startcol: lexer.col,
+                endcol: lexer.col+1,
             });
-            advance(&mut lexer);
+            advance(lexer);
         }
-        else if cur == '\r' as char || cur == '\n' as char {
+        else if cur == ';' as char || cur == '\r' as char || cur == '\n' as char {
             vector.push(Token {
                 data: String::from("\\n"),
                 tp: TokenType::NEWLINE,
+                line: lexer.line,
+                startcol: lexer.col,
+                endcol: lexer.col+1,
             });
-            advance(&mut lexer);
+            advance(lexer);
             if lexer.current=='\n' as char { // Windows compat
-                advance(&mut lexer);
+                advance(lexer);
             }
         }
     }
+
+    vector.push(Token {
+        data: String::from("\\0"),
+        tp: TokenType::EOF,
+        line: lexer.line,
+        startcol: lexer.col,
+        endcol: lexer.col,
+    });
 
     return (vector.len(), vector);
 }
 
 fn make_number(lexer: &mut Lexer) -> Token {
     let mut data: String = String::from("");
+    let start: usize = lexer.col;
 
     while lexer.current.is_numeric() {
         data.push(lexer.current);
@@ -100,6 +131,9 @@ fn make_number(lexer: &mut Lexer) -> Token {
     let tok = Token {
         data: data,
         tp: TokenType::INT,
+        line: lexer.line,
+        startcol: start,
+        endcol: lexer.col,
     };
     return tok;
 }
