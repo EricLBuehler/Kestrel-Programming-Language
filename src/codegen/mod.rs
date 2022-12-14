@@ -38,7 +38,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         self.builder.position_at_end(basic_block); 
         
-        let mut msg: String = String::from("Hello, world!");
+        let mut msg: String = String::from("Hello! %d\n");
         msg.push('\0');
 
         let arr_type: inkwell::types::ArrayType = self.context.i8_type().array_type(msg.len()  as u32);
@@ -64,7 +64,7 @@ impl<'ctx> CodeGen<'ctx> {
         
         let value: inkwell::values::PointerValue = unsafe { self.builder.build_in_bounds_gep(global.as_pointer_value(), &[i32_type.const_int(0, false), i32_type.const_int(0, false)], "val") };
 
-        self.builder.build_call(printf, &[value.into()], "printf");
+        self.builder.build_call(printf, &[value.into(), inkwell::values::BasicMetadataValueEnum::IntValue(i32_type.const_int(123, false))], "printf");
 
         self.builder.build_return(Some(&i32_type.const_int(0, false),));
     }
