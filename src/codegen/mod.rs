@@ -64,7 +64,7 @@ impl<'ctx> CodeGen<'ctx> {
         
         let value: inkwell::values::PointerValue = unsafe { self.builder.build_in_bounds_gep(global.as_pointer_value(), &[i32_type.const_int(0, false), i32_type.const_int(0, false)], "val") };
 
-        self.builder.build_call(printf, &[value.into(), inkwell::values::BasicMetadataValueEnum::IntValue(i32_type.const_int(123, false))], "printf");
+        self.builder.build_call(printf, &[value.into(), i32_type.const_int(123, false).into()], "printf");
 
         self.builder.build_return(Some(&i32_type.const_int(0, false),));
     }
