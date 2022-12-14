@@ -2,12 +2,18 @@
 pub enum BinaryOpType {
     DEFAULT,
     ADD,
+    SUB,
+    MUL,
+    DIV,
 }
 
 impl std::fmt::Display for BinaryOpType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
             BinaryOpType::ADD => write!(f, "+"),
+            BinaryOpType::SUB => write!(f, "-"),
+            BinaryOpType::MUL => write!(f, "*"),
+            BinaryOpType::DIV => write!(f, "/"),
             _ => write!(f, ""),
         }
     }    

@@ -121,8 +121,10 @@ impl<'life> Parser<'life> {
             self.advance();
 
             match self.current.tp {
-                TokenType::INT |
-                TokenType::PLUS => {
+                TokenType::PLUS |
+                TokenType::HYPHEN |
+                TokenType::ASTERISK |
+                TokenType::FWSLASH => {
                     left = self.generate_binary(left);
                 }
                 _ => {}
@@ -153,6 +155,9 @@ impl<'life> Parser<'life> {
     fn generate_binary(&mut self, left: Node) -> Node{
         let op: nodes::BinaryOpType = match self.current.tp {
             TokenType::PLUS => nodes::BinaryOpType::ADD,
+            TokenType::HYPHEN => nodes::BinaryOpType::SUB,
+            TokenType::ASTERISK => nodes::BinaryOpType::MUL,
+            TokenType::FWSLASH => nodes::BinaryOpType::DIV,
             _ => nodes::BinaryOpType::DEFAULT,
         };
 

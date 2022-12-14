@@ -6,6 +6,9 @@ pub enum TokenType {
     PLUS,
     NEWLINE,
     EOF,
+    ASTERISK,
+    FWSLASH,
+    HYPHEN,
 }
 
 pub struct Lexer<'life> {
@@ -39,6 +42,9 @@ impl std::fmt::Display for TokenType {
            TokenType::PLUS => write!(f, "PLUS"),
            TokenType::NEWLINE => write!(f, "NEWLINE"),
            TokenType::EOF => write!(f, "EOF"),
+           TokenType::ASTERISK => write!(f, "ASTERISK"),
+           TokenType::FWSLASH => write!(f, "FWSLASH"),
+           TokenType::HYPHEN => write!(f, "HYPHEN"),
        }
     }
 }
@@ -87,6 +93,36 @@ pub fn generate_tokens(lexer: &mut Lexer) -> (usize, Vec<Token>) {
             vector.push(Token {
                 data: String::from("+"),
                 tp: TokenType::PLUS,
+                line: lexer.line,
+                startcol: lexer.col,
+                endcol: lexer.col+1,
+            });
+            advance(lexer);
+        }
+        else if cur == '-' {
+            vector.push(Token {
+                data: String::from("-"),
+                tp: TokenType::HYPHEN,
+                line: lexer.line,
+                startcol: lexer.col,
+                endcol: lexer.col+1,
+            });
+            advance(lexer);
+        }
+        else if cur == '*' {
+            vector.push(Token {
+                data: String::from("*"),
+                tp: TokenType::ASTERISK,
+                line: lexer.line,
+                startcol: lexer.col,
+                endcol: lexer.col+1,
+            });
+            advance(lexer);
+        }
+        else if cur == '/' {
+            vector.push(Token {
+                data: String::from("/"),
+                tp: TokenType::FWSLASH,
                 line: lexer.line,
                 startcol: lexer.col,
                 endcol: lexer.col+1,
