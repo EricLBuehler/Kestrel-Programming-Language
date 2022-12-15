@@ -1,4 +1,4 @@
-mod nodes;
+pub mod nodes;
 use crate::lexer;
 use crate::errors::ErrorType;
 use crate::lexer::TokenType;
@@ -10,23 +10,31 @@ pub struct Parser<'life> {
     pub info: &'life crate::fileinfo::FileInfo<'life>,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum NodeType {
     BINARY,
-    INT,
+    I32,
 }
 
 #[derive(Clone)]
 pub struct Node{
-    tp: NodeType,
-    data: Box<nodes::NodeData>,
+    pub tp: NodeType,
+    pub data: Box<nodes::NodeData>,
+    pub pos: Position,
+}
+
+#[derive(Clone)]
+pub struct Position{
+    pub line: usize,
+    pub startcol: usize,
+    pub endcol: usize,
 }
 
 impl std::fmt::Display for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.tp {
             NodeType::BINARY => write!(f, "{}", self.data.binary.as_ref().unwrap() ),
-            NodeType::INT => write!(f, "{}", self.data.int.as_ref().unwrap() ),
+            NodeType::I32 => write!(f, "{}", self.data.int.as_ref().unwrap() ),
         }
     }    
 }
@@ -48,12 +56,12 @@ pub fn print_nodes(nodes: &Vec<Node>) {
 
 
 impl<'life> Parser<'life> { 
-    pub fn genreate_ast(&mut self) {        
-        self.block();
+    pub fn genreate_ast(&mut self)  -> Vec<Node> {        
+        self.block()
     }
 
     fn raise_error(&mut self, error: &str, errtp: ErrorType) -> !{
-        crate::errors::raise_error(error, errtp, self.current.line, self.current.startcol, self.current.endcol, &self.info);
+        crate::errors::raise_error(error, errtp, &Position { line: self.current.line, startcol: self.current.startcol, endcol: self.current.endcol }, &self.info);
     }
 
     fn advance(&mut self) {
@@ -80,7 +88,7 @@ impl<'life> Parser<'life> {
         self.current.tp == tp
     }
     
-    fn block(&mut self) {
+    fn block(&mut self) -> Vec<Node> {
         let mut nodes: Vec<Node> = Vec::new();
         
         while !self.current_is_type(TokenType::EOF) {
@@ -89,6 +97,7 @@ impl<'life> Parser<'life> {
         }
 
         print_nodes(&nodes);
+        return nodes;
     }
     
     fn statement(&mut self) -> Node{
@@ -98,7 +107,7 @@ impl<'life> Parser<'life> {
     
     fn atom(&mut self) -> Option<Node> {
         match self.current.tp {
-            TokenType::INT => Some(self.generate_int(self.current.data.clone())),
+            TokenType::I32 => Some(self.generate_int(self.current.data.clone())),
             _ => None,
         }
     }
@@ -143,16 +152,30 @@ impl<'life> Parser<'life> {
             binary: None,
             int: Some(int),
         };
+
+        let pos = Position {
+            line: self.current.line,
+            startcol: self.current.startcol,
+            endcol: self.current.endcol,
+        };
     
         let n: Node = Node {
-            tp: NodeType::INT,
+            tp: NodeType::I32,
             data: Box::new(nodedat),
+            pos,
         };
     
         return n;
     }
     
     fn generate_binary(&mut self, left: Node) -> Node{
+        let mut pos = Position {
+            line: left.pos.line,
+            startcol: left.pos.startcol,
+            endcol: 0,
+        };
+
+
         let op: nodes::BinaryOpType = match self.current.tp {
             TokenType::PLUS => nodes::BinaryOpType::ADD,
             TokenType::HYPHEN => nodes::BinaryOpType::SUB,
@@ -173,10 +196,13 @@ impl<'life> Parser<'life> {
             binary: Some(bin),
             int: None,
         };
+
+        pos.endcol = self.current.endcol;
     
         let n: Node = Node {
             tp: NodeType::BINARY,
             data: Box::new(nodedat),
+            pos,
         };
     
         return n;

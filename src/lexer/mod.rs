@@ -2,7 +2,7 @@
 
 #[derive(Clone, PartialEq)]
 pub enum TokenType {
-    INT,
+    I32,
     PLUS,
     NEWLINE,
     EOF,
@@ -38,7 +38,7 @@ impl std::fmt::Display for Token {
 impl std::fmt::Display for TokenType {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
        match *self {
-           TokenType::INT => write!(f, "INT"),
+           TokenType::I32 => write!(f, "i32"),
            TokenType::PLUS => write!(f, "PLUS"),
            TokenType::NEWLINE => write!(f, "NEWLINE"),
            TokenType::EOF => write!(f, "EOF"),
@@ -166,7 +166,7 @@ fn make_number(lexer: &mut Lexer) -> Token {
     
     let tok = Token {
         data: data,
-        tp: TokenType::INT,
+        tp: TokenType::I32,
         line: lexer.line,
         startcol: start,
         endcol: lexer.col,

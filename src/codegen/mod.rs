@@ -6,37 +6,135 @@ use inkwell::module::Module;
 use inkwell::passes::PassManagerSubType;
 
 use std::error::Error;
+use crate::parser;
+mod types;
+mod builtin_types;
+use crate::errors;
 
 extern crate guess_host_triple;
 
-struct CodeGen<'ctx> {
+pub struct InkwellTypes<'ctx> {
+    pub i32tp: &'ctx inkwell::types::IntType<'ctx>,
+}
+
+pub struct CodeGen<'ctx> {
     context: &'ctx Context,
     module: Module<'ctx>,
     builder: Builder<'ctx>,
+    types: std::collections::HashMap<String, types::Type<'ctx>>,
+    info: &'ctx crate::fileinfo::FileInfo<'ctx>,
+    pub inkwell_types: InkwellTypes<'ctx>,
 }
 
+//Codegen functions
 impl<'ctx> CodeGen<'ctx> {
-    fn compile(&self) {
+    fn build_binary(&self, node: &parser::Node) -> types::Data<'ctx> {
+        let binary: &parser::nodes::BinaryNode = node.data.binary.as_ref().unwrap();
+
+        let left: types::Data = self.compile_expr(&binary.left);
+        let right: types::Data = self.compile_expr(&binary.right);
+
+        let mut args: Vec<&types::Data> = Vec::new();
+
+        args.push(&left);
+        args.push(&right);
+
+        let tp: &types::Type = self.types.get(&left.tp.to_string()).unwrap();
+
+        let traittp = match node.data.binary.as_ref().unwrap().op {
+            parser::nodes::BinaryOpType::ADD => {
+                types::TraitType::Add
+            }
+            parser::nodes::BinaryOpType::MUL => {
+                types::TraitType::Mul
+            }
+            parser::nodes::BinaryOpType::SUB => {
+                types::TraitType::Sub
+            }
+            parser::nodes::BinaryOpType::DIV => {
+                types::TraitType::Div
+            }
+            _ => {
+                unreachable!();
+            }
+        };
+
+        let t: &types::Trait = match tp.traits.get(&traittp.to_string()) {
+            Some (v) => {
+                v
+            }
+            None => {
+                let fmt: String = format!("type {} has no trait {}", &left.tp.to_string(), &traittp.to_string());
+                errors::raise_error(&fmt, errors::ErrorType::MissingTrait, &node.pos, self.info);
+            }
+        };
+
+        let func = t.function;
+
+        let data: types::Data = (func)(&self, args, &node.pos);
+
+        return data;
+    }
+
+    fn compile_expr(&self, node: &parser::Node) -> types::Data<'ctx> {
+        match node.tp {
+            parser::NodeType::BINARY => {
+                self.build_binary(node)
+            }
+            parser::NodeType::I32 => {
+                let self_data: &String = &node.data.int.as_ref().unwrap().left;
+                let selfv: inkwell::values::IntValue = match self.inkwell_types.i32tp.const_int_from_string(self_data.as_str(), inkwell::types::StringRadix::Decimal) {
+                    None => {
+                        let fmt: String = format!("invalid i32 literal {}", self_data);
+                        errors::raise_error(&fmt, errors::ErrorType::InvalidLiteralForRadix, &node.pos, self.info);
+                    }
+            
+                    Some(v) => {
+                        v
+                    }
+            
+                };
+                types::Data {data: Some(inkwell::values::AnyValueEnum::IntValue(selfv)), tp: types::DataType::I32}
+            }
+        }
+    }
+
+    fn compile(&self, nodes: Vec<parser::Node>) {
+        // Generic header
         let i32_type: inkwell::types::IntType = self.context.i32_type();
         let fn_type: inkwell::types::FunctionType = i32_type.fn_type(&[], false);
-        let function: inkwell::values::FunctionValue = self.module.add_function("main", fn_type, None);
-        let basic_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(function, "entry");
+        let main: inkwell::values::FunctionValue = self.module.add_function("main", fn_type, None);
+        let basic_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(main, "entry");
 
         let mut attr: inkwell::attributes::Attribute = self.context.create_enum_attribute(inkwell::attributes::Attribute::get_named_enum_kind_id("noinline"), 0);
 
-        function.add_attribute(inkwell::attributes::AttributeLoc::Function, attr);
+        main.add_attribute(inkwell::attributes::AttributeLoc::Function, attr);
 
         attr = self.context.create_enum_attribute(inkwell::attributes::Attribute::get_named_enum_kind_id("optnone"), 0);
 
-        function.add_attribute(inkwell::attributes::AttributeLoc::Function, attr);
-
+        main.add_attribute(inkwell::attributes::AttributeLoc::Function, attr);
+        
         self.builder.position_at_end(basic_block); 
 
-        self.builder.build_return(Some(&i32_type.const_int(0, false),));
+        /////// Code generation start:
+        for node in nodes {
+            self.compile_expr(&node);
+        }
+
+        /////// End
+
+        self.builder.build_return(Some(&i32_type.const_int(0, false))); //TODO: replace this with something user-defined
+        
+        let pass_manager_builder: inkwell::passes::PassManagerBuilder = inkwell::passes::PassManagerBuilder::create();
+        pass_manager_builder.set_optimization_level(inkwell::OptimizationLevel::Aggressive);
+        let manager = inkwell::passes::PassManager::create(&self.module);
+        pass_manager_builder.populate_function_pass_manager(&manager);
+
+        unsafe { main.run_in_pass_manager(&manager); }
     }
 }
 
-pub fn generate_code(module_name: &str, source_name: &str) -> Result<(), Box<dyn Error>> {
+pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::Node>, info: &crate::fileinfo::FileInfo) -> Result<(), Box<dyn Error>> {
     let context: inkwell::context::Context = Context::create();
     let module: inkwell::module::Module = context.create_module(module_name);
     
@@ -48,18 +146,29 @@ pub fn generate_code(module_name: &str, source_name: &str) -> Result<(), Box<dyn
     module.set_triple(&inkwell::targets::TargetTriple::create(triple.as_str()));
     module.set_source_file_name(source_name);
 
-    let codegen: CodeGen = CodeGen {
+    let inkwelltypes = InkwellTypes {
+        i32tp: &context.i32_type(),
+    };
+
+    let mut codegen: CodeGen = CodeGen {
         context: &context,
         module: module,
         builder: context.create_builder(),
+        types: std::collections::HashMap::new(),
+        info,
+        inkwell_types: inkwelltypes,
     };
-
+    
     let pass_manager_builder: inkwell::passes::PassManagerBuilder = inkwell::passes::PassManagerBuilder::create();
     pass_manager_builder.set_optimization_level(inkwell::OptimizationLevel::Aggressive);
     let manager: inkwell::passes::PassManager<Module> = inkwell::passes::PassManager::create(());
     pass_manager_builder.populate_module_pass_manager(&manager);
 
-    codegen.compile();
+    builtin_types::init(&mut codegen);
+
+
+
+    codegen.compile(nodes);
 
     unsafe { codegen.module.run_in_pass_manager(&manager) };
 

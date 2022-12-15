@@ -53,9 +53,9 @@ fn main() {
         info: &file_info,
     };
 
-    parser.genreate_ast();
+    let nodes: Vec<parser::Node> = parser.genreate_ast();
 
-    let res: Result<(), Box<dyn std::error::Error>> = codegen::generate_code("module", filename.as_str());
+    let res: Result<(), Box<dyn std::error::Error>> = codegen::generate_code("module", filename.as_str(), nodes, &file_info);
 
     match res {
         Ok(_) => {}
