@@ -33,18 +33,31 @@ impl std::fmt::Display for BinaryNode {
 }
 
 #[derive(Clone)]
-pub struct IntNode {
+pub struct I32Node {
     pub left: String,
 }
 
-impl std::fmt::Display for IntNode {
+impl std::fmt::Display for I32Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Integer '{}'", self.left)
+        write!(f, "i32 '{}'", self.left)
+    }    
+}
+
+#[derive(Clone)]
+pub struct LetNode {
+    pub name: String,
+    pub expr: crate::parser::Node,
+}
+
+impl std::fmt::Display for LetNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Let '{}' = {}", self.name, self.expr)
     }    
 }
 
 #[derive(Clone)]
 pub struct NodeData {
     pub binary: Option<BinaryNode>,
-    pub int: Option<IntNode>,
+    pub int: Option<I32Node>,
+    pub letn: Option<LetNode>,
 }

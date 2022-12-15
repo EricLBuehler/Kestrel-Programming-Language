@@ -9,6 +9,9 @@ pub enum TokenType {
     ASTERISK,
     FWSLASH,
     HYPHEN,
+    KEYWORD,
+    IDENTIFIER,
+    EQUALS,
 }
 
 pub struct Lexer<'life> {
@@ -45,6 +48,9 @@ impl std::fmt::Display for TokenType {
            TokenType::ASTERISK => write!(f, "ASTERISK"),
            TokenType::FWSLASH => write!(f, "FWSLASH"),
            TokenType::HYPHEN => write!(f, "HYPHEN"),
+           TokenType::KEYWORD => write!(f, "KEYWORD"),
+           TokenType::IDENTIFIER => write!(f, "IDENTIFIER"),
+           TokenType::EQUALS => write!(f, "EQUALS"),
        }
     }
 }
@@ -54,7 +60,7 @@ fn advance(lexer: &mut Lexer) {
 
     lexer.col+=1;
 
-    if lexer.idx == lexer.len {
+    if lexer.idx >= lexer.len {
         lexer.current = '\0';
         return;
     }
@@ -80,14 +86,17 @@ pub fn print_tokens(len: usize, tokens: &Vec<Token>) {
     println!("========================");
 }
 
-pub fn generate_tokens(lexer: &mut Lexer) -> (usize, Vec<Token>) {  
+pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Token>) {  
     let mut vector: Vec<Token> = Vec::new();
 
     for _ in 0 .. lexer.data.len() {
         let cur: char = lexer.current;
         
-        if cur.is_numeric() {
+        if cur.is_digit(10) {
             vector.push(make_number(lexer));
+        }
+        else if cur.is_alphabetic() || cur=='_'{
+            vector.push(make_identifier(lexer, kwds));
         }
         else if cur == '+' {
             vector.push(Token {
@@ -129,6 +138,16 @@ pub fn generate_tokens(lexer: &mut Lexer) -> (usize, Vec<Token>) {
             });
             advance(lexer);
         }
+        else if cur == '=' {
+            vector.push(Token {
+                data: String::from("="),
+                tp: TokenType::EQUALS,
+                line: lexer.line,
+                startcol: lexer.col,
+                endcol: lexer.col+1,
+            });
+            advance(lexer);
+        }
         else if cur == ';' as char || cur == '\r' as char || cur == '\n' as char {
             vector.push(Token {
                 data: String::from("\\n"),
@@ -141,6 +160,9 @@ pub fn generate_tokens(lexer: &mut Lexer) -> (usize, Vec<Token>) {
             if lexer.current=='\n' as char { // Windows compat
                 advance(lexer);
             }
+        }
+        else {
+            advance(lexer);
         }
     }
 
@@ -171,5 +193,28 @@ fn make_number(lexer: &mut Lexer) -> Token {
         startcol: start,
         endcol: lexer.col,
     };
+    return tok;
+}
+
+fn make_identifier(lexer: &mut Lexer, kwds: &Vec<String>) -> Token {
+    let mut data: String = String::from("");
+    let start: usize = lexer.col;
+
+    while lexer.current.is_alphabetic() || lexer.current=='_' {
+        data.push(lexer.current);
+        advance(lexer);
+    }
+    
+    let mut tok = Token {
+        data: data,
+        tp: TokenType::IDENTIFIER,
+        line: lexer.line,
+        startcol: start,
+        endcol: lexer.col,
+    };
+
+    if kwds.iter().find(|x| **x==tok.data)!=None {
+        tok.tp = TokenType::KEYWORD;
+    }
     return tok;
 }

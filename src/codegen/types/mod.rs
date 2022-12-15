@@ -4,6 +4,7 @@ use std::collections::HashMap;
 #[derive(Clone, PartialEq)]
 pub enum DataType {
     I32,
+    Unit,
 }
 pub enum TraitType {
     Add,
@@ -11,8 +12,9 @@ pub enum TraitType {
     Sub,
     Div,
 }
+
 pub struct Data<'a> {
-    pub data: Option<inkwell::values::AnyValueEnum<'a>>,
+    pub data: Option<inkwell::values::BasicValueEnum<'a>>,
     pub tp: DataType,
 }
 
@@ -20,6 +22,7 @@ impl std::fmt::Display for DataType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
             DataType::I32 => write!(f, "i32"),
+            DataType::Unit => write!(f, "Unit"),
         }
     }    
 }

@@ -64,7 +64,7 @@ impl<'ctx> CodeGen<'ctx> {
                 v
             }
             None => {
-                let fmt: String = format!("type {} has no trait {}", &left.tp.to_string(), &traittp.to_string());
+                let fmt: String = format!("type {} has no trait {}.", &left.tp.to_string(), &traittp.to_string());
                 errors::raise_error(&fmt, errors::ErrorType::MissingTrait, &node.pos, self.info);
             }
         };
@@ -75,17 +75,34 @@ impl<'ctx> CodeGen<'ctx> {
 
         return data;
     }
+    
+    fn build_let(&self, node: &parser::Node) -> types::Data<'ctx> {
+        let right: types::Data = self.compile_expr(&node.data.letn.as_ref().unwrap().expr);
+
+        let ptr: inkwell::values::PointerValue = self.builder.build_alloca(right.data.unwrap().get_type(), node.data.letn.as_ref().unwrap().name.as_str());
+
+        self.builder.build_store(ptr, right.data.unwrap());
+
+        let data: types::Data = types::Data {
+            data: None,
+            tp: types::DataType::Unit,
+        };
+        return data;
+    }
 
     fn compile_expr(&self, node: &parser::Node) -> types::Data<'ctx> {
         match node.tp {
             parser::NodeType::BINARY => {
                 self.build_binary(node)
             }
+            parser::NodeType::LET => {
+                self.build_let(node)
+            }
             parser::NodeType::I32 => {
                 let self_data: &String = &node.data.int.as_ref().unwrap().left;
                 let selfv: inkwell::values::IntValue = match self.inkwell_types.i32tp.const_int_from_string(self_data.as_str(), inkwell::types::StringRadix::Decimal) {
                     None => {
-                        let fmt: String = format!("invalid i32 literal {}", self_data);
+                        let fmt: String = format!("invalid i32 literal {}.", self_data);
                         errors::raise_error(&fmt, errors::ErrorType::InvalidLiteralForRadix, &node.pos, self.info);
                     }
             
@@ -94,7 +111,7 @@ impl<'ctx> CodeGen<'ctx> {
                     }
             
                 };
-                types::Data {data: Some(inkwell::values::AnyValueEnum::IntValue(selfv)), tp: types::DataType::I32}
+                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::DataType::I32}
             }
         }
     }

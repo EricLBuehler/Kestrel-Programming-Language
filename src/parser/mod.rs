@@ -14,6 +14,7 @@ pub struct Parser<'life> {
 pub enum NodeType {
     BINARY,
     I32,
+    LET,
 }
 
 #[derive(Clone)]
@@ -35,6 +36,7 @@ impl std::fmt::Display for Node {
         match self.tp {
             NodeType::BINARY => write!(f, "{}", self.data.binary.as_ref().unwrap() ),
             NodeType::I32 => write!(f, "{}", self.data.int.as_ref().unwrap() ),
+            NodeType::LET => write!(f, "{}", self.data.letn.as_ref().unwrap() ),
         }
     }    
 }
@@ -101,8 +103,15 @@ impl<'life> Parser<'life> {
     }
     
     fn statement(&mut self) -> Node{
-        //Later, handle keywords here
-        return self.expr();
+        match self.current.tp {
+            lexer::TokenType::KEYWORD => {
+                return self.keyword();
+            }
+            _ => {
+                return self.expr();
+            }
+        }
+        
     }
     
     fn atom(&mut self) -> Option<Node> {
@@ -116,6 +125,14 @@ impl<'life> Parser<'life> {
         while self.current_is_type(TokenType::NEWLINE) {
             self.advance();
         }
+    }
+
+    fn keyword(&mut self) -> Node {
+        if self.current.data == String::from("let") {
+            return self.parse_let();
+        }
+        
+        unreachable!();
     }
     
     fn expr(&mut self) -> Node {
@@ -142,15 +159,18 @@ impl<'life> Parser<'life> {
 
         return left;
     }
+
+    // Expressions
     
     fn generate_int(&mut self, data: String) -> Node{
-        let int: nodes::IntNode = nodes::IntNode{
+        let int: nodes::I32Node = nodes::I32Node{
             left: data.clone()
         };
     
         let nodedat: nodes::NodeData = nodes::NodeData {
             binary: None,
             int: Some(int),
+            letn: None,
         };
 
         let pos = Position {
@@ -195,6 +215,7 @@ impl<'life> Parser<'life> {
         let nodedat: nodes::NodeData = nodes::NodeData {
             binary: Some(bin),
             int: None,
+            letn: None,
         };
 
         pos.endcol = self.current.endcol;
@@ -206,6 +227,54 @@ impl<'life> Parser<'life> {
         };
     
         return n;
+    }
+
+    //Keywords
+    fn parse_let(&mut self) -> Node{
+        let mut pos = Position {
+            line: self.current.line,
+            startcol: self.current.startcol,
+            endcol: 0,
+        };
+
+        self.advance();
+
+        if !self.current_is_type(TokenType::IDENTIFIER) {
+            self.raise_error("expected identifier.", ErrorType::InvalidTok);
+        }
+
+        let name: String = self.current.data.clone();
+
+        self.advance();
+
+        if !self.current_is_type(TokenType::EQUALS) {
+            self.raise_error("expected equals.", ErrorType::InvalidTok);
+        }
+        
+        self.advance();
+
+        let expr: Node = self.expr();
+
+        let letn: nodes::LetNode = nodes::LetNode{
+            name,
+            expr,
+        };
+    
+        let nodedat: nodes::NodeData = nodes::NodeData {
+            binary: None,
+            int: None,
+            letn: Some(letn),
+        };
+
+        pos.endcol = self.current.endcol;
+    
+        let n: Node = Node {
+            tp: NodeType::LET,
+            data: Box::new(nodedat),
+            pos,
+        };
+
+        return n;        
     }
 
 }

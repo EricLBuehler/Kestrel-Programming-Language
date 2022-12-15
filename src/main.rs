@@ -35,6 +35,8 @@ fn main() {
         name: filename.clone(),
     };
 
+    let mut keywords: Vec<String> = vec![String::from("let")];
+
     let mut lexer: lexer::Lexer = lexer::Lexer {
         idx: 0,
         data: file_data_bytes,
@@ -44,7 +46,7 @@ fn main() {
         col: 0,
     };
 
-    let (_, tokens) = lexer::generate_tokens(&mut lexer);
+    let (_, tokens) = lexer::generate_tokens(&mut lexer, &mut keywords);
 
     let mut parser: parser::Parser = parser::Parser {
         tokens: &tokens,
