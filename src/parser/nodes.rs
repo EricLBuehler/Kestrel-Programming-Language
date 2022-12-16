@@ -56,8 +56,20 @@ impl std::fmt::Display for LetNode {
 }
 
 #[derive(Clone)]
+pub struct IdentifierNode {
+    pub name: String,
+}
+
+impl std::fmt::Display for IdentifierNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Identifier '{}'", self.name)
+    }    
+}
+
+#[derive(Clone)]
 pub struct NodeData {
     pub binary: Option<BinaryNode>,
     pub int: Option<I32Node>,
     pub letn: Option<LetNode>,
+    pub identifier: Option<IdentifierNode>,
 }

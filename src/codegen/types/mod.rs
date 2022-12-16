@@ -13,6 +13,7 @@ pub enum TraitType {
     Div,
 }
 
+#[derive(Clone, PartialEq)]
 pub struct Data<'a> {
     pub data: Option<inkwell::values::BasicValueEnum<'a>>,
     pub tp: DataType,

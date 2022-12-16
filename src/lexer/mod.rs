@@ -117,6 +117,7 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
                 endcol: lexer.col+1,
             });
             advance(lexer);
+
         }
         else if cur == '*' {
             vector.push(Token {
@@ -157,13 +158,12 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
                 endcol: lexer.col+1,
             });
             advance(lexer);
-            if lexer.current=='\n' as char { // Windows compat
-                advance(lexer);
-            }
+            lexer.col = 0;
         }
         else {
             advance(lexer);
         }
+
     }
 
     vector.push(Token {
@@ -181,17 +181,22 @@ fn make_number(lexer: &mut Lexer) -> Token {
     let mut data: String = String::from("");
     let start: usize = lexer.col;
 
-    while lexer.current.is_numeric() {
+    let mut end: usize = lexer.col;
+    let mut line: usize = lexer.line;
+
+    while lexer.current.is_numeric() || lexer.current=='_' {
         data.push(lexer.current);
+        end=lexer.col;
+        line=lexer.line;
         advance(lexer);
     }
     
     let tok = Token {
         data: data,
         tp: TokenType::I32,
-        line: lexer.line,
+        line,
         startcol: start,
-        endcol: lexer.col,
+        endcol: end+1,
     };
     return tok;
 }
@@ -200,17 +205,22 @@ fn make_identifier(lexer: &mut Lexer, kwds: &Vec<String>) -> Token {
     let mut data: String = String::from("");
     let start: usize = lexer.col;
 
+    let mut end: usize = lexer.col;
+    let mut line: usize = lexer.line;
+
     while lexer.current.is_alphabetic() || lexer.current=='_' {
         data.push(lexer.current);
+        end=lexer.col;
+        line=lexer.line;
         advance(lexer);
     }
     
     let mut tok = Token {
         data: data,
         tp: TokenType::IDENTIFIER,
-        line: lexer.line,
+        line,
         startcol: start,
-        endcol: lexer.col,
+        endcol: end+1,
     };
 
     if kwds.iter().find(|x| **x==tok.data)!=None {

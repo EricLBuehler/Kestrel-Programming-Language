@@ -5,6 +5,7 @@ pub enum ErrorType {
     InvalidDataTypes,
     InvalidLiteralForRadix,
     MissingTrait,
+    RedefinitionAttempt,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -14,12 +15,13 @@ impl std::fmt::Display for ErrorType {
             ErrorType::InvalidDataTypes => write!(f, "invalid data types for operation"),
             ErrorType::InvalidLiteralForRadix => write!(f, "invalid data literal for implicit or explicit radix"),
             ErrorType::MissingTrait => write!(f, "missing trait"),
+            ErrorType::RedefinitionAttempt => write!(f, "attempt to redefine variable"),
         }
     }
 }
 
 pub fn raise_error(error: &str, errtp: ErrorType, pos: &crate::parser::Position, info: &crate::fileinfo::FileInfo) -> !{
-    let header: String = format!("error[E{:0>5}]: {}", errtp as u8 + 1, error);
+    let header: String = format!("error[E{:0>3}]: {}", errtp as u8 + 1, error);
     let location: String = format!("{}:{}:{}", info.name, pos.line+1, pos.startcol+1);
     println!("{}", header.red().bold());
     println!("{}", location.red());

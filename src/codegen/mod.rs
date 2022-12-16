@@ -14,7 +14,11 @@ use crate::errors;
 extern crate guess_host_triple;
 
 pub struct InkwellTypes<'ctx> {
-    pub i32tp: &'ctx inkwell::types::IntType<'ctx>,
+    i32tp: &'ctx inkwell::types::IntType<'ctx>,
+}
+
+pub struct Namespaces<'ctx> {
+    global: std::collections::HashMap<String, (inkwell::values::PointerValue<'ctx>, types::DataType)>,
 }
 
 pub struct CodeGen<'ctx> {
@@ -23,12 +27,13 @@ pub struct CodeGen<'ctx> {
     builder: Builder<'ctx>,
     types: std::collections::HashMap<String, types::Type<'ctx>>,
     info: &'ctx crate::fileinfo::FileInfo<'ctx>,
-    pub inkwell_types: InkwellTypes<'ctx>,
+    inkwell_types: InkwellTypes<'ctx>,
+    namespaces: Namespaces<'ctx>,
 }
 
 //Codegen functions
 impl<'ctx> CodeGen<'ctx> {
-    fn build_binary(&self, node: &parser::Node) -> types::Data<'ctx> {
+    fn build_binary(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         let binary: &parser::nodes::BinaryNode = node.data.binary.as_ref().unwrap();
 
         let left: types::Data = self.compile_expr(&binary.left);
@@ -76,12 +81,20 @@ impl<'ctx> CodeGen<'ctx> {
         return data;
     }
     
-    fn build_let(&self, node: &parser::Node) -> types::Data<'ctx> {
+    fn build_let(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         let right: types::Data = self.compile_expr(&node.data.letn.as_ref().unwrap().expr);
 
-        let ptr: inkwell::values::PointerValue = self.builder.build_alloca(right.data.unwrap().get_type(), node.data.letn.as_ref().unwrap().name.as_str());
+        let name: String = node.data.letn.as_ref().unwrap().name.clone();
+        if self.namespaces.global.iter().find(|x| *x.0 == name) != None {
+            let fmt: String = format!("name {} is already defined in namespace.", name);
+            errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
+        }
+
+        let ptr: inkwell::values::PointerValue = self.builder.build_alloca(right.data.unwrap().get_type(), name.as_str());
 
         self.builder.build_store(ptr, right.data.unwrap());
+
+        self.namespaces.global.insert(name, (ptr, right.tp));
 
         let data: types::Data = types::Data {
             data: None,
@@ -89,15 +102,32 @@ impl<'ctx> CodeGen<'ctx> {
         };
         return data;
     }
+    
+    fn build_loadname(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        let name: String = node.data.identifier.as_ref().unwrap().name.clone();
 
-    fn compile_expr(&self, node: &parser::Node) -> types::Data<'ctx> {
+        if self.namespaces.global.iter().find(|x| *x.0 == name) == None {
+        }
+
+        let (ptr, tp) = match self.namespaces.global.get(&name) {
+            None => {
+                let fmt: String = format!("name {} is not defined in namespace.", name);
+                errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
+            }
+            Some(v) => {
+                (v.0, v.1.clone())
+            }
+        };
+
+        let data: types::Data = types::Data {
+            data: Some(self.builder.build_load(ptr, &name)),
+            tp,
+        };
+        return data;
+    }
+
+    fn compile_expr(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         match node.tp {
-            parser::NodeType::BINARY => {
-                self.build_binary(node)
-            }
-            parser::NodeType::LET => {
-                self.build_let(node)
-            }
             parser::NodeType::I32 => {
                 let self_data: &String = &node.data.int.as_ref().unwrap().left;
                 let selfv: inkwell::values::IntValue = match self.inkwell_types.i32tp.const_int_from_string(self_data.as_str(), inkwell::types::StringRadix::Decimal) {
@@ -113,10 +143,19 @@ impl<'ctx> CodeGen<'ctx> {
                 };
                 types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::DataType::I32}
             }
+            parser::NodeType::BINARY => {
+                self.build_binary(node)
+            }
+            parser::NodeType::LET => {
+                self.build_let(node)
+            }
+            parser::NodeType::IDENTIFIER => {
+                self.build_loadname(node)
+            }
         }
     }
 
-    fn compile(&self, nodes: Vec<parser::Node>) {
+    fn compile(&mut self, mut nodes: Vec<parser::Node>) {
         // Generic header
         let i32_type: inkwell::types::IntType = self.context.i32_type();
         let fn_type: inkwell::types::FunctionType = i32_type.fn_type(&[], false);
@@ -134,8 +173,9 @@ impl<'ctx> CodeGen<'ctx> {
         self.builder.position_at_end(basic_block); 
 
         /////// Code generation start:
-        for node in nodes {
-            self.compile_expr(&node);
+                
+        for node in &mut nodes {
+            self.compile_expr(node);
         }
 
         /////// End
@@ -167,6 +207,10 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
         i32tp: &context.i32_type(),
     };
 
+    let namespaces: Namespaces = Namespaces {
+        global: std::collections::HashMap::new(),
+    };
+
     let mut codegen: CodeGen = CodeGen {
         context: &context,
         module: module,
@@ -174,6 +218,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
         types: std::collections::HashMap::new(),
         info,
         inkwell_types: inkwelltypes,
+        namespaces: namespaces,
     };
     
     let pass_manager_builder: inkwell::passes::PassManagerBuilder = inkwell::passes::PassManagerBuilder::create();

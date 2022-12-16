@@ -15,6 +15,7 @@ pub enum NodeType {
     BINARY,
     I32,
     LET,
+    IDENTIFIER,
 }
 
 #[derive(Clone)]
@@ -37,6 +38,7 @@ impl std::fmt::Display for Node {
             NodeType::BINARY => write!(f, "{}", self.data.binary.as_ref().unwrap() ),
             NodeType::I32 => write!(f, "{}", self.data.int.as_ref().unwrap() ),
             NodeType::LET => write!(f, "{}", self.data.letn.as_ref().unwrap() ),
+            NodeType::IDENTIFIER => write!(f, "{}", self.data.identifier.as_ref().unwrap() ),
         }
     }    
 }
@@ -67,8 +69,8 @@ impl<'life> Parser<'life> {
     }
 
     fn advance(&mut self) {
+        let next: Option<&lexer::Token> = self.tokens.get(self.idx);
         self.idx+=1;
-        let next: Option<&lexer::Token> = self.tokens.get(self.idx-1);
 
         match next {
             Some(v) => {
@@ -117,6 +119,7 @@ impl<'life> Parser<'life> {
     fn atom(&mut self) -> Option<Node> {
         match self.current.tp {
             TokenType::I32 => Some(self.generate_int(self.current.data.clone())),
+            TokenType::IDENTIFIER => Some(self.generate_identifier(self.current.data.clone())),
             _ => None,
         }
     }
@@ -171,6 +174,7 @@ impl<'life> Parser<'life> {
             binary: None,
             int: Some(int),
             letn: None,
+            identifier: None,
         };
 
         let pos = Position {
@@ -216,12 +220,40 @@ impl<'life> Parser<'life> {
             binary: Some(bin),
             int: None,
             letn: None,
+            identifier: None,
         };
 
         pos.endcol = self.current.endcol;
     
         let n: Node = Node {
             tp: NodeType::BINARY,
+            data: Box::new(nodedat),
+            pos,
+        };
+    
+        return n;
+    }
+    
+    fn generate_identifier(&mut self, data: String) -> Node{
+        let identi: nodes::IdentifierNode = nodes::IdentifierNode{
+            name: data.clone()
+        };
+    
+        let nodedat: nodes::NodeData = nodes::NodeData {
+            binary: None,
+            int: None,
+            letn: None,
+            identifier: Some(identi),
+        };
+
+        let pos = Position {
+            line: self.current.line,
+            startcol: self.current.startcol,
+            endcol: self.current.endcol,
+        };
+    
+        let n: Node = Node {
+            tp: NodeType::IDENTIFIER,
             data: Box::new(nodedat),
             pos,
         };
@@ -264,9 +296,10 @@ impl<'life> Parser<'life> {
             binary: None,
             int: None,
             letn: Some(letn),
+            identifier: None,
         };
 
-        pos.endcol = self.current.endcol;
+        pos.endcol = nodedat.letn.as_ref().unwrap().expr.pos.endcol;
     
         let n: Node = Node {
             tp: NodeType::LET,
