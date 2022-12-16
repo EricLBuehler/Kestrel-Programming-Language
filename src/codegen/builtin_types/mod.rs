@@ -4,6 +4,7 @@ use crate::codegen::types::{Type, DataType, Trait, TraitType, Data};
 
 pub mod i32type;
 pub mod unittype;
+pub mod functype;
 
 fn add_simple_type<'a>(codegen: &mut codegen::CodeGen<'a>, traits: HashMap<String, Trait<'a>>, basictype: DataType, name: &str){
     let tp = Type {
@@ -29,4 +30,5 @@ fn create_trait<'a>(function: fn(&codegen::CodeGen<'a>, Vec<&Data<'a>>, &crate::
 pub fn init(codegen: &mut codegen::CodeGen) {
     i32type::init_i32(codegen);
     unittype::init_unit(codegen);
+    functype::init_func(codegen);
 }

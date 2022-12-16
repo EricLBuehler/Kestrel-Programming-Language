@@ -5,6 +5,7 @@ use std::collections::HashMap;
 pub enum DataType {
     I32,
     Unit,
+    Func,
 }
 pub enum TraitType {
     Add,
@@ -24,6 +25,7 @@ impl std::fmt::Display for DataType {
         match *self {
             DataType::I32 => write!(f, "i32"),
             DataType::Unit => write!(f, "Unit"),
+            DataType::Func => write!(f, "fn"),
         }
     }    
 }

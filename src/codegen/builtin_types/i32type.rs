@@ -72,5 +72,5 @@ pub fn init_i32(codegen: &mut codegen::CodeGen) {
     traits.insert(TraitType::Sub.to_string(), builtin_types::create_trait(i32_sub, 2, TraitType::Sub, String::from("i32"), DataType::I32));
     traits.insert(TraitType::Div.to_string(), builtin_types::create_trait(i32_div, 2, TraitType::Div, String::from("i32"), DataType::I32));
 
-    builtin_types::add_simple_type(codegen, traits, DataType::I32, "i32");
+    builtin_types::add_simple_type(codegen, traits, DataType::I32, DataType::I32.to_string().as_str());
 }

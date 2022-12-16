@@ -67,9 +67,26 @@ impl std::fmt::Display for IdentifierNode {
 }
 
 #[derive(Clone)]
+pub struct FuncNode {
+    pub name: String,
+    pub blocks: Vec<crate::parser::Node>,
+}
+
+impl std::fmt::Display for FuncNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Function '{}' {{", self.name)?;
+        for node in self.blocks.clone() {
+            writeln!(f, "    {}", node)?;
+        }
+        write!(f, "    }}")
+    }    
+}
+
+#[derive(Clone)]
 pub struct NodeData {
     pub binary: Option<BinaryNode>,
     pub int: Option<I32Node>,
     pub letn: Option<LetNode>,
     pub identifier: Option<IdentifierNode>,
+    pub func: Option<FuncNode>,
 }

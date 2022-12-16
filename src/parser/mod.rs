@@ -16,6 +16,7 @@ pub enum NodeType {
     I32,
     LET,
     IDENTIFIER,
+    FUNC,
 }
 
 #[derive(Clone)]
@@ -39,6 +40,7 @@ impl std::fmt::Display for Node {
             NodeType::I32 => write!(f, "{}", self.data.int.as_ref().unwrap() ),
             NodeType::LET => write!(f, "{}", self.data.letn.as_ref().unwrap() ),
             NodeType::IDENTIFIER => write!(f, "{}", self.data.identifier.as_ref().unwrap() ),
+            NodeType::FUNC => write!(f, "{}", self.data.func.as_ref().unwrap() ),
         }
     }    
 }
@@ -95,7 +97,7 @@ impl<'life> Parser<'life> {
     fn block(&mut self) -> Vec<Node> {
         let mut nodes: Vec<Node> = Vec::new();
         
-        while !self.current_is_type(TokenType::EOF) {
+        while !self.current_is_type(TokenType::EOF) && !self.current_is_type(TokenType::RCURLY) {
             nodes.push(self.statement());
             self.advance();
         }
@@ -133,6 +135,9 @@ impl<'life> Parser<'life> {
     fn keyword(&mut self) -> Node {
         if self.current.data == String::from("let") {
             return self.parse_let();
+        }
+        else if self.current.data == String::from("fn") {
+            return self.parse_fn();
         }
         
         unreachable!();
@@ -175,6 +180,7 @@ impl<'life> Parser<'life> {
             int: Some(int),
             letn: None,
             identifier: None,
+            func: None,
         };
 
         let pos = Position {
@@ -221,6 +227,7 @@ impl<'life> Parser<'life> {
             int: None,
             letn: None,
             identifier: None,
+            func: None,
         };
 
         pos.endcol = self.current.endcol;
@@ -244,6 +251,7 @@ impl<'life> Parser<'life> {
             int: None,
             letn: None,
             identifier: Some(identi),
+            func: None,
         };
 
         let pos = Position {
@@ -297,6 +305,7 @@ impl<'life> Parser<'life> {
             int: None,
             letn: Some(letn),
             identifier: None,
+            func: None,
         };
 
         pos.endcol = nodedat.letn.as_ref().unwrap().expr.pos.endcol;
@@ -306,6 +315,77 @@ impl<'life> Parser<'life> {
             data: Box::new(nodedat),
             pos,
         };
+
+        return n;        
+    }
+
+    fn parse_fn(&mut self) -> Node{
+        let mut pos = Position {
+            line: self.current.line,
+            startcol: self.current.startcol,
+            endcol: 0,
+        };
+
+        self.advance();
+
+        if !self.current_is_type(TokenType::IDENTIFIER) {
+            self.raise_error("expected identifier.", ErrorType::InvalidTok);
+        }
+
+        let name: String = self.current.data.clone();
+
+        self.advance();
+
+        if !self.current_is_type(TokenType::LPAREN) {
+            self.raise_error("expected left parenthesis.", ErrorType::InvalidTok);
+        }
+        
+        self.advance();
+
+        if !self.current_is_type(TokenType::RPAREN) {
+            self.raise_error("expected right parenthesis.", ErrorType::InvalidTok);
+        }
+
+        pos.endcol = self.current.endcol;
+        
+        self.advance();
+
+        if !self.current_is_type(TokenType::LCURLY) {
+            self.raise_error("expected left curly bracket.", ErrorType::InvalidTok);
+        }
+        
+        self.advance();
+
+        self.skip_newline();
+
+        let blocks: Vec<Node> = self.block();
+
+        if !self.current_is_type(TokenType::RCURLY) {
+            self.raise_error("expected rught curly bracket.", ErrorType::InvalidTok);
+        }
+        
+        self.advance();
+
+        let func: nodes::FuncNode = nodes::FuncNode{
+            name,
+            blocks,
+        };
+    
+        let nodedat: nodes::NodeData = nodes::NodeData {
+            binary: None,
+            int: None,
+            letn: None,
+            identifier: None,
+            func: Some(func),
+        };
+
+    
+        let n: Node = Node {
+            tp: NodeType::FUNC,
+            data: Box::new(nodedat),
+            pos,
+        };
+
 
         return n;        
     }

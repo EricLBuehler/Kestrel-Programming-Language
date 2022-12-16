@@ -19,6 +19,7 @@ pub struct InkwellTypes<'ctx> {
 
 pub struct Namespaces<'ctx> {
     global: std::collections::HashMap<String, (inkwell::values::PointerValue<'ctx>, types::DataType)>,
+    functions: std::collections::HashMap<String, inkwell::values::FunctionValue<'ctx>>,
 }
 
 pub struct CodeGen<'ctx> {
@@ -33,6 +34,22 @@ pub struct CodeGen<'ctx> {
 
 //Codegen functions
 impl<'ctx> CodeGen<'ctx> {
+    fn get_variable(&mut self, name: &String) -> Option<&(inkwell::values::PointerValue<'ctx>, types::DataType)>{
+        if self.namespaces.global.iter().find(|x| *x.0 == *name) != None {
+            return self.namespaces.global.get(name);
+        }
+
+        return None;
+    }
+    
+    fn get_function(&mut self, name: &String) -> Option<&(inkwell::values::PointerValue<'ctx>, types::DataType)>{
+        if self.namespaces.functions.iter().find(|x| *x.0 == *name) != None {
+            return self.namespaces.global.get(name);
+        }
+
+        return None;
+    }
+
     fn build_binary(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         let binary: &parser::nodes::BinaryNode = node.data.binary.as_ref().unwrap();
 
@@ -85,9 +102,14 @@ impl<'ctx> CodeGen<'ctx> {
         let right: types::Data = self.compile_expr(&node.data.letn.as_ref().unwrap().expr);
 
         let name: String = node.data.letn.as_ref().unwrap().name.clone();
-        if self.namespaces.global.iter().find(|x| *x.0 == name) != None {
+        if self.get_variable(&name) != None {
             let fmt: String = format!("name {} is already defined in namespace.", name);
             errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
+        }
+
+        if right.data == None{
+            let fmt: String = format!("Cannot assign to {}.", right.tp.to_string());
+            errors::raise_error(&fmt, errors::ErrorType::CannotAssign, &node.pos, self.info);
         }
 
         let ptr: inkwell::values::PointerValue = self.builder.build_alloca(right.data.unwrap().get_type(), name.as_str());
@@ -106,13 +128,10 @@ impl<'ctx> CodeGen<'ctx> {
     fn build_loadname(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         let name: String = node.data.identifier.as_ref().unwrap().name.clone();
 
-        if self.namespaces.global.iter().find(|x| *x.0 == name) == None {
-        }
-
-        let (ptr, tp) = match self.namespaces.global.get(&name) {
+        let (ptr, tp) = match self.get_variable(&name) {
             None => {
                 let fmt: String = format!("name {} is not defined in namespace.", name);
-                errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
+                errors::raise_error(&fmt, errors::ErrorType::NameNotFound, &node.pos, self.info);
             }
             Some(v) => {
                 (v.0, v.1.clone())
@@ -122,6 +141,58 @@ impl<'ctx> CodeGen<'ctx> {
         let data: types::Data = types::Data {
             data: Some(self.builder.build_load(ptr, &name)),
             tp,
+        };
+        return data;
+    }
+    
+    fn build_func(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        let old_block: Option<inkwell::basic_block::BasicBlock>=self.builder.get_insert_block();
+        if old_block != None {
+            let fmt: String = format!("Cannot define nested functions.");
+            errors::raise_error(&fmt, errors::ErrorType::NestedFunctions, &node.pos, self.info);
+        }
+        
+        let name: &String = &node.data.func.as_ref().unwrap().name;
+        if self.get_function(&name) != None {
+            let fmt: String = format!("function {} is already defined in namespace.", name);
+            errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
+        }
+
+        // Generic header
+        let fn_type: inkwell::types::FunctionType = self.inkwell_types.i32tp.fn_type(&[], false);
+        let func: inkwell::values::FunctionValue = self.module.add_function(name.as_str(), fn_type, None);
+        let basic_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(func, "entry");
+
+        let mut attr: inkwell::attributes::Attribute = self.context.create_enum_attribute(inkwell::attributes::Attribute::get_named_enum_kind_id("noinline"), 0);
+
+        func.add_attribute(inkwell::attributes::AttributeLoc::Function, attr);
+
+        attr = self.context.create_enum_attribute(inkwell::attributes::Attribute::get_named_enum_kind_id("optnone"), 0);
+
+        func.add_attribute(inkwell::attributes::AttributeLoc::Function, attr);
+        
+        self.builder.position_at_end(basic_block); 
+
+        /////// Code generation start:
+
+        self.compile(&node.data.func.as_ref().unwrap().blocks);
+
+        /////// End
+
+        self.builder.build_return(Some(&self.inkwell_types.i32tp.const_int(0, false))); //TODO: replace this with something user-defined
+        
+        let pass_manager_builder: inkwell::passes::PassManagerBuilder = inkwell::passes::PassManagerBuilder::create();
+        pass_manager_builder.set_optimization_level(inkwell::OptimizationLevel::Aggressive);
+        let manager = inkwell::passes::PassManager::create(&self.module);
+        pass_manager_builder.populate_function_pass_manager(&manager);
+
+        unsafe { func.run_in_pass_manager(&manager); }
+        
+        self.namespaces.functions.insert(name.clone(), func);
+
+        let data: types::Data = types::Data {
+            data: None,
+            tp: types::DataType::Func,
         };
         return data;
     }
@@ -152,42 +223,16 @@ impl<'ctx> CodeGen<'ctx> {
             parser::NodeType::IDENTIFIER => {
                 self.build_loadname(node)
             }
+            parser::NodeType::FUNC => {
+                self.build_func(node)
+            }
         }
     }
 
-    fn compile(&mut self, mut nodes: Vec<parser::Node>) {
-        // Generic header
-        let i32_type: inkwell::types::IntType = self.context.i32_type();
-        let fn_type: inkwell::types::FunctionType = i32_type.fn_type(&[], false);
-        let main: inkwell::values::FunctionValue = self.module.add_function("main", fn_type, None);
-        let basic_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(main, "entry");
-
-        let mut attr: inkwell::attributes::Attribute = self.context.create_enum_attribute(inkwell::attributes::Attribute::get_named_enum_kind_id("noinline"), 0);
-
-        main.add_attribute(inkwell::attributes::AttributeLoc::Function, attr);
-
-        attr = self.context.create_enum_attribute(inkwell::attributes::Attribute::get_named_enum_kind_id("optnone"), 0);
-
-        main.add_attribute(inkwell::attributes::AttributeLoc::Function, attr);
-        
-        self.builder.position_at_end(basic_block); 
-
-        /////// Code generation start:
-                
-        for node in &mut nodes {
+    fn compile(&mut self, nodes: &Vec<parser::Node>) {
+        for node in nodes {
             self.compile_expr(node);
         }
-
-        /////// End
-
-        self.builder.build_return(Some(&i32_type.const_int(0, false))); //TODO: replace this with something user-defined
-        
-        let pass_manager_builder: inkwell::passes::PassManagerBuilder = inkwell::passes::PassManagerBuilder::create();
-        pass_manager_builder.set_optimization_level(inkwell::OptimizationLevel::Aggressive);
-        let manager = inkwell::passes::PassManager::create(&self.module);
-        pass_manager_builder.populate_function_pass_manager(&manager);
-
-        unsafe { main.run_in_pass_manager(&manager); }
     }
 }
 
@@ -209,6 +254,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
 
     let namespaces: Namespaces = Namespaces {
         global: std::collections::HashMap::new(),
+        functions: std::collections::HashMap::new(),
     };
 
     let mut codegen: CodeGen = CodeGen {
@@ -228,9 +274,15 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
 
     builtin_types::init(&mut codegen);
 
+    //Check main function
+    nodes.iter()
+    .find(|node| node.tp == parser::NodeType::FUNC && node.data.func.as_ref().unwrap().name == "main")
+    .or_else(|| {
+        let fmt: String = format!("main function is not defined in namespace.");
+        errors::raise_error_no_pos(&fmt, errors::ErrorType::NameNotFound);        
+    });
 
-
-    codegen.compile(nodes);
+    codegen.compile(&nodes);
 
     unsafe { codegen.module.run_in_pass_manager(&manager) };
 

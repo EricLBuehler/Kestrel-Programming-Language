@@ -6,6 +6,9 @@ pub enum ErrorType {
     InvalidLiteralForRadix,
     MissingTrait,
     RedefinitionAttempt,
+    NameNotFound,
+    NestedFunctions,
+    CannotAssign,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -15,7 +18,10 @@ impl std::fmt::Display for ErrorType {
             ErrorType::InvalidDataTypes => write!(f, "invalid data types for operation"),
             ErrorType::InvalidLiteralForRadix => write!(f, "invalid data literal for implicit or explicit radix"),
             ErrorType::MissingTrait => write!(f, "missing trait"),
-            ErrorType::RedefinitionAttempt => write!(f, "attempt to redefine variable"),
+            ErrorType::RedefinitionAttempt => write!(f, "attempt to redefine name"),
+            ErrorType::NameNotFound => write!(f, "name not defined"),
+            ErrorType::NestedFunctions => write!(f, "attempt to define nested functions"),
+            ErrorType::CannotAssign => write!(f, "cannot assign to type"),
         }
     }
 }
@@ -40,5 +46,11 @@ pub fn raise_error(error: &str, errtp: ErrorType, pos: &crate::parser::Position,
     let linestr = (pos.line+1).to_string().blue().bold();
     println!("{} | {}", linestr, snippet);
     println!("{} | {}", " ".repeat(linestr.len()), arrows.green());
+    std::process::exit(1);
+}
+
+pub fn raise_error_no_pos(error: &str, errtp: ErrorType) -> !{
+    let header: String = format!("error[E{:0>3}]: {}", errtp as u8 + 1, error);
+    println!("{}", header.red().bold());
     std::process::exit(1);
 }

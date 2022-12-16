@@ -12,6 +12,10 @@ pub enum TokenType {
     KEYWORD,
     IDENTIFIER,
     EQUALS,
+    LCURLY,
+    RCURLY,
+    LPAREN,
+    RPAREN,
 }
 
 pub struct Lexer<'life> {
@@ -51,6 +55,10 @@ impl std::fmt::Display for TokenType {
            TokenType::KEYWORD => write!(f, "KEYWORD"),
            TokenType::IDENTIFIER => write!(f, "IDENTIFIER"),
            TokenType::EQUALS => write!(f, "EQUALS"),
+           TokenType::LCURLY => write!(f, "LCURLY"),
+           TokenType::RCURLY => write!(f, "RCURLY"),
+           TokenType::LPAREN => write!(f, "LPAREN"),
+           TokenType::RPAREN => write!(f, "RPAREN"),
        }
     }
 }
@@ -143,6 +151,46 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
             vector.push(Token {
                 data: String::from("="),
                 tp: TokenType::EQUALS,
+                line: lexer.line,
+                startcol: lexer.col,
+                endcol: lexer.col+1,
+            });
+            advance(lexer);
+        }
+        else if cur == '{' {
+            vector.push(Token {
+                data: String::from("{"),
+                tp: TokenType::LCURLY,
+                line: lexer.line,
+                startcol: lexer.col,
+                endcol: lexer.col+1,
+            });
+            advance(lexer);
+        }
+        else if cur == '}' {
+            vector.push(Token {
+                data: String::from("}"),
+                tp: TokenType::RCURLY,
+                line: lexer.line,
+                startcol: lexer.col,
+                endcol: lexer.col+1,
+            });
+            advance(lexer);
+        }
+        else if cur == '(' {
+            vector.push(Token {
+                data: String::from("("),
+                tp: TokenType::LPAREN,
+                line: lexer.line,
+                startcol: lexer.col,
+                endcol: lexer.col+1,
+            });
+            advance(lexer);
+        }
+        else if cur == ')' {
+            vector.push(Token {
+                data: String::from(")"),
+                tp: TokenType::RPAREN,
                 line: lexer.line,
                 startcol: lexer.col,
                 endcol: lexer.col+1,
