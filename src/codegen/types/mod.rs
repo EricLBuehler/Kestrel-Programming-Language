@@ -1,7 +1,7 @@
 use crate::codegen;
 use std::collections::HashMap;
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum DataType {
     I32,
     Unit,
@@ -14,7 +14,7 @@ pub enum TraitType {
     Div,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Data<'a> {
     pub data: Option<inkwell::values::BasicValueEnum<'a>>,
     pub tp: DataType,

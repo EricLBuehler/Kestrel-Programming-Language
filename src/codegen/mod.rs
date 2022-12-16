@@ -191,7 +191,7 @@ impl<'ctx> CodeGen<'ctx> {
         self.namespaces.functions.insert(name.clone(), func);
 
         let data: types::Data = types::Data {
-            data: None,
+            data: Some(inkwell::values::BasicValueEnum::PointerValue(func.as_global_value().as_pointer_value())),
             tp: types::DataType::Func,
         };
         return data;
