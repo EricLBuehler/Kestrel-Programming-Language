@@ -238,7 +238,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
 
     std::process::Command::new("llc").arg("a.ll").output().expect("Failed to execute llc");
 
-    std::process::Command::new("gcc").arg("a.s").arg("-oa").output().expect("Failed to execute llc");
+    std::process::Command::new("gcc").arg("a.s").arg("-oa").output().expect("Failed to execute gcc");
 
     Ok(())
 }
