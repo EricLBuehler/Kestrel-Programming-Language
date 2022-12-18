@@ -119,7 +119,6 @@ impl<'life> Parser<'life> {
         
         while !self.current_is_type(TokenType::EOF) && !self.current_is_type(TokenType::RCURLY) {
             nodes.push(self.statement());
-            self.advance();
             self.skip_newline();
         }
 
@@ -182,10 +181,11 @@ impl<'life> Parser<'life> {
                 TokenType::FWSLASH => {
                     left = self.generate_binary(left);
                 }
-                _ => {}
+                _ => {
+                    return left;
+                }
             }
         }
-
         return left;
     }
 

@@ -5,20 +5,17 @@ target triple = "x86_64-unknown-linux-gnu"
 ; Function Attrs: noinline nounwind optnone
 define void @_main() local_unnamed_addr #0 !dbg !4 {
 entry:
+  %v = alloca i32, !dbg !8
+  store i32 1, i32* %v, !dbg !8
+  %v1 = load i32, i32* %v, !dbg !8
   ret void, !dbg !8
-}
-
-; Function Attrs: noinline nounwind optnone
-define i32 (i32)* @f() local_unnamed_addr #0 !dbg !10 {
-entry:
-  ret i32 0, !dbg !14
 }
 
 ; Function Attrs: noinline nounwind optnone
 define i32 @main(i32 %0, i8** %1) local_unnamed_addr #0 {
 entry:
-  call void @_main(), !dbg !14
-  ret i32 0, !dbg !14
+  call void @_main(), !dbg !8
+  ret i32 0, !dbg !8
 }
 
 attributes #0 = { noinline nounwind optnone }
@@ -36,9 +33,3 @@ attributes #0 = { noinline nounwind optnone }
 !7 = !DIBasicType(name: "void", size: 16, flags: DIFlagPublic)
 !8 = !DILocation(line: 0, scope: !9)
 !9 = distinct !DILexicalBlock(scope: !4, file: !2)
-!10 = distinct !DISubprogram(name: "f", linkageName: "f", scope: null, file: !2, line: 3, type: !11, scopeLine: 3, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
-!11 = !DISubroutineType(flags: DIFlagPublic, types: !12)
-!12 = !{!13}
-!13 = !DIBasicType(name: "i32 (i32)", size: 16, flags: DIFlagPublic)
-!14 = !DILocation(line: 3, scope: !15)
-!15 = distinct !DILexicalBlock(scope: !10, file: !2, line: 3)
