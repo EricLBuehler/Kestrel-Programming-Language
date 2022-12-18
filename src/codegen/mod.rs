@@ -425,13 +425,6 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
     builtin_types::init(&mut codegen);
 
     //Check main function
-    nodes.iter()
-    .find(|node| node.tp == parser::NodeType::FUNC && node.data.func.as_ref().unwrap().name == "main")
-    .or_else(|| {
-        let fmt: String = format!("main function is not defined in namespace.");
-        errors::raise_error_no_pos(&fmt, errors::ErrorType::NameNotFound);        
-    });
-
     codegen.compile(&nodes);
 
     //Make the real main function
