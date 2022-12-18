@@ -1,4 +1,5 @@
 fn main() {
-    let x = 1+2
-    let y = x+3
+}
+
+fn f() -> fn(i32) -> i32 {
 }

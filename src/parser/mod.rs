@@ -74,6 +74,10 @@ pub fn print_nodes(nodes: &Vec<Node>) {
 //                                      Parser internal functions
 // ---------------------------------------------------------------------------------------------------------------
 
+//Rules:
+//Atomic: inplace
+//Expressions + Keywords: leave off on next
+
 
 impl<'life> Parser<'life> { 
     pub fn genreate_ast(&mut self)  -> Vec<Node> {        
@@ -114,6 +118,7 @@ impl<'life> Parser<'life> {
         while !self.current_is_type(TokenType::EOF) && !self.current_is_type(TokenType::RCURLY) {
             nodes.push(self.statement());
             self.advance();
+            self.skip_newline();
         }
 
         print_nodes(&nodes);
