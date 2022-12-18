@@ -410,6 +410,11 @@ impl<'ctx> CodeGen<'ctx> {
 
         let ptr: inkwell::values::PointerValue = self.namespaces.global.get(&name).unwrap().0;
 
+        if self.namespaces.global.get(&name).unwrap().2 == types::DataMutablility::Immutable {
+            let fmt: String = format!("Cannot assign to immutable variable.");
+            errors::raise_error(&fmt, errors::ErrorType::ImmutableAssign, &node.pos, self.info);
+        }
+        
         if self.namespaces.global.get(&name).unwrap().1.tp != right.tp.tp {
             let fmt: String = format!("Expected {} type, got {} type.", self.namespaces.global.get(&name).unwrap().1.tp.to_string(), right.tp.to_string());
             errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);

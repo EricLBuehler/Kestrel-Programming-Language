@@ -254,7 +254,9 @@ impl<'life> Parser<'life> {
             op,
             right: self.expr(),
         };
-    
+
+        pos.endcol = bin.right.pos.endcol;
+
         let nodedat: nodes::NodeData = nodes::NodeData {
             binary: Some(bin),
             int: None,
@@ -263,8 +265,6 @@ impl<'life> Parser<'life> {
             func: None,
             assign: None,
         };
-
-        pos.endcol = self.current.endcol;
     
         let n: Node = Node {
             tp: NodeType::BINARY,
@@ -321,6 +321,8 @@ impl<'life> Parser<'life> {
             name: left.data.identifier.unwrap().name,
             expr: self.expr(),
         };
+
+        pos.endcol = assign.expr.pos.endcol;
     
         let nodedat: nodes::NodeData = nodes::NodeData {
             binary: None,
@@ -330,8 +332,6 @@ impl<'life> Parser<'life> {
             func: None,
             assign: Some(assign),
         };
-
-        pos.endcol = self.current.endcol;
     
         let n: Node = Node {
             tp: NodeType::ASSIGN,
