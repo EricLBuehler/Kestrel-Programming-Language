@@ -213,7 +213,7 @@ impl<'ctx> CodeGen<'ctx> {
         if node.data.letn.as_ref().unwrap().tp != None {
             (tp, _) = Self::get_llvm_from_arg(&self.inkwell_types, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
             if tp != rt_tp {
-                let fmt: String = format!("Expected {} type, got {} type.", self.namespaces.locals.get(&name).unwrap().1.tp.to_string(), rt_tp.to_string());
+                let fmt: String = format!("Expected {} type, got {} type.", tp.to_string(), rt_tp.to_string());
                 errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
             }
         }
