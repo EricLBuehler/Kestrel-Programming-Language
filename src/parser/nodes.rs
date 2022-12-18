@@ -47,6 +47,7 @@ impl std::fmt::Display for I32Node {
 pub struct LetNode {
     pub name: String,
     pub expr: crate::parser::Node,
+    pub mutability: crate::codegen::types::DataMutablility,
 }
 
 impl std::fmt::Display for LetNode {

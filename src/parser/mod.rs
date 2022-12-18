@@ -299,6 +299,12 @@ impl<'life> Parser<'life> {
         };
 
         self.advance();
+        
+        let mut mutability: DataMutablility = DataMutablility::Immutable;
+        if self.current_is_type(TokenType::KEYWORD) && self.current.data == "mut" {
+            self.advance();
+            mutability = DataMutablility::Mutable;
+        }
 
         if !self.current_is_type(TokenType::IDENTIFIER) {
             self.raise_error("expected identifier.", ErrorType::InvalidTok);
@@ -319,6 +325,7 @@ impl<'life> Parser<'life> {
         let letn: nodes::LetNode = nodes::LetNode{
             name,
             expr,
+            mutability,
         };
     
         let nodedat: nodes::NodeData = nodes::NodeData {
@@ -340,12 +347,7 @@ impl<'life> Parser<'life> {
         return n;        
     }
 
-    fn parse_argument(&mut self) -> Arg{
-        let mut mutability: DataMutablility = DataMutablility::Immutable;
-        if self.current_is_type(TokenType::KEYWORD) && self.current.data == "mut" {
-            self.advance();
-            mutability = DataMutablility::Mutable;
-        }
+    fn parse_argument(&mut self, mutability: DataMutablility) -> Arg{
         if !self.current_is_type(TokenType::IDENTIFIER) {
             if !self.current_is_type(TokenType::KEYWORD) || (self.current_is_type(TokenType::IDENTIFIER) && self.current.data != "fn") {
                 self.raise_error("expected identifier.", ErrorType::InvalidTok);
@@ -369,7 +371,12 @@ impl<'life> Parser<'life> {
             self.advance();
 
             while !self.current_is_type(TokenType::RPAREN) && !self.current_is_type(TokenType::EOF) {
-                args_.args.push(self.parse_argument());
+                let mut mutability: DataMutablility = DataMutablility::Immutable;
+                if self.current_is_type(TokenType::KEYWORD) && self.current.data == "mut" {
+                    self.advance();
+                    mutability = DataMutablility::Mutable;
+                }
+                args_.args.push(self.parse_argument(mutability));
             }
             
             if !self.current_is_type(TokenType::RPAREN) {
@@ -380,14 +387,14 @@ impl<'life> Parser<'life> {
 
             if self.current_is_type(TokenType::SMALLARROW) {
                 self.advance();
-                args_.rettp.push(self.parse_argument());
+                args_.rettp.push(self.parse_argument(DataMutablility::Immutable));
             }
             else {
                 args_.rettp.push(Arg {
                     isfn: false,
                     data: Some(String::from("unit")),
                     args: None,
-                    mutability,
+                    mutability: DataMutablility::Immutable,
                 });
             }
 
@@ -439,6 +446,12 @@ impl<'life> Parser<'life> {
             rettp: Vec::new(),
         };
         while !self.current_is_type(TokenType::RPAREN) {
+            let mut mutability: DataMutablility = DataMutablility::Immutable;
+            if self.current_is_type(TokenType::KEYWORD) && self.current.data == "mut" {
+                self.advance();
+                mutability = DataMutablility::Mutable;
+            }
+
             if !self.current_is_type(TokenType::IDENTIFIER) {
                 self.raise_error("expected identifier.", ErrorType::InvalidTok);
             }
@@ -453,7 +466,7 @@ impl<'life> Parser<'life> {
 
             self.advance();
 
-            args.args.push(self.parse_argument());
+            args.args.push(self.parse_argument(mutability));
             if !self.current_is_type(TokenType::COMMA) && !self.current_is_type(TokenType::RPAREN) {
                 self.raise_error("expected comma.", ErrorType::InvalidTok);
             }
@@ -474,7 +487,7 @@ impl<'life> Parser<'life> {
         if self.current_is_type(TokenType::SMALLARROW) {
             self.advance();
 
-            args.rettp.push(self.parse_argument());
+            args.rettp.push(self.parse_argument(DataMutablility::Immutable));
         }
         else {
             args.rettp.push(Arg {
