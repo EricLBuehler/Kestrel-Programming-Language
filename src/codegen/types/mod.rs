@@ -82,6 +82,12 @@ pub struct Method {
     pub function: fn(Vec<Type>) -> Type,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub enum DataMutablility{
+    Immutable,
+    Mutable,
+}
+
 pub fn new_datatype(tp: BasicDataType, name: String, names: Vec<String>, types: Vec<DataType>) -> DataType {
     return DataType {
         tp,

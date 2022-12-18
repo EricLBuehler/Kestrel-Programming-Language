@@ -10,7 +10,7 @@ use inkwell::debug_info::AsDIScope;
 use core::panic;
 use std::error::Error;
 use crate::parser;
-mod types;
+pub mod types;
 mod builtin_types;
 use crate::errors;
 

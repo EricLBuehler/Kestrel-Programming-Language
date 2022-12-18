@@ -3,6 +3,7 @@ pub mod nodes;
 use crate::lexer;
 use crate::errors::ErrorType;
 use crate::lexer::TokenType;
+use crate::codegen::types::{self, DataMutablility};
 
 pub struct Parser<'life> {
     pub tokens: &'life Vec<lexer::Token>,
@@ -39,6 +40,7 @@ pub struct Arg {
     pub isfn: bool,
     pub data: Option<String>,
     pub args: Option<Args>,
+    pub mutability: types::DataMutablility,
 }
 #[derive(Clone, Debug)]
 pub struct Args {
@@ -339,6 +341,11 @@ impl<'life> Parser<'life> {
     }
 
     fn parse_argument(&mut self) -> Arg{
+        let mut mutability: DataMutablility = DataMutablility::Immutable;
+        if self.current_is_type(TokenType::KEYWORD) && self.current.data == "mut" {
+            self.advance();
+            mutability = DataMutablility::Mutable;
+        }
         if !self.current_is_type(TokenType::IDENTIFIER) {
             if !self.current_is_type(TokenType::KEYWORD) || (self.current_is_type(TokenType::IDENTIFIER) && self.current.data != "fn") {
                 self.raise_error("expected identifier.", ErrorType::InvalidTok);
@@ -380,6 +387,7 @@ impl<'life> Parser<'life> {
                     isfn: false,
                     data: Some(String::from("unit")),
                     args: None,
+                    mutability,
                 });
             }
 
@@ -387,6 +395,7 @@ impl<'life> Parser<'life> {
                 isfn: true,
                 data: None,
                 args: Some(args_),
+                mutability,
             };
         }
         else {
@@ -395,6 +404,7 @@ impl<'life> Parser<'life> {
                 isfn: false,
                 data: Some(tp),
                 args: None,
+                mutability,
             };
         }
     }
@@ -471,6 +481,7 @@ impl<'life> Parser<'life> {
                 isfn: false,
                 data: Some(String::from("unit")),
                 args: None,
+                mutability: DataMutablility::Immutable,
             });
         }
 
