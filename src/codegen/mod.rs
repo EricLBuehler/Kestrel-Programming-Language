@@ -24,7 +24,7 @@ pub struct InkwellTypes<'ctx> {
 }
 
 pub struct Namespaces<'ctx> {
-    global: std::collections::HashMap<String, (inkwell::values::PointerValue<'ctx>, types::DataType, types::DataMutablility)>,
+    locals: std::collections::HashMap<String, (inkwell::values::PointerValue<'ctx>, types::DataType, types::DataMutablility)>,
     functions: std::collections::HashMap<String, (inkwell::values::FunctionValue<'ctx>, types::DataType)>,
 }
 
@@ -43,11 +43,11 @@ pub struct CodeGen<'ctx> {
 //Codegen functions
 impl<'ctx> CodeGen<'ctx> {
     fn get_variable(&mut self, name: &String) -> Option<&(inkwell::values::PointerValue<'ctx>, types::DataType, types::DataMutablility)>{
-        if self.namespaces.global.iter().find(|x| *x.0 == *name) != None {
-            return self.namespaces.global.get(name);
+        if self.namespaces.locals.iter().find(|x| *x.0 == *name) != None {
+            return self.namespaces.locals.get(name);
         }
 
-        return None;
+        return None
     }
     
     fn get_function(&mut self, name: &String) -> Option<(inkwell::values::PointerValue<'ctx>, types::DataType)>{
@@ -178,7 +178,7 @@ impl<'ctx> CodeGen<'ctx> {
                 v
             }
             None => {
-                let fmt: String = format!("type {} has no trait {}.", &left.tp.to_string(), &traittp.to_string());
+                let fmt: String = format!("Type {} has no trait {}.", &left.tp.to_string(), &traittp.to_string());
                 errors::raise_error(&fmt, errors::ErrorType::MissingTrait, &node.pos, self.info);
             }
         };
@@ -195,7 +195,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         let name: String = node.data.letn.as_ref().unwrap().name.clone();
         if self.get_variable(&name) != None {
-            let fmt: String = format!("name {} is already defined in namespace.", name);
+            let fmt: String = format!("Name {} is already defined in namespace.", name);
             errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
         }
 
@@ -208,7 +208,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         self.builder.build_store(ptr, right.data.unwrap());
 
-        self.namespaces.global.insert(name, (ptr, right.tp, node.data.letn.as_ref().unwrap().mutability));
+        self.namespaces.locals.insert(name, (ptr, right.tp, node.data.letn.as_ref().unwrap().mutability));
 
         let data: types::Data = types::Data {
             data: None,
@@ -222,8 +222,12 @@ impl<'ctx> CodeGen<'ctx> {
 
         let (ptr, tp) = match self.get_variable(&name) {
             None => {
-                let fmt: String = format!("name {} is not defined in namespace.", name);
-                errors::raise_error(&fmt, errors::ErrorType::NameNotFound, &node.pos, self.info);
+                let res: Option<&(inkwell::values::PointerValue, types::DataType, types::DataMutablility)> = self.get_variable(&name);
+                if res==None {
+                    let fmt: String = format!("Name {} is not defined.", name);
+                    errors::raise_error(&fmt, errors::ErrorType::NameNotFound, &node.pos, self.info);
+                }
+                (res.unwrap().0, res.unwrap().1.clone())
             }
             Some(v) => {
                 (v.0, v.1.clone())
@@ -240,7 +244,7 @@ impl<'ctx> CodeGen<'ctx> {
     fn build_func(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         let name: &String = &node.data.func.as_ref().unwrap().name;
         if self.get_function(&name) != None {
-            let fmt: String = format!("function {} is already defined in namespace.", name);
+            let fmt: String = format!("Function {} is already defined.", name);
             errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
         }
 
@@ -290,17 +294,17 @@ impl<'ctx> CodeGen<'ctx> {
         //Main function specifics
         let mangled_name = self.mangle_name_main(&name);
         if self.get_function(&mangled_name) != None {
-            let fmt: String = format!("mangled function 'main' name {} is already defined in namespace.", mangled_name);
+            let fmt: String = format!("Mangled function 'main' name {} is already defined.", mangled_name);
             errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
         }
         if name == "main" {
             if fn_type.get_param_types().len() != 0 {
-                let fmt: String = format!("expected 0 arguments, got {}.", fn_type.get_param_types().len());
+                let fmt: String = format!("Expected 0 arguments, got {}.", fn_type.get_param_types().len());
                 errors::raise_error(&fmt, errors::ErrorType::ArgumentCountMismatch, &node.pos, self.info);
             }
 
             if fn_type.get_return_type() != None {
-                let fmt: String = format!("expected 'unit' return type, got '{}'.", &rettp_full.0.name);
+                let fmt: String = format!("Expected 'unit' return type, got '{}'.", &rettp_full.0.name);
                 errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
             }
         }
@@ -413,21 +417,21 @@ impl<'ctx> CodeGen<'ctx> {
             errors::raise_error(&fmt, errors::ErrorType::CannotAssign, &node.pos, self.info);
         }
 
-        let ptr: inkwell::values::PointerValue = self.namespaces.global.get(&name).unwrap().0;
+        let ptr: inkwell::values::PointerValue = self.namespaces.locals.get(&name).unwrap().0;
 
-        if self.namespaces.global.get(&name).unwrap().2 == types::DataMutablility::Immutable {
+        if self.namespaces.locals.get(&name).unwrap().2 == types::DataMutablility::Immutable {
             let fmt: String = format!("Cannot assign to immutable variable.");
             errors::raise_error(&fmt, errors::ErrorType::ImmutableAssign, &node.pos, self.info);
         }
         
-        if self.namespaces.global.get(&name).unwrap().1.tp != right.tp.tp {
-            let fmt: String = format!("Expected {} type, got {} type.", self.namespaces.global.get(&name).unwrap().1.tp.to_string(), right.tp.to_string());
+        if self.namespaces.locals.get(&name).unwrap().1.tp != right.tp.tp {
+            let fmt: String = format!("Expected {} type, got {} type.", self.namespaces.locals.get(&name).unwrap().1.tp.to_string(), right.tp.to_string());
             errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
         }
 
         self.builder.build_store(ptr, right.data.unwrap());
 
-        self.namespaces.global.insert(name, (ptr, right.tp, types::DataMutablility::Mutable));
+        self.namespaces.locals.insert(name, (ptr, right.tp, types::DataMutablility::Mutable));
 
         let data: types::Data = types::Data {
             data: None,
@@ -442,7 +446,7 @@ impl<'ctx> CodeGen<'ctx> {
                 let self_data: &String = &node.data.int.as_ref().unwrap().left;
                 let selfv: inkwell::values::IntValue = match self.inkwell_types.i32tp.const_int_from_string(self_data.as_str(), inkwell::types::StringRadix::Decimal) {
                     None => {
-                        let fmt: String = format!("invalid i32 literal '{}'.", self_data);
+                        let fmt: String = format!("Invalid i32 literal '{}'.", self_data);
                         errors::raise_error(&fmt, errors::ErrorType::InvalidLiteralForRadix, &node.pos, self.info);
                     }
             
@@ -452,7 +456,7 @@ impl<'ctx> CodeGen<'ctx> {
             
                 };
                 if self.get_repr_from_intv(&selfv) != *self_data {
-                    let fmt: String = format!("invalid i32 literal '{}'.", self_data);
+                    let fmt: String = format!("Invalid i32 literal '{}'.", self_data);
                     errors::raise_error(&fmt, errors::ErrorType::InvalidLiteralForRadix, &node.pos, self.info);
                 }
                 types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::I32, types::BasicDataType::I32.to_string(), Vec::new(), Vec::new(), Vec::new())}
@@ -505,7 +509,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
     };
 
     let namespaces: Namespaces = Namespaces {
-        global: std::collections::HashMap::new(),
+        locals: std::collections::HashMap::new(),
         functions: std::collections::HashMap::new(),
     };
 
@@ -553,7 +557,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
 
     //Make the real main function
     if codegen.get_function(&String::from("main")) == None {
-        let fmt: String = format!("function 'main' is not defined.");
+        let fmt: String = format!("Function 'main' is not defined.");
         errors::raise_error_no_pos(&fmt, errors::ErrorType::NameNotFound);
     }
 
