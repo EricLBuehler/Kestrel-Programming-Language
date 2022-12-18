@@ -397,6 +397,34 @@ impl<'ctx> CodeGen<'ctx> {
         };
         return data;
     }
+    
+    fn build_assign(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        let right: types::Data = self.compile_expr(&node.data.assign.as_ref().unwrap().expr);
+
+        let name: String = node.data.assign.as_ref().unwrap().name.clone();
+
+        if right.data == None{
+            let fmt: String = format!("Cannot assign to {}.", right.tp.to_string());
+            errors::raise_error(&fmt, errors::ErrorType::CannotAssign, &node.pos, self.info);
+        }
+
+        let ptr: inkwell::values::PointerValue = self.namespaces.global.get(&name).unwrap().0;
+
+        if self.namespaces.global.get(&name).unwrap().1.tp != right.tp.tp {
+            let fmt: String = format!("Expected {} type, got {} type.", self.namespaces.global.get(&name).unwrap().1.tp.to_string(), right.tp.to_string());
+            errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+        }
+
+        self.builder.build_store(ptr, right.data.unwrap());
+
+        self.namespaces.global.insert(name, (ptr, right.tp, types::DataMutablility::Mutable));
+
+        let data: types::Data = types::Data {
+            data: None,
+            tp: types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), Vec::new(), Vec::new(), Vec::new()),
+        };
+        return data;
+    }
 
     fn compile_expr(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         match node.tp {
@@ -426,6 +454,9 @@ impl<'ctx> CodeGen<'ctx> {
             }
             parser::NodeType::FUNC => {
                 self.build_func(node)
+            }
+            parser::NodeType::ASSIGN => {
+                self.build_assign(node)
             }
         }
     }

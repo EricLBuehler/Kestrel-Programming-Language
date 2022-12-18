@@ -172,7 +172,7 @@ impl<'life> Parser<'life> {
     fn expr(&mut self) -> Node {
         let mut left: Node;
         match self.atom() {
-            None => self.raise_error("invalid token.", ErrorType::InvalidTok),
+            None => self.raise_error("Invalid token.", ErrorType::InvalidTok),
             Some(val) => {left = val},
         }
 
@@ -312,7 +312,7 @@ impl<'life> Parser<'life> {
         };
 
         if left.tp != NodeType::IDENTIFIER {
-            self.raise_error_pos("expected identifier", ErrorType::InvalidTok, left);
+            self.raise_error_pos("Expected identifier", ErrorType::InvalidTok, left);
         }
 
         self.advance();
@@ -360,7 +360,7 @@ impl<'life> Parser<'life> {
         }
 
         if !self.current_is_type(TokenType::IDENTIFIER) {
-            self.raise_error("expected identifier.", ErrorType::InvalidTok);
+            self.raise_error("Expected identifier.", ErrorType::InvalidTok);
         }
 
         let name: String = self.current.data.clone();
@@ -368,7 +368,7 @@ impl<'life> Parser<'life> {
         self.advance();
 
         if !self.current_is_type(TokenType::EQUALS) {
-            self.raise_error("expected equals.", ErrorType::InvalidTok);
+            self.raise_error("Expected equals.", ErrorType::InvalidTok);
         }
         
         self.advance();
@@ -404,7 +404,7 @@ impl<'life> Parser<'life> {
     fn parse_argument(&mut self, mutability: DataMutablility) -> Arg{
         if !self.current_is_type(TokenType::IDENTIFIER) {
             if !self.current_is_type(TokenType::KEYWORD) || (self.current_is_type(TokenType::IDENTIFIER) && self.current.data != "fn") {
-                self.raise_error("expected identifier.", ErrorType::InvalidTok);
+                self.raise_error("Expected identifier.", ErrorType::InvalidTok);
             }
         }
         
@@ -419,7 +419,7 @@ impl<'life> Parser<'life> {
             self.advance();
             
             if !self.current_is_type(TokenType::LPAREN) {
-                self.raise_error("expected left parenthesis.", ErrorType::InvalidTok);
+                self.raise_error("Expected left parenthesis.", ErrorType::InvalidTok);
             }
 
             self.advance();
@@ -434,7 +434,7 @@ impl<'life> Parser<'life> {
             }
             
             if !self.current_is_type(TokenType::RPAREN) {
-                self.raise_error("expected right parenthesis.", ErrorType::InvalidTok);
+                self.raise_error("Expected right parenthesis.", ErrorType::InvalidTok);
             }
 
             self.advance();
@@ -480,7 +480,7 @@ impl<'life> Parser<'life> {
         self.advance();
 
         if !self.current_is_type(TokenType::IDENTIFIER) {
-            self.raise_error("expected identifier.", ErrorType::InvalidTok);
+            self.raise_error("Expected identifier.", ErrorType::InvalidTok);
         }
 
         let name: String = self.current.data.clone();
@@ -488,7 +488,7 @@ impl<'life> Parser<'life> {
         self.advance();
 
         if !self.current_is_type(TokenType::LPAREN) {
-            self.raise_error("expected left parenthesis.", ErrorType::InvalidTok);
+            self.raise_error("Expected left parenthesis.", ErrorType::InvalidTok);
         }
         
         self.advance();
@@ -507,7 +507,7 @@ impl<'life> Parser<'life> {
             }
 
             if !self.current_is_type(TokenType::IDENTIFIER) {
-                self.raise_error("expected identifier.", ErrorType::InvalidTok);
+                self.raise_error("Expected identifier.", ErrorType::InvalidTok);
             }
     
             let name: String = self.current.data.clone();
@@ -515,14 +515,14 @@ impl<'life> Parser<'life> {
             self.advance();
 
             if !self.current_is_type(TokenType::COLON) {
-                self.raise_error("expected colon.", ErrorType::InvalidTok);
+                self.raise_error("Expected colon.", ErrorType::InvalidTok);
             }
 
             self.advance();
 
             args.args.push(self.parse_argument(mutability));
             if !self.current_is_type(TokenType::COMMA) && !self.current_is_type(TokenType::RPAREN) {
-                self.raise_error("expected comma.", ErrorType::InvalidTok);
+                self.raise_error("Expected comma.", ErrorType::InvalidTok);
             }
 
             args.name.push(name);
@@ -533,7 +533,7 @@ impl<'life> Parser<'life> {
 
 
         if !self.current_is_type(TokenType::RPAREN) {
-            self.raise_error("expected right parenthesis.", ErrorType::InvalidTok);
+            self.raise_error("Expected right parenthesis.", ErrorType::InvalidTok);
         }
         
         self.advance();
@@ -558,7 +558,7 @@ impl<'life> Parser<'life> {
 
 
         if !self.current_is_type(TokenType::LCURLY) {
-            self.raise_error("expected left curly bracket.", ErrorType::InvalidTok);
+            self.raise_error("Expected left curly bracket.", ErrorType::InvalidTok);
         }
         
         self.advance();
@@ -568,7 +568,7 @@ impl<'life> Parser<'life> {
         let blocks: Vec<Node> = self.block();
 
         if !self.current_is_type(TokenType::RCURLY) {
-            self.raise_error("expected rught curly bracket.", ErrorType::InvalidTok);
+            self.raise_error("Expected rught curly bracket.", ErrorType::InvalidTok);
         }
         
         self.advance();
