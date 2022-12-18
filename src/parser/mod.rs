@@ -1,4 +1,5 @@
 pub mod nodes;
+
 use crate::lexer;
 use crate::errors::ErrorType;
 use crate::lexer::TokenType;
@@ -31,6 +32,19 @@ pub struct Position{
     pub line: usize,
     pub startcol: usize,
     pub endcol: usize,
+}
+
+#[derive(Clone, Debug)]
+pub struct Arg {
+    pub isfn: bool,
+    pub data: Option<String>,
+    pub args: Option<Args>,
+}
+#[derive(Clone, Debug)]
+pub struct Args {
+    pub name: Vec<String>,
+    pub args: Vec<Arg>,
+    pub rettp: Vec<Arg>, //Only 1 element, Vec for indirection
 }
 
 impl std::fmt::Display for Node {
@@ -71,7 +85,7 @@ impl<'life> Parser<'life> {
     }
 
     fn advance(&mut self) {
-        let next: Option<&lexer::Token> = self.tokens.get(self.idx);
+        let next = self.tokens.get(self.idx);
         self.idx+=1;
 
         match next {
@@ -87,7 +101,7 @@ impl<'life> Parser<'life> {
                     endcol: 0,
                 };
             }
-        }        
+        }
     }
     
     fn current_is_type(&mut self, tp: TokenType) -> bool {
@@ -319,6 +333,67 @@ impl<'life> Parser<'life> {
         return n;        
     }
 
+    fn parse_argument(&mut self) -> Arg{
+        if !self.current_is_type(TokenType::IDENTIFIER) {
+            if !self.current_is_type(TokenType::KEYWORD) || (self.current_is_type(TokenType::IDENTIFIER) && self.current.data != "fn") {
+                self.raise_error("expected identifier.", ErrorType::InvalidTok);
+            }
+        }
+        
+        let tp: String = self.current.data.clone();
+        if tp == "fn" {
+            let mut args_ = Args {
+                name: Vec::new(),
+                args: Vec::new(),
+                rettp: Vec::new(),
+            };
+
+            self.advance();
+            
+            if !self.current_is_type(TokenType::LPAREN) {
+                self.raise_error("expected left parenthesis.", ErrorType::InvalidTok);
+            }
+
+            self.advance();
+
+            while !self.current_is_type(TokenType::RPAREN) && !self.current_is_type(TokenType::EOF) {
+                args_.args.push(self.parse_argument());
+            }
+            
+            if !self.current_is_type(TokenType::RPAREN) {
+                self.raise_error("expected right parenthesis.", ErrorType::InvalidTok);
+            }
+
+            self.advance();
+
+            if self.current_is_type(TokenType::SMALLARROW) {
+                self.advance();
+                args_.rettp.push(self.parse_argument());
+            }
+            else {
+                args_.rettp.push(Arg {
+                    isfn: false,
+                    data: Some(String::from("unit")),
+                    args: None,
+                });
+            }
+
+            return Arg {
+                isfn: true,
+                data: None,
+                args: Some(args_),
+            };
+        }
+        else {
+            self.advance();
+            return Arg {
+                isfn: false,
+                data: Some(tp),
+                args: None,
+            };
+        }
+    }
+
     fn parse_fn(&mut self) -> Node{
         let mut pos = Position {
             line: self.current.line,
@@ -342,13 +417,62 @@ impl<'life> Parser<'life> {
         
         self.advance();
 
+        // Parse Arguments
+        let mut args: Args = Args {
+            name: Vec::new(),
+            args: Vec::new(),
+            rettp: Vec::new(),
+        };
+        while !self.current_is_type(TokenType::RPAREN) {
+            if !self.current_is_type(TokenType::IDENTIFIER) {
+                self.raise_error("expected identifier.", ErrorType::InvalidTok);
+            }
+    
+            let name: String = self.current.data.clone();
+            
+            self.advance();
+
+            if !self.current_is_type(TokenType::COLON) {
+                self.raise_error("expected colon.", ErrorType::InvalidTok);
+            }
+
+            self.advance();
+
+            args.args.push(self.parse_argument());
+            if !self.current_is_type(TokenType::COMMA) && !self.current_is_type(TokenType::RPAREN) {
+                self.raise_error("expected comma.", ErrorType::InvalidTok);
+            }
+
+            args.name.push(name);
+        }
+
+        //
+
+
+
         if !self.current_is_type(TokenType::RPAREN) {
             self.raise_error("expected right parenthesis.", ErrorType::InvalidTok);
         }
-
-        pos.endcol = self.current.endcol;
         
         self.advance();
+
+        if self.current_is_type(TokenType::SMALLARROW) {
+            self.advance();
+
+            args.rettp.push(self.parse_argument());
+        }
+        else {
+            args.rettp.push(Arg {
+                isfn: false,
+                data: Some(String::from("unit")),
+                args: None,
+            });
+        }
+
+        
+        pos.endcol = self.current.endcol;
+
+
 
         if !self.current_is_type(TokenType::LCURLY) {
             self.raise_error("expected left curly bracket.", ErrorType::InvalidTok);
@@ -369,6 +493,7 @@ impl<'life> Parser<'life> {
         let func: nodes::FuncNode = nodes::FuncNode{
             name,
             blocks,
+            args,
         };
     
         let nodedat: nodes::NodeData = nodes::NodeData {

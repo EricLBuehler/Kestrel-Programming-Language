@@ -9,6 +9,9 @@ pub enum ErrorType {
     NameNotFound,
     NestedFunctions,
     CannotAssign,
+    UnknownType,
+    ArgumentCountMismatch,
+    TypeMismatch,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -22,6 +25,9 @@ impl std::fmt::Display for ErrorType {
             ErrorType::NameNotFound => write!(f, "name not defined"),
             ErrorType::NestedFunctions => write!(f, "attempt to define nested functions"),
             ErrorType::CannotAssign => write!(f, "cannot assign to type"),
+            ErrorType::UnknownType => write!(f, "unknown type"),
+            ErrorType::ArgumentCountMismatch => write!(f, "invalid number of arguments were passed to a function"),
+            ErrorType::TypeMismatch => write!(f, "mismatch of types"),
         }
     }
 }

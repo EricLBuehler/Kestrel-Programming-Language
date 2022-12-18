@@ -4,7 +4,9 @@ use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
 use inkwell::passes::PassManagerSubType;
+use crate::fileinfo;
 
+use core::panic;
 use std::error::Error;
 use crate::parser;
 mod types;
@@ -14,12 +16,14 @@ use crate::errors;
 extern crate guess_host_triple;
 
 pub struct InkwellTypes<'ctx> {
+    i8tp: &'ctx inkwell::types::IntType<'ctx>,
     i32tp: &'ctx inkwell::types::IntType<'ctx>,
+    voidtp: &'ctx inkwell::types::VoidType<'ctx>,
 }
 
 pub struct Namespaces<'ctx> {
     global: std::collections::HashMap<String, (inkwell::values::PointerValue<'ctx>, types::DataType)>,
-    functions: std::collections::HashMap<String, inkwell::values::FunctionValue<'ctx>>,
+    functions: std::collections::HashMap<String, (inkwell::values::FunctionValue<'ctx>, types::DataType)>,
 }
 
 pub struct CodeGen<'ctx> {
@@ -27,7 +31,7 @@ pub struct CodeGen<'ctx> {
     module: Module<'ctx>,
     builder: Builder<'ctx>,
     types: std::collections::HashMap<String, types::Type<'ctx>>,
-    info: &'ctx crate::fileinfo::FileInfo<'ctx>,
+    info: &'ctx fileinfo::FileInfo<'ctx>,
     inkwell_types: InkwellTypes<'ctx>,
     namespaces: Namespaces<'ctx>,
 }
@@ -42,12 +46,90 @@ impl<'ctx> CodeGen<'ctx> {
         return None;
     }
     
-    fn get_function(&mut self, name: &String) -> Option<&(inkwell::values::PointerValue<'ctx>, types::DataType)>{
+    fn get_function(&mut self, name: &String) -> Option<(inkwell::values::PointerValue<'ctx>, types::DataType)>{
         if self.namespaces.functions.iter().find(|x| *x.0 == *name) != None {
-            return self.namespaces.global.get(name);
+            return Some((self.namespaces.functions.get(name).unwrap().0.as_global_value().as_pointer_value(), types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), Vec::new(), Vec::new())));
         }
 
         return None;
+    }
+
+    fn get_datatype_from_str(info: &fileinfo::FileInfo, str_rep: &String, node: &parser::Node) -> types::DataType {
+        if *str_rep == types::BasicDataType::I32.to_string() {
+            return types::new_datatype(types::BasicDataType::I32, types::BasicDataType::I32.to_string(), Vec::new(), Vec::new());
+        }
+        else if *str_rep == types::BasicDataType::Unit.to_string() {
+            return types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(),Vec::new(), Vec::new());
+        }
+
+        let fmt: String = format!("Unknown type '{}'.", str_rep);
+        errors::raise_error(&fmt, errors::ErrorType::UnknownType, &node.pos, info);
+    }
+
+    fn get_llvm_from_arg(types: &InkwellTypes<'ctx>, info: &fileinfo::FileInfo, arg: &parser::Arg, node: &parser::Node) -> (types::DataType, inkwell::types::AnyTypeEnum<'ctx>) {
+        if arg.isfn {
+            let args: &Vec<parser::Arg> = &arg.args.as_ref().unwrap().args;
+            let mut datatypes: Vec<types::DataType> = Vec::new();
+            let mut inktypes: Vec<inkwell::types::BasicMetadataTypeEnum> = Vec::new();
+            
+            for arg in args {
+                let (data, tp) = Self::get_llvm_from_arg(types, info, &arg, node);
+                datatypes.push(data);
+                if tp.is_int_type() {
+                    inktypes.push(inkwell::types::BasicMetadataTypeEnum::IntType(tp.into_int_type()));
+                }
+                else if tp.is_function_type() {
+                    inktypes.push(inkwell::types::BasicMetadataTypeEnum::PointerType(tp.into_function_type().ptr_type(inkwell::AddressSpace::Generic)));
+                }
+                else if tp.is_void_type() {
+                    //Placeholder
+                }
+                else {
+                    panic!("Unexpected type");
+                }
+            }
+            
+            let rettp_full: (types::DataType, inkwell::types::AnyTypeEnum) = Self::get_llvm_from_arg(types, info, &arg.args.as_ref().unwrap().rettp.last().unwrap(), node);
+            let tp: inkwell::types::AnyTypeEnum = rettp_full.1;
+            let fntp: inkwell::types::FunctionType;
+            
+            if tp.is_int_type() {
+                fntp = tp.into_int_type().fn_type(&inktypes[..], false);
+            }
+            else if tp.is_function_type() {
+                fntp = tp.into_function_type().ptr_type(inkwell::AddressSpace::Generic).fn_type(&inktypes[..], false);
+            }
+            else if tp.is_void_type() {
+                fntp = tp.into_void_type().fn_type(&inktypes[..], false);
+            }
+            else {
+                panic!("Unexpected type");
+            }
+            return (types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), node.data.func.as_ref().unwrap().args.name.clone(), datatypes), inkwell::types::AnyTypeEnum::FunctionType(fntp));
+        }
+        else {
+            let tp: types::DataType = Self::get_datatype_from_str(info, &arg.data.as_ref().unwrap(), node);
+            match tp.tp {
+                types::BasicDataType::I32 => {
+                    return (tp, inkwell::types::AnyTypeEnum::IntType(*types.i32tp));
+                }
+                types::BasicDataType::Unit => {
+                    return (tp, inkwell::types::AnyTypeEnum::VoidType(*types.voidtp));
+                }
+                types::BasicDataType::Func => {
+                    unimplemented!();
+                }
+                
+            }
+        }
+    }
+
+    fn mangle_name_main(&self, name: &String) -> String {
+        let mut new: String = name.clone();
+        if *name == String::from("main") {
+            new = String::from("_") + new.as_str();      
+        }
+        return new;
     }
 
     fn build_binary(&mut self, node: &parser::Node) -> types::Data<'ctx> {
@@ -120,7 +202,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         let data: types::Data = types::Data {
             data: None,
-            tp: types::DataType::Unit,
+            tp: types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), Vec::new(), Vec::new()),
         };
         return data;
     }
@@ -158,9 +240,70 @@ impl<'ctx> CodeGen<'ctx> {
             errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
         }
 
-        // Generic header
-        let fn_type: inkwell::types::FunctionType = self.inkwell_types.i32tp.fn_type(&[], false);
-        let func: inkwell::values::FunctionValue = self.module.add_function(name.as_str(), fn_type, None);
+        //// Generic header
+
+        // Argument and return types
+        let args = &node.data.func.as_ref().unwrap().args;
+
+        let mut datatypes: Vec<types::DataType> = Vec::new();
+        let mut inktypes: Vec<inkwell::types::BasicMetadataTypeEnum> = Vec::new();
+        
+        for arg in &args.args {
+            let (data, tp) = Self::get_llvm_from_arg(&self.inkwell_types, &self.info, &arg, node);
+            datatypes.push(data);
+            if tp.is_int_type() {
+                inktypes.push(inkwell::types::BasicMetadataTypeEnum::IntType(tp.into_int_type()));
+            }
+            else if tp.is_function_type() {
+                inktypes.push(inkwell::types::BasicMetadataTypeEnum::PointerType(tp.into_function_type().ptr_type(inkwell::AddressSpace::Generic)));
+            }
+            else if tp.is_void_type() {
+                //Placeholder
+            }
+            else {
+                panic!("Unexpected type");
+            }
+        }
+        
+        let rettp_full: (types::DataType, inkwell::types::AnyTypeEnum) = Self::get_llvm_from_arg(&self.inkwell_types, &self.info, &args.rettp.last().unwrap(), node);
+        
+        let tp: inkwell::types::AnyTypeEnum = rettp_full.1;
+        let fn_type: inkwell::types::FunctionType;
+        
+        if tp.is_int_type() {
+            fn_type = tp.into_int_type().fn_type(&inktypes[..], false);
+        }
+        else if tp.is_function_type() {
+            fn_type = tp.into_function_type().ptr_type(inkwell::AddressSpace::Generic).fn_type(&inktypes[..], false);
+        }
+        else if tp.is_void_type() {
+            fn_type = tp.into_void_type().fn_type(&inktypes[..], false);
+        }
+        else {
+            panic!("Unexpected type");
+        }
+        
+        //
+
+        //Main function specifics
+        let mangled_name = self.mangle_name_main(&name);
+        if self.get_function(&mangled_name) != None {
+            let fmt: String = format!("mangled function 'main' name {} is already defined in namespace.", mangled_name);
+            errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
+        }
+
+        if fn_type.get_param_types().len() != 0 {
+            let fmt: String = format!("expected 0 arguments, got {}.", fn_type.get_param_types().len());
+            errors::raise_error(&fmt, errors::ErrorType::ArgumentCountMismatch, &node.pos, self.info);
+        }
+
+        if fn_type.get_return_type() != None {
+            let fmt: String = format!("expected 'unit' return type, got '{}'.", &rettp_full.0.name);
+            errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+        }
+        //
+
+        let func: inkwell::values::FunctionValue = self.module.add_function(mangled_name.as_str(), fn_type, None);
         let basic_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(func, "entry");
 
         let mut attr: inkwell::attributes::Attribute = self.context.create_enum_attribute(inkwell::attributes::Attribute::get_named_enum_kind_id("noinline"), 0);
@@ -179,7 +322,12 @@ impl<'ctx> CodeGen<'ctx> {
 
         /////// End
 
-        self.builder.build_return(Some(&self.inkwell_types.i32tp.const_int(0, false))); //TODO: replace this with something user-defined
+        if rettp_full.0.tp != types::BasicDataType::Unit { //TODO: replace this with something user-defined (self.compile return tail expression or return stmt)
+            self.builder.build_return(Some(&self.inkwell_types.i32tp.const_int(0, false))); 
+        }
+        else {
+            self.builder.build_return(None);
+        }
         
         let pass_manager_builder: inkwell::passes::PassManagerBuilder = inkwell::passes::PassManagerBuilder::create();
         pass_manager_builder.set_optimization_level(inkwell::OptimizationLevel::Aggressive);
@@ -188,11 +336,11 @@ impl<'ctx> CodeGen<'ctx> {
 
         unsafe { func.run_in_pass_manager(&manager); }
         
-        self.namespaces.functions.insert(name.clone(), func);
+        self.namespaces.functions.insert(name.clone(), (func, types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), node.data.func.as_ref().unwrap().args.name.clone(), datatypes)));
 
         let data: types::Data = types::Data {
             data: Some(inkwell::values::BasicValueEnum::PointerValue(func.as_global_value().as_pointer_value())),
-            tp: types::DataType::Func,
+            tp: types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), Vec::new(), Vec::new()),
         };
         return data;
     }
@@ -212,7 +360,7 @@ impl<'ctx> CodeGen<'ctx> {
                     }
             
                 };
-                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::DataType::I32}
+                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::I32, types::BasicDataType::I32.to_string(), Vec::new(), Vec::new())}
             }
             parser::NodeType::BINARY => {
                 self.build_binary(node)
@@ -249,7 +397,9 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
     module.set_source_file_name(source_name);
 
     let inkwelltypes = InkwellTypes {
+        i8tp: &context.i8_type(),
         i32tp: &context.i32_type(),
+        voidtp: &context.void_type(),
     };
 
     let namespaces: Namespaces = Namespaces {
@@ -283,6 +433,34 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
     });
 
     codegen.compile(&nodes);
+
+    //Make the real main function
+    if codegen.get_function(&String::from("main")) == None {
+        let fmt: String = format!("function 'main' is not defined.");
+        errors::raise_error_no_pos(&fmt, errors::ErrorType::NameNotFound);
+    }
+
+    let (main, _) = codegen.namespaces.functions.get(&String::from("main")).unwrap();
+
+    let main_tp: inkwell::types::FunctionType = codegen.inkwell_types.i32tp.fn_type(&[inkwell::types::BasicMetadataTypeEnum::IntType(*codegen.inkwell_types.i32tp), inkwell::types::BasicMetadataTypeEnum::PointerType(codegen.inkwell_types.i8tp.ptr_type(inkwell::AddressSpace::Generic).ptr_type(inkwell::AddressSpace::Generic))], false);
+    let realmain: inkwell::values::FunctionValue = codegen.module.add_function("main", main_tp, None);
+    let basic_block: inkwell::basic_block::BasicBlock = codegen.context.append_basic_block(realmain, "entry");
+
+    let mut attr: inkwell::attributes::Attribute = codegen.context.create_enum_attribute(inkwell::attributes::Attribute::get_named_enum_kind_id("noinline"), 0);
+
+    realmain.add_attribute(inkwell::attributes::AttributeLoc::Function, attr);
+
+    attr = codegen.context.create_enum_attribute(inkwell::attributes::Attribute::get_named_enum_kind_id("optnone"), 0);
+
+    realmain.add_attribute(inkwell::attributes::AttributeLoc::Function, attr);
+    
+    codegen.builder.position_at_end(basic_block); 
+
+    codegen.builder.build_call(*main, &[], "res");
+
+    codegen.builder.build_return(Some(&codegen.inkwell_types.i32tp.const_int(0, false)));
+
+    //
 
     unsafe { codegen.module.run_in_pass_manager(&manager) };
 

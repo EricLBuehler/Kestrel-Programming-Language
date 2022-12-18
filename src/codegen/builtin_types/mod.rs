@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 use crate::codegen;
-use crate::codegen::types::{Type, DataType, Trait, TraitType, Data};
+use crate::codegen::types::{Type, BasicDataType, Trait, TraitType, Data};
 
 pub mod i32type;
 pub mod unittype;
 pub mod functype;
 
-fn add_simple_type<'a>(codegen: &mut codegen::CodeGen<'a>, traits: HashMap<String, Trait<'a>>, basictype: DataType, name: &str){
+fn add_simple_type<'a>(codegen: &mut codegen::CodeGen<'a>, traits: HashMap<String, Trait<'a>>, basictype: BasicDataType, name: &str){
     let tp = Type {
         attributes: HashMap::new(),
         traits,
@@ -17,7 +17,7 @@ fn add_simple_type<'a>(codegen: &mut codegen::CodeGen<'a>, traits: HashMap<Strin
     codegen.types.insert(String::from(name), tp);
 }
 
-fn create_trait<'a>(function: fn(&codegen::CodeGen<'a>, Vec<&Data<'a>>, &crate::parser::Position) -> Data<'a>, nargs: usize, traittype: TraitType, rettp: String, retbasictype: DataType) -> Trait<'a>{
+fn create_trait<'a>(function: fn(&codegen::CodeGen<'a>, Vec<&Data<'a>>, &crate::parser::Position) -> Data<'a>, nargs: usize, traittype: TraitType, rettp: String, retbasictype: BasicDataType) -> Trait<'a>{
     Trait {
         nargs,
         function,

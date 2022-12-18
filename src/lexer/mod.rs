@@ -16,6 +16,9 @@ pub enum TokenType {
     RCURLY,
     LPAREN,
     RPAREN,
+    COLON,
+    COMMA,
+    SMALLARROW,
 }
 
 pub struct Lexer<'life> {
@@ -59,6 +62,9 @@ impl std::fmt::Display for TokenType {
            TokenType::RCURLY => write!(f, "RCURLY"),
            TokenType::LPAREN => write!(f, "LPAREN"),
            TokenType::RPAREN => write!(f, "RPAREN"),
+           TokenType::COLON => write!(f, "COLON"),
+           TokenType::COMMA => write!(f, "COMMA"),
+           TokenType::SMALLARROW => write!(f, "SMALLARROW"),
        }
     }
 }
@@ -125,7 +131,17 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
                 endcol: lexer.col+1,
             });
             advance(lexer);
-
+            if lexer.current == '>' {     
+                let popped: Token = vector.pop().unwrap();           
+                vector.push(Token {
+                    data: String::from("->"),
+                    tp: TokenType::SMALLARROW,
+                    line: popped.line,
+                    startcol: popped.startcol,
+                    endcol: popped.endcol+1,
+                });
+                advance(lexer);
+            }
         }
         else if cur == '*' {
             vector.push(Token {
@@ -197,6 +213,26 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
             });
             advance(lexer);
         }
+        else if cur == ':' {
+            vector.push(Token {
+                data: String::from(":"),
+                tp: TokenType::COLON,
+                line: lexer.line,
+                startcol: lexer.col,
+                endcol: lexer.col+1,
+            });
+            advance(lexer);
+        }
+        else if cur == ',' {
+            vector.push(Token {
+                data: String::from(","),
+                tp: TokenType::COMMA,
+                line: lexer.line,
+                startcol: lexer.col,
+                endcol: lexer.col+1,
+            });
+            advance(lexer);
+        }
         else if cur == ';' as char || cur == '\r' as char || cur == '\n' as char {
             vector.push(Token {
                 data: String::from("\\n"),
@@ -256,7 +292,7 @@ fn make_identifier(lexer: &mut Lexer, kwds: &Vec<String>) -> Token {
     let mut end: usize = lexer.col;
     let mut line: usize = lexer.line;
 
-    while lexer.current.is_alphabetic() || lexer.current=='_' {
+    while lexer.current.is_alphabetic() || lexer.current=='_' || lexer.current.is_numeric(){
         data.push(lexer.current);
         end=lexer.col;
         line=lexer.line;
