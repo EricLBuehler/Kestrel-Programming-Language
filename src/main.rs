@@ -33,6 +33,7 @@ fn main() {
     let file_info: FileInfo = FileInfo {
         data: file_data_bytes.clone(),
         name: filename.clone(),
+        dir: String::from("."),
     };
 
     let mut keywords: Vec<String> = vec![String::from("let"), String::from("fn")];

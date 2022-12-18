@@ -5,6 +5,7 @@ use inkwell::context::Context;
 use inkwell::module::Module;
 use inkwell::passes::PassManagerSubType;
 use crate::fileinfo;
+use inkwell::debug_info::AsDIScope;
 
 use core::panic;
 use std::error::Error;
@@ -34,6 +35,8 @@ pub struct CodeGen<'ctx> {
     info: &'ctx fileinfo::FileInfo<'ctx>,
     inkwell_types: InkwellTypes<'ctx>,
     namespaces: Namespaces<'ctx>,
+    dibuilder: inkwell::debug_info::DebugInfoBuilder<'ctx>,
+    dicompile_unit: inkwell::debug_info::DICompileUnit<'ctx>,
 }
 
 //Codegen functions
@@ -240,8 +243,6 @@ impl<'ctx> CodeGen<'ctx> {
             errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
         }
 
-        //// Generic header
-
         // Argument and return types
         let args = &node.data.func.as_ref().unwrap().args;
 
@@ -282,8 +283,6 @@ impl<'ctx> CodeGen<'ctx> {
         else {
             panic!("Unexpected type");
         }
-        
-        //
 
         //Main function specifics
         let mangled_name = self.mangle_name_main(&name);
@@ -304,7 +303,63 @@ impl<'ctx> CodeGen<'ctx> {
         //
 
         let func: inkwell::values::FunctionValue = self.module.add_function(mangled_name.as_str(), fn_type, None);
+
+        
+        // Add debug information
+        let mut diparamtps: Vec<inkwell::debug_info::DIType> = Vec::new();
+
+        let direttp: inkwell::debug_info::DIBasicType = self.dibuilder.create_basic_type(
+            tp.print_to_string().to_str().unwrap(),
+            std::mem::size_of_val(&tp) as u64,
+            0x00,
+            inkwell::debug_info::DIFlagsConstants::PUBLIC).unwrap();
+
+        for tp in fn_type.get_param_types() {
+            diparamtps.push(self.dibuilder.create_basic_type(
+                tp.print_to_string().to_str().unwrap(),
+                std::mem::size_of_val(&tp) as u64,
+                0x00,
+                inkwell::debug_info::DIFlagsConstants::PUBLIC).unwrap().as_type());
+        }
+
+        let sub_type = self.dibuilder.create_subroutine_type(
+            self.dicompile_unit.get_file(),
+            Some(direttp.as_type()),
+            &diparamtps[..],
+            inkwell::debug_info::DIFlagsConstants::PUBLIC);
+
+        let func_scope: inkwell::debug_info::DISubprogram = self.dibuilder.create_function(
+            self.dicompile_unit.as_debug_info_scope(),
+            name,
+            Some(&mangled_name),
+            self.dicompile_unit.get_file(),
+            node.pos.line as u32,
+            sub_type,
+            true, //Needs to be dynamic
+            true,
+            node.pos.line as u32,
+            inkwell::debug_info::DIFlagsConstants::PUBLIC,
+            true);
+
+        func.set_subprogram(func_scope);
+
+        let lexical_block = self.dibuilder.create_lexical_block(
+            func_scope.as_debug_info_scope(),
+            self.dicompile_unit.get_file(),
+            node.pos.line as u32,
+            node.pos.startcol as u32);
+
+        let location = self.dibuilder.create_debug_location(
+            self.context,
+            node.pos.line as u32,
+            node.pos.startcol as u32,
+            lexical_block.as_debug_info_scope(),
+            None);
+
+
+        //Continue function compilation
         let basic_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(func, "entry");
+        self.builder.set_current_debug_location(self.context, location);
 
         let mut attr: inkwell::attributes::Attribute = self.context.create_enum_attribute(inkwell::attributes::Attribute::get_named_enum_kind_id("noinline"), 0);
 
@@ -407,6 +462,24 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
         functions: std::collections::HashMap::new(),
     };
 
+    
+    //Setup debug info
+    module.add_basic_value_flag("Debug Info Version", inkwell::module::FlagBehavior::Error, inkwelltypes.i32tp.const_int(1, false));
+    let (dibuilder, compile_unit) = module.create_debug_info_builder(
+        true,
+        inkwell::debug_info::DWARFSourceLanguage::C,
+        &info.name,
+        &info.dir,
+        "Kestrel",
+        true,
+        "",
+        0,
+        "",
+        inkwell::debug_info::DWARFEmissionKind::Full,
+        0,
+        false,
+        false);
+
     let mut codegen: CodeGen = CodeGen {
         context: &context,
         module: module,
@@ -415,16 +488,20 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
         info,
         inkwell_types: inkwelltypes,
         namespaces: namespaces,
+        dibuilder: dibuilder,
+        dicompile_unit: compile_unit,
     };
     
+    //Pass manager (optimizer)
     let pass_manager_builder: inkwell::passes::PassManagerBuilder = inkwell::passes::PassManagerBuilder::create();
     pass_manager_builder.set_optimization_level(inkwell::OptimizationLevel::Aggressive);
     let manager: inkwell::passes::PassManager<Module> = inkwell::passes::PassManager::create(());
     pass_manager_builder.populate_module_pass_manager(&manager);
 
+    //Setup builtin types
     builtin_types::init(&mut codegen);
 
-    //Check main function
+    //Compile code
     codegen.compile(&nodes);
 
     //Make the real main function
@@ -455,6 +532,10 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
 
     //
 
+    //Generate debug info
+    codegen.dibuilder.finalize();
+
+    //Optimize
     unsafe { codegen.module.run_in_pass_manager(&manager) };
 
     codegen.module.print_to_file(std::path::Path::new("a.ll"))?;
