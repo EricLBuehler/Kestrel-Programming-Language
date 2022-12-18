@@ -298,7 +298,6 @@ impl<'ctx> CodeGen<'ctx> {
         //
 
         let func: inkwell::values::FunctionValue = self.module.add_function(mangled_name.as_str(), fn_type, None);
-
         
         // Add debug information
         let mut diparamtps: Vec<inkwell::debug_info::DIType> = Vec::new();

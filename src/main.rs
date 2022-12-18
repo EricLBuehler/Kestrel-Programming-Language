@@ -36,7 +36,7 @@ fn main() {
         dir: String::from("."),
     };
 
-    let mut keywords: Vec<String> = vec![String::from("let"), String::from("fn")];
+    let mut keywords: Vec<String> = vec![String::from("let"), String::from("fn"), String::from("mut")];
 
     let mut lexer: lexer::Lexer = lexer::Lexer {
         idx: 0,
