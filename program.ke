@@ -1,5 +1,2 @@
 fn main() {
 }
-
-fn f(mut x) {
-}
