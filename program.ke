@@ -1,2 +1,4 @@
 fn main() {
+    let v = 1
+    v=2
 }
