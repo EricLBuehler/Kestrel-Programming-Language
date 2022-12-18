@@ -208,7 +208,17 @@ impl<'ctx> CodeGen<'ctx> {
 
         self.builder.build_store(ptr, right.data.unwrap());
 
-        self.namespaces.locals.insert(name, (ptr, right.tp, node.data.letn.as_ref().unwrap().mutability));
+        let mut tp: types::DataType = right.tp;
+        let rt_tp: types::DataType = tp.clone();
+        if node.data.letn.as_ref().unwrap().tp != None {
+            (tp, _) = Self::get_llvm_from_arg(&self.inkwell_types, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
+            if tp != rt_tp {
+                let fmt: String = format!("Expected {} type, got {} type.", self.namespaces.locals.get(&name).unwrap().1.tp.to_string(), rt_tp.to_string());
+                errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+            }
+        }
+
+        self.namespaces.locals.insert(name, (ptr, tp, node.data.letn.as_ref().unwrap().mutability));
 
         let data: types::Data = types::Data {
             data: None,

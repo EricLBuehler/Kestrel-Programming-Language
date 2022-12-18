@@ -36,14 +36,14 @@ pub struct Position{
     pub endcol: usize,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Arg {
     pub isfn: bool,
     pub data: Option<String>,
     pub args: Option<Args>,
     pub mutability: types::DataMutablility,
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Args {
     pub name: Vec<String>,
     pub args: Vec<Arg>,
