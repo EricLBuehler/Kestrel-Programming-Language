@@ -4,6 +4,7 @@ use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
 use inkwell::passes::PassManagerSubType;
+use inkwell::values::IntValue;
 use crate::fileinfo;
 use inkwell::debug_info::AsDIScope;
 
@@ -127,6 +128,10 @@ impl<'ctx> CodeGen<'ctx> {
                 
             }
         }
+    }
+
+    fn get_repr_from_intv(&self, v: &IntValue) -> String {
+        return v.to_string().split(" ").collect::<Vec<&str>>().get(1).unwrap().split("\"").collect::<Vec<&str>>().get(0).unwrap().to_string();
     }
 
     fn mangle_name_main(&self, name: &String) -> String {
@@ -437,7 +442,7 @@ impl<'ctx> CodeGen<'ctx> {
                 let self_data: &String = &node.data.int.as_ref().unwrap().left;
                 let selfv: inkwell::values::IntValue = match self.inkwell_types.i32tp.const_int_from_string(self_data.as_str(), inkwell::types::StringRadix::Decimal) {
                     None => {
-                        let fmt: String = format!("invalid i32 literal {}.", self_data);
+                        let fmt: String = format!("invalid i32 literal '{}'.", self_data);
                         errors::raise_error(&fmt, errors::ErrorType::InvalidLiteralForRadix, &node.pos, self.info);
                     }
             
@@ -446,6 +451,10 @@ impl<'ctx> CodeGen<'ctx> {
                     }
             
                 };
+                if self.get_repr_from_intv(&selfv) != *self_data {
+                    let fmt: String = format!("invalid i32 literal '{}'.", self_data);
+                    errors::raise_error(&fmt, errors::ErrorType::InvalidLiteralForRadix, &node.pos, self.info);
+                }
                 types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::I32, types::BasicDataType::I32.to_string(), Vec::new(), Vec::new(), Vec::new())}
             }
             parser::NodeType::BINARY => {
