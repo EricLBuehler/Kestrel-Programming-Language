@@ -1,4 +1,7 @@
 fn main() {
-    let mut v: unit = 1
-    v=2
+    f()
+}
+
+fn f() {
+    let x = 1+2
 }

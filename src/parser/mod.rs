@@ -1,4 +1,7 @@
 pub mod nodes;
+pub mod precedence;
+
+use precedence::Precedence;
 
 use crate::lexer;
 use crate::errors::ErrorType;
@@ -119,6 +122,29 @@ impl<'life> Parser<'life> {
     fn current_is_type(&mut self, tp: TokenType) -> bool {
         self.current.tp == tp
     }
+
+    fn get_precedence(&self) -> Precedence {
+        match self.current.tp {
+            TokenType::EQUALS => {
+                Precedence::Assign
+            }
+            TokenType::PLUS => {
+                Precedence::Sum
+            }
+            TokenType::HYPHEN => {
+                Precedence::Sum
+            }
+            TokenType::ASTERISK => {
+                Precedence::Product
+            }
+            TokenType::FWSLASH => {
+                Precedence::Product
+            }
+            _ => {
+                Precedence::Lowest
+            }
+        }
+    }
     
     fn block(&mut self) -> Vec<Node> {
         let mut nodes: Vec<Node> = Vec::new();
@@ -138,7 +164,7 @@ impl<'life> Parser<'life> {
                 return self.keyword();
             }
             _ => {
-                return self.expr();
+                return self.expr(Precedence::Lowest);
             }
         }
         
@@ -169,14 +195,14 @@ impl<'life> Parser<'life> {
         unreachable!();
     }
     
-    fn expr(&mut self) -> Node {
+    fn expr(&mut self, prec: Precedence) -> Node {
         let mut left: Node;
         match self.atom() {
             None => self.raise_error("Invalid token.", ErrorType::InvalidTok),
             Some(val) => {left = val},
         }
 
-        while !self.current_is_type(TokenType::NEWLINE) && !self.current_is_type(TokenType::EOF) {
+        while !self.current_is_type(TokenType::NEWLINE) && !self.current_is_type(TokenType::EOF) && (prec as u32) < (self.get_precedence() as u32){
             self.skip_newline();
             self.advance();
 
@@ -185,7 +211,7 @@ impl<'life> Parser<'life> {
                 TokenType::HYPHEN |
                 TokenType::ASTERISK |
                 TokenType::FWSLASH => {
-                    left = self.generate_binary(left);
+                    left = self.generate_binary(left, self.get_precedence());
                 }
 
                 TokenType::EQUALS => {
@@ -231,7 +257,7 @@ impl<'life> Parser<'life> {
         return n;
     }
     
-    fn generate_binary(&mut self, left: Node) -> Node{
+    fn generate_binary(&mut self, left: Node, prec: Precedence) -> Node{
         let mut pos = Position {
             line: left.pos.line,
             startcol: left.pos.startcol,
@@ -252,7 +278,7 @@ impl<'life> Parser<'life> {
         let bin: nodes::BinaryNode = nodes::BinaryNode{
             left,
             op,
-            right: self.expr(),
+            right: self.expr(prec),
         };
 
         pos.endcol = bin.right.pos.endcol;
@@ -319,7 +345,7 @@ impl<'life> Parser<'life> {
 
         let assign: nodes::AssignNode = nodes::AssignNode{
             name: left.data.identifier.unwrap().name,
-            expr: self.expr(),
+            expr: self.expr(Precedence::Lowest),
         };
 
         pos.endcol = assign.expr.pos.endcol;
@@ -382,7 +408,7 @@ impl<'life> Parser<'life> {
         
         self.advance();
 
-        let expr: Node = self.expr();
+        let expr: Node = self.expr(Precedence::Lowest);
 
         let letn: nodes::LetNode = nodes::LetNode{
             name,
