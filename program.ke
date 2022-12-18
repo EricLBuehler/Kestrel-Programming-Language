@@ -1,4 +1,4 @@
 fn main() {
-    let mut v = 1
+    let mut v: i32 = 1
     v=2
 }

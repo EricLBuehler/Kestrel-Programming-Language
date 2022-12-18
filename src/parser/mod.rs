@@ -351,6 +351,8 @@ impl<'life> Parser<'life> {
             endcol: 0,
         };
 
+        let mut tp: Option<Arg> = None;
+
         self.advance();
         
         let mut mutability: DataMutablility = DataMutablility::Immutable;
@@ -366,6 +368,13 @@ impl<'life> Parser<'life> {
         let name: String = self.current.data.clone();
 
         self.advance();
+        
+        if self.current_is_type(TokenType::COLON) {
+            self.advance();
+    
+            tp=Some(self.parse_argument(mutability));
+        }
+
 
         if !self.current_is_type(TokenType::EQUALS) {
             self.raise_error("Expected equals.", ErrorType::InvalidTok);
@@ -379,6 +388,7 @@ impl<'life> Parser<'life> {
             name,
             expr,
             mutability,
+            tp,
         };
     
         let nodedat: nodes::NodeData = nodes::NodeData {

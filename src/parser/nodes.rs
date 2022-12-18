@@ -48,6 +48,7 @@ pub struct LetNode {
     pub name: String,
     pub expr: crate::parser::Node,
     pub mutability: crate::codegen::types::DataMutablility,
+    pub tp: Option<crate::parser::Arg>,
 }
 
 impl std::fmt::Display for LetNode {
