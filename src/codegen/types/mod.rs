@@ -13,6 +13,7 @@ pub struct DataType {
     pub names: Vec<String>,
     pub types: Vec<DataType>,
     pub name: String,
+    pub mutability: Vec<DataMutablility>,
 }
 pub enum TraitType {
     Add,
@@ -82,17 +83,18 @@ pub struct Method {
     pub function: fn(Vec<Type>) -> Type,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum DataMutablility{
     Immutable,
     Mutable,
 }
 
-pub fn new_datatype(tp: BasicDataType, name: String, names: Vec<String>, types: Vec<DataType>) -> DataType {
+pub fn new_datatype(tp: BasicDataType, name: String, names: Vec<String>, types: Vec<DataType>, mutability: Vec<DataMutablility>) -> DataType {
     return DataType {
         tp,
         names,
         types,
         name,
+        mutability,
     };
 }

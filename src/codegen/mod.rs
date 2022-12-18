@@ -23,7 +23,7 @@ pub struct InkwellTypes<'ctx> {
 }
 
 pub struct Namespaces<'ctx> {
-    global: std::collections::HashMap<String, (inkwell::values::PointerValue<'ctx>, types::DataType)>,
+    global: std::collections::HashMap<String, (inkwell::values::PointerValue<'ctx>, types::DataType, types::DataMutablility)>,
     functions: std::collections::HashMap<String, (inkwell::values::FunctionValue<'ctx>, types::DataType)>,
 }
 
@@ -41,7 +41,7 @@ pub struct CodeGen<'ctx> {
 
 //Codegen functions
 impl<'ctx> CodeGen<'ctx> {
-    fn get_variable(&mut self, name: &String) -> Option<&(inkwell::values::PointerValue<'ctx>, types::DataType)>{
+    fn get_variable(&mut self, name: &String) -> Option<&(inkwell::values::PointerValue<'ctx>, types::DataType, types::DataMutablility)>{
         if self.namespaces.global.iter().find(|x| *x.0 == *name) != None {
             return self.namespaces.global.get(name);
         }
@@ -51,7 +51,7 @@ impl<'ctx> CodeGen<'ctx> {
     
     fn get_function(&mut self, name: &String) -> Option<(inkwell::values::PointerValue<'ctx>, types::DataType)>{
         if self.namespaces.functions.iter().find(|x| *x.0 == *name) != None {
-            return Some((self.namespaces.functions.get(name).unwrap().0.as_global_value().as_pointer_value(), types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), Vec::new(), Vec::new())));
+            return Some((self.namespaces.functions.get(name).unwrap().0.as_global_value().as_pointer_value(), types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), Vec::new(), Vec::new(), self.namespaces.functions.get(name).unwrap().1.mutability.clone())));
         }
 
         return None;
@@ -59,10 +59,10 @@ impl<'ctx> CodeGen<'ctx> {
 
     fn get_datatype_from_str(info: &fileinfo::FileInfo, str_rep: &String, node: &parser::Node) -> types::DataType {
         if *str_rep == types::BasicDataType::I32.to_string() {
-            return types::new_datatype(types::BasicDataType::I32, types::BasicDataType::I32.to_string(), Vec::new(), Vec::new());
+            return types::new_datatype(types::BasicDataType::I32, types::BasicDataType::I32.to_string(), Vec::new(), Vec::new(), Vec::new());
         }
         else if *str_rep == types::BasicDataType::Unit.to_string() {
-            return types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(),Vec::new(), Vec::new());
+            return types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(),Vec::new(), Vec::new(), Vec::new());
         }
 
         let fmt: String = format!("Unknown type '{}'.", str_rep);
@@ -73,11 +73,13 @@ impl<'ctx> CodeGen<'ctx> {
         if arg.isfn {
             let args: &Vec<parser::Arg> = &arg.args.as_ref().unwrap().args;
             let mut datatypes: Vec<types::DataType> = Vec::new();
+            let mut mutability: Vec<types::DataMutablility> = Vec::new();
             let mut inktypes: Vec<inkwell::types::BasicMetadataTypeEnum> = Vec::new();
             
             for arg in args {
                 let (data, tp) = Self::get_llvm_from_arg(types, info, &arg, node);
                 datatypes.push(data);
+                mutability.push(arg.mutability);
                 if tp.is_int_type() {
                     inktypes.push(inkwell::types::BasicMetadataTypeEnum::IntType(tp.into_int_type()));
                 }
@@ -108,7 +110,7 @@ impl<'ctx> CodeGen<'ctx> {
             else {
                 panic!("Unexpected type");
             }
-            return (types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), node.data.func.as_ref().unwrap().args.name.clone(), datatypes), inkwell::types::AnyTypeEnum::FunctionType(fntp));
+            return (types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), node.data.func.as_ref().unwrap().args.name.clone(), datatypes, mutability), inkwell::types::AnyTypeEnum::FunctionType(fntp));
         }
         else {
             let tp: types::DataType = Self::get_datatype_from_str(info, &arg.data.as_ref().unwrap(), node);
@@ -201,11 +203,11 @@ impl<'ctx> CodeGen<'ctx> {
 
         self.builder.build_store(ptr, right.data.unwrap());
 
-        self.namespaces.global.insert(name, (ptr, right.tp));
+        self.namespaces.global.insert(name, (ptr, right.tp, node.data.letn.as_ref().unwrap().mutability));
 
         let data: types::Data = types::Data {
             data: None,
-            tp: types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), Vec::new(), Vec::new()),
+            tp: types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), Vec::new(), Vec::new(), Vec::new()),
         };
         return data;
     }
@@ -241,11 +243,13 @@ impl<'ctx> CodeGen<'ctx> {
         let args = &node.data.func.as_ref().unwrap().args;
 
         let mut datatypes: Vec<types::DataType> = Vec::new();
+        let mut mutability: Vec<types::DataMutablility> = Vec::new();
         let mut inktypes: Vec<inkwell::types::BasicMetadataTypeEnum> = Vec::new();
         
         for arg in &args.args {
             let (data, tp) = Self::get_llvm_from_arg(&self.inkwell_types, &self.info, &arg, node);
             datatypes.push(data);
+            mutability.push(arg.mutability);
             if tp.is_int_type() {
                 inktypes.push(inkwell::types::BasicMetadataTypeEnum::IntType(tp.into_int_type()));
             }
@@ -385,11 +389,11 @@ impl<'ctx> CodeGen<'ctx> {
 
         unsafe { func.run_in_pass_manager(&manager); }
         
-        self.namespaces.functions.insert(name.clone(), (func, types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), node.data.func.as_ref().unwrap().args.name.clone(), datatypes)));
+        self.namespaces.functions.insert(name.clone(), (func, types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), node.data.func.as_ref().unwrap().args.name.clone(), datatypes, mutability)));
 
         let data: types::Data = types::Data {
             data: Some(inkwell::values::BasicValueEnum::PointerValue(func.as_global_value().as_pointer_value())),
-            tp: types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), Vec::new(), Vec::new()),
+            tp: self.namespaces.functions.get(&name.clone()).unwrap().1.clone(),
         };
         return data;
     }
@@ -409,7 +413,7 @@ impl<'ctx> CodeGen<'ctx> {
                     }
             
                 };
-                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::I32, types::BasicDataType::I32.to_string(), Vec::new(), Vec::new())}
+                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::I32, types::BasicDataType::I32.to_string(), Vec::new(), Vec::new(), Vec::new())}
             }
             parser::NodeType::BINARY => {
                 self.build_binary(node)
