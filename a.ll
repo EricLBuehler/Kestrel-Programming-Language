@@ -8,7 +8,7 @@ entry:
   %v = alloca i32, !dbg !8
   store i32 1, i32* %v, !dbg !8
   store i32 2, i32* %v, !dbg !8
-  store i32 0, i32* %v, !dbg !8
+  store i32 10, i32* %v, !dbg !8
   ret void, !dbg !8
 }
 
