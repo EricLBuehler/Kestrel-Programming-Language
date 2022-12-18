@@ -85,10 +85,23 @@ impl std::fmt::Display for FuncNode {
 }
 
 #[derive(Clone)]
+pub struct AssignNode {
+    pub name: String,
+    pub expr: crate::parser::Node,
+}
+
+impl std::fmt::Display for AssignNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "'{}' = {}", self.name, self.expr)
+    }    
+}
+
+#[derive(Clone)]
 pub struct NodeData {
     pub binary: Option<BinaryNode>,
     pub int: Option<I32Node>,
     pub letn: Option<LetNode>,
     pub identifier: Option<IdentifierNode>,
     pub func: Option<FuncNode>,
+    pub assign: Option<AssignNode>,
 }

@@ -19,6 +19,7 @@ pub enum NodeType {
     LET,
     IDENTIFIER,
     FUNC,
+    ASSIGN,
 }
 
 #[derive(Clone)]
@@ -57,6 +58,7 @@ impl std::fmt::Display for Node {
             NodeType::LET => write!(f, "{}", self.data.letn.as_ref().unwrap() ),
             NodeType::IDENTIFIER => write!(f, "{}", self.data.identifier.as_ref().unwrap() ),
             NodeType::FUNC => write!(f, "{}", self.data.func.as_ref().unwrap() ),
+            NodeType::ASSIGN => write!(f, "{}", self.data.assign.as_ref().unwrap() ),
         }
     }    
 }
@@ -88,6 +90,10 @@ impl<'life> Parser<'life> {
 
     fn raise_error(&mut self, error: &str, errtp: ErrorType) -> !{
         crate::errors::raise_error(error, errtp, &Position { line: self.current.line, startcol: self.current.startcol, endcol: self.current.endcol }, &self.info);
+    }
+
+    fn raise_error_pos(&mut self, error: &str, errtp: ErrorType, node: Node) -> !{
+        crate::errors::raise_error(error, errtp, &node.pos, &self.info);
     }
 
     fn advance(&mut self) {
@@ -181,6 +187,11 @@ impl<'life> Parser<'life> {
                 TokenType::FWSLASH => {
                     left = self.generate_binary(left);
                 }
+
+                TokenType::EQUALS => {
+                    left = self.generate_assign(left);
+                }
+
                 _ => {
                     return left;
                 }
@@ -202,6 +213,7 @@ impl<'life> Parser<'life> {
             letn: None,
             identifier: None,
             func: None,
+            assign: None,
         };
 
         let pos = Position {
@@ -249,6 +261,7 @@ impl<'life> Parser<'life> {
             letn: None,
             identifier: None,
             func: None,
+            assign: None,
         };
 
         pos.endcol = self.current.endcol;
@@ -273,6 +286,7 @@ impl<'life> Parser<'life> {
             letn: None,
             identifier: Some(identi),
             func: None,
+            assign: None,
         };
 
         let pos = Position {
@@ -289,6 +303,45 @@ impl<'life> Parser<'life> {
     
         return n;
     }
+
+    fn generate_assign(&mut self, left: Node) -> Node{
+        let mut pos = Position {
+            line: self.current.line,
+            startcol: left.pos.startcol,
+            endcol: 0,
+        };
+
+        if left.tp != NodeType::IDENTIFIER {
+            self.raise_error_pos("expected identifier", ErrorType::InvalidTok, left);
+        }
+
+        self.advance();
+
+        let assign: nodes::AssignNode = nodes::AssignNode{
+            name: left.data.identifier.unwrap().name,
+            expr: self.expr(),
+        };
+    
+        let nodedat: nodes::NodeData = nodes::NodeData {
+            binary: None,
+            int: None,
+            letn: None,
+            identifier: None,
+            func: None,
+            assign: Some(assign),
+        };
+
+        pos.endcol = self.current.endcol;
+    
+        let n: Node = Node {
+            tp: NodeType::ASSIGN,
+            data: Box::new(nodedat),
+            pos,
+        };
+    
+        return n;
+    }
+
 
     //Keywords
     fn parse_let(&mut self) -> Node{
@@ -334,6 +387,7 @@ impl<'life> Parser<'life> {
             letn: Some(letn),
             identifier: None,
             func: None,
+            assign: None,
         };
 
         pos.endcol = nodedat.letn.as_ref().unwrap().expr.pos.endcol;
@@ -531,6 +585,7 @@ impl<'life> Parser<'life> {
             letn: None,
             identifier: None,
             func: Some(func),
+            assign: None,
         };
 
     
