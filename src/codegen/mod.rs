@@ -231,12 +231,6 @@ impl<'ctx> CodeGen<'ctx> {
     }
     
     fn build_func(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let old_block: Option<inkwell::basic_block::BasicBlock>=self.builder.get_insert_block();
-        if old_block != None {
-            let fmt: String = format!("Cannot define nested functions.");
-            errors::raise_error(&fmt, errors::ErrorType::NestedFunctions, &node.pos, self.info);
-        }
-        
         let name: &String = &node.data.func.as_ref().unwrap().name;
         if self.get_function(&name) != None {
             let fmt: String = format!("function {} is already defined in namespace.", name);
@@ -290,15 +284,16 @@ impl<'ctx> CodeGen<'ctx> {
             let fmt: String = format!("mangled function 'main' name {} is already defined in namespace.", mangled_name);
             errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
         }
+        if name == "main" {
+            if fn_type.get_param_types().len() != 0 {
+                let fmt: String = format!("expected 0 arguments, got {}.", fn_type.get_param_types().len());
+                errors::raise_error(&fmt, errors::ErrorType::ArgumentCountMismatch, &node.pos, self.info);
+            }
 
-        if fn_type.get_param_types().len() != 0 {
-            let fmt: String = format!("expected 0 arguments, got {}.", fn_type.get_param_types().len());
-            errors::raise_error(&fmt, errors::ErrorType::ArgumentCountMismatch, &node.pos, self.info);
-        }
-
-        if fn_type.get_return_type() != None {
-            let fmt: String = format!("expected 'unit' return type, got '{}'.", &rettp_full.0.name);
-            errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+            if fn_type.get_return_type() != None {
+                let fmt: String = format!("expected 'unit' return type, got '{}'.", &rettp_full.0.name);
+                errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+            }
         }
         //
 
@@ -373,7 +368,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         /////// Code generation start:
 
-        self.compile(&node.data.func.as_ref().unwrap().blocks);
+        self.compile(&node.data.func.as_ref().unwrap().blocks, true);
 
         /////// End
 
@@ -432,8 +427,12 @@ impl<'ctx> CodeGen<'ctx> {
         }
     }
 
-    fn compile(&mut self, nodes: &Vec<parser::Node>) {
+    fn compile(&mut self, nodes: &Vec<parser::Node>, infn: bool) {
         for node in nodes {
+            if infn && node.tp == parser::NodeType::FUNC {
+                let fmt: String = format!("Cannot define nested functions.");
+                errors::raise_error(&fmt, errors::ErrorType::NestedFunctions, &node.pos, self.info);
+            }
             self.compile_expr(node);
         }
     }
@@ -502,7 +501,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
     builtin_types::init(&mut codegen);
 
     //Compile code
-    codegen.compile(&nodes);
+    codegen.compile(&nodes, false);
 
     //Make the real main function
     if codegen.get_function(&String::from("main")) == None {
