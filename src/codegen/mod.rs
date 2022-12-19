@@ -448,7 +448,7 @@ impl<'ctx> CodeGen<'ctx> {
             errors::raise_error(&fmt, errors::ErrorType::ImmutableAssign, &node.pos, self.info);
         }
         
-        if self.namespaces.locals.get(&name).unwrap().1.tp != right.tp.tp {
+        if self.namespaces.locals.get(&name).unwrap().1 != right.tp {
             let fmt: String = format!("Expected {} type, got {} type.", self.namespaces.locals.get(&name).unwrap().1.tp.to_string(), right.tp.to_string());
             errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
         }

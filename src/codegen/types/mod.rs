@@ -8,7 +8,7 @@ pub enum BasicDataType {
     Unit,
     Func,
 }
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct DataType {
     pub tp: BasicDataType,
     pub names: Vec<String>,
@@ -47,12 +47,21 @@ impl std::fmt::Display for DataType {
     }    
 }
 
+impl PartialEq for DataType {
+    fn eq(&self, other: &DataType) -> bool {
+        return self.name == other.name;
+    }
+    fn ne(&self, other: &DataType) -> bool {
+        return self.name != other.name;
+    }
+}
+
 impl PartialEq<BasicDataType> for DataType {
     fn eq(&self, other: &BasicDataType) -> bool {
-        return self.tp == *other;
+        return self.name == other.to_string();
     }
     fn ne(&self, other: &BasicDataType) -> bool {
-        return self.tp != *other;
+        return self.name != other.to_string();
     }
 }
 
