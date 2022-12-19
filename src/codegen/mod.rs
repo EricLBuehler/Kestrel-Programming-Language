@@ -205,12 +205,12 @@ impl<'ctx> CodeGen<'ctx> {
 
         let name: String = node.data.letn.as_ref().unwrap().name.clone();
         if self.get_variable(&name) != None {
-            let fmt: String = format!("Name {} is already defined in namespace.", name);
+            let fmt: String = format!("Name '{}' is already defined in namespace.", name);
             errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
         }
 
         if right.data == None{
-            let fmt: String = format!("Cannot assign to {}.", right.tp.to_string());
+            let fmt: String = format!("Cannot assign to '{}'.", right.tp.to_string());
             errors::raise_error(&fmt, errors::ErrorType::CannotAssign, &node.pos, self.info);
         }
 
@@ -223,7 +223,7 @@ impl<'ctx> CodeGen<'ctx> {
         if node.data.letn.as_ref().unwrap().tp != None {
             (tp, _) = Self::get_llvm_from_arg(&self.inkwell_types, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
             if tp != rt_tp {
-                let fmt: String = format!("Expected {} type, got {} type.", tp.to_string(), rt_tp.to_string());
+                let fmt: String = format!("Expected '{}' type, got '{}' type.", tp.to_string(), rt_tp.to_string());
                 errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
             }
         }
@@ -268,7 +268,7 @@ impl<'ctx> CodeGen<'ctx> {
     fn build_func(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         let name: &String = &node.data.func.as_ref().unwrap().name;
         if self.get_function(&name) != None {
-            let fmt: String = format!("Function {} is already defined.", name);
+            let fmt: String = format!("Function '{}' is already defined.", name);
             errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
         }
 
@@ -318,7 +318,7 @@ impl<'ctx> CodeGen<'ctx> {
         //Main function specifics
         let mangled_name = self.mangle_name_main(&name);
         if self.get_function(&mangled_name) != None {
-            let fmt: String = format!("Mangled function 'main' name {} is already defined.", mangled_name);
+            let fmt: String = format!("Mangled function 'main' name '{}' is already defined.", mangled_name);
             errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
         }
         if name == "main" {
@@ -437,7 +437,7 @@ impl<'ctx> CodeGen<'ctx> {
         let name: String = node.data.assign.as_ref().unwrap().name.clone();
 
         if right.data == None{
-            let fmt: String = format!("Cannot assign to {}.", right.tp.to_string());
+            let fmt: String = format!("Cannot assign to '{}'.", right.tp.to_string());
             errors::raise_error(&fmt, errors::ErrorType::CannotAssign, &node.pos, self.info);
         }
 
@@ -449,7 +449,7 @@ impl<'ctx> CodeGen<'ctx> {
         }
         
         if self.namespaces.locals.get(&name).unwrap().1 != right.tp {
-            let fmt: String = format!("Expected {} type, got {} type.", self.namespaces.locals.get(&name).unwrap().1.tp.to_string(), right.tp.to_string());
+            let fmt: String = format!("Expected '{}' type, got '{}' type.", self.namespaces.locals.get(&name).unwrap().1.tp.to_string(), right.tp.to_string());
             errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
         }
 

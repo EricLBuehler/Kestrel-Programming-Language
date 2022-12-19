@@ -1,20 +1,28 @@
-use crate::codegen::types::{Trait, TraitType, Data, new_datatype, BasicDataType, basic_to_metadata};
+use crate::codegen::types::{Trait, TraitType, Data, DataType, new_datatype, BasicDataType, basic_to_metadata};
 use crate::codegen;
 use crate::codegen::builtin_types;
 use crate::parser;
+use crate::errors;
 use std::collections::HashMap;
 
-fn fn_call<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {
+fn fn_call<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
     let args_ref: &Vec<Data> = &args;
     let selfv: &Data = args_ref.first().unwrap();
     let args_: &[Data] = &args_ref[1..];
 
     let mut args_basic: Vec<inkwell::values::BasicMetadataValueEnum> = Vec::new();
+    let types: &Vec<DataType> = &selfv.tp.types;
 
+    let mut idx: usize = 0;
     for arg in args_ {
         let res: Option<inkwell::values::BasicValueEnum> = arg.data;
         if res != None {
             args_basic.push(basic_to_metadata(res.unwrap()));
+            if arg.tp != *types.get(idx).unwrap(){
+                let fmt: String = format!("expected '{}' type, got '{}' type.", arg.tp.name, types.get(idx).unwrap().name);
+                errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, pos, codegen.info);
+            }
+            idx += 1;
         }
     }
 
