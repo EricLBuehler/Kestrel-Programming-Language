@@ -456,17 +456,21 @@ impl<'ctx> CodeGen<'ctx> {
 
         /////// End
         
-        if retv.tp != rettp_full.0.tp && name!="main"{
-            let fmt: String = format!("Expected '{}' return type, got '{}'.", &rettp_full.0.name, retv.tp.name);
-            errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
-        }
+        //Check if last stmt. is a return
+
+        if node.data.func.as_ref().unwrap().blocks.len()==0 || node.data.func.as_ref().unwrap().blocks.last().unwrap().tp != parser::NodeType::RETURN {
+            if retv.tp != rettp_full.0.tp && name!="main"{
+                let fmt: String = format!("Expected '{}' return type, got '{}'.", &rettp_full.0.name, retv.tp.name);
+                errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+            }
 
 
-        if rettp_full.0.tp != types::BasicDataType::Unit {
-            self.builder.build_return(Some(&retv.data.unwrap())); 
-        }
-        else {
-            self.builder.build_return(None);
+            if rettp_full.0.tp != types::BasicDataType::Unit {
+                self.builder.build_return(Some(&retv.data.unwrap())); 
+            }
+            else {
+                self.builder.build_return(None);
+            }
         }
         
         let pass_manager_builder: inkwell::passes::PassManagerBuilder = inkwell::passes::PassManagerBuilder::create();

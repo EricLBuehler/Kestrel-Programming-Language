@@ -13,7 +13,6 @@ entry:
   store i32 %i32sum, i32* %y, !dbg !8
   %y2 = load i32, i32* %y, !dbg !8
   ret i32 %y2, !dbg !8
-  ret i32 %y2, !dbg !8
 }
 
 ; Function Attrs: noinline nounwind optnone
