@@ -140,6 +140,9 @@ impl<'life> Parser<'life> {
             TokenType::FWSLASH => {
                 Precedence::Product
             }
+            TokenType::LPAREN => {
+                Precedence::Call
+            }
             _ => {
                 Precedence::Lowest
             }
@@ -174,6 +177,7 @@ impl<'life> Parser<'life> {
         match self.current.tp {
             TokenType::I32 => Some(self.generate_int(self.current.data.clone())),
             TokenType::IDENTIFIER => Some(self.generate_identifier(self.current.data.clone())),
+            TokenType::LPAREN => Some(self.generate_grouped()),
             _ => None,
         }
     }
@@ -202,10 +206,8 @@ impl<'life> Parser<'life> {
             Some(val) => {left = val},
         }
 
+        self.advance();
         while !self.current_is_type(TokenType::NEWLINE) && !self.current_is_type(TokenType::EOF) && (prec as u32) < (self.get_precedence() as u32){
-            self.skip_newline();
-            self.advance();
-
             match self.current.tp {
                 TokenType::PLUS |
                 TokenType::HYPHEN |
@@ -366,6 +368,17 @@ impl<'life> Parser<'life> {
         };
     
         return n;
+    }
+
+    fn generate_grouped(&mut self) -> Node {
+        self.advance();
+        let node: Node = self.expr(Precedence::Lowest);
+
+        if !self.current_is_type(TokenType::RPAREN) {
+            self.raise_error("Expected right parenthesis.", ErrorType::InvalidTok);
+        }
+
+        return node;
     }
 
 

@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum Precedence {
     Lowest,
