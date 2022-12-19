@@ -1,8 +1,7 @@
-fn main() {
-    (1+2)*3
-    f(100)
+fn f(x: i32) {
+    let y = 2
 }
 
-fn f(x: i32) {
-    let y = x+2
+fn main() {
+    f(100)
 }

@@ -99,7 +99,7 @@ impl std::fmt::Display for AssignNode {
 
 #[derive(Clone)]
 pub struct CallNode {
-    pub name: String,
+    pub name: crate::parser::Node,
     pub args: Vec<crate::parser::Node>,
 }
 

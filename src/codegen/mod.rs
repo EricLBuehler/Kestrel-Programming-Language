@@ -4,6 +4,7 @@ use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
 use inkwell::passes::PassManagerSubType;
+use inkwell::types::BasicType;
 use inkwell::values::IntValue;
 use crate::fileinfo;
 use inkwell::debug_info::AsDIScope;
@@ -142,18 +143,24 @@ impl<'ctx> CodeGen<'ctx> {
         return new;
     }
 
+    fn get_type_from_data(&self, data: &types::Data) -> &types::Type<'ctx> {
+        return self.types.get(&data.tp.to_string()).unwrap();
+    }
+
     fn build_binary(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         let binary: &parser::nodes::BinaryNode = node.data.binary.as_ref().unwrap();
 
         let left: types::Data = self.compile_expr(&binary.left);
         let right: types::Data = self.compile_expr(&binary.right);
 
-        let mut args: Vec<&types::Data> = Vec::new();
+        let mut args: Vec<types::Data> = Vec::new();
 
-        args.push(&left);
-        args.push(&right);
+        let tp: &types::Type = self.get_type_from_data(&left);
 
-        let tp: &types::Type = self.types.get(&left.tp.to_string()).unwrap();
+        let tp_str: &String = &left.tp.name.clone();
+
+        args.push(left);
+        args.push(right);
 
         let traittp = match node.data.binary.as_ref().unwrap().op {
             parser::nodes::BinaryOpType::ADD => {
@@ -178,7 +185,7 @@ impl<'ctx> CodeGen<'ctx> {
                 v
             }
             None => {
-                let fmt: String = format!("Type {} has no trait {}.", &left.tp.to_string(), &traittp.to_string());
+                let fmt: String = format!("Type '{}' has no trait '{}'.", tp_str, &traittp.to_string());
                 errors::raise_error(&fmt, errors::ErrorType::MissingTrait, &node.pos, self.info);
             }
         };
@@ -232,12 +239,16 @@ impl<'ctx> CodeGen<'ctx> {
 
         let (ptr, tp) = match self.get_variable(&name) {
             None => {
-                let res: Option<&(inkwell::values::PointerValue, types::DataType, types::DataMutablility)> = self.get_variable(&name);
+                let res: Option<(inkwell::values::PointerValue, types::DataType)> = self.get_function(&name);
                 if res==None {
                     let fmt: String = format!("Name {} is not defined.", name);
                     errors::raise_error(&fmt, errors::ErrorType::NameNotFound, &node.pos, self.info);
                 }
-                (res.unwrap().0, res.unwrap().1.clone())
+                let data: types::Data = types::Data {
+                    data: Some(inkwell::values::BasicValueEnum::PointerValue(res.as_ref().unwrap().0)),
+                    tp: res.unwrap().1,
+                };
+                return data;
             }
             Some(v) => {
                 (v.0, v.1.clone())
@@ -245,7 +256,7 @@ impl<'ctx> CodeGen<'ctx> {
         };
 
         let data: types::Data = types::Data {
-            data: Some(self.builder.build_load(ptr, &name)),
+            data: Some(self.builder.build_load(ptr, name.as_str())),
             tp,
         };
         return data;
@@ -449,6 +460,35 @@ impl<'ctx> CodeGen<'ctx> {
         };
         return data;
     }
+    
+    fn build_call(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        let callable: types::Data = self.compile_expr(&node.data.call.as_ref().unwrap().name);
+
+        let mut args: Vec<types::Data> = Vec::new();
+
+        for arg in &node.data.call.as_ref().unwrap().args{
+            let v: types::Data = self.compile_expr(arg); 
+            args.push(v);
+        }
+
+        let tp: &types::Type = self.get_type_from_data(&callable);
+
+        let t: &types::Trait = match tp.traits.get(&types::TraitType::Call.to_string()) {
+            Some (v) => {
+                v
+            }
+            None => {
+                let fmt: String = format!("Type '{}' has no trait '{}'.", &callable.tp.name, &types::TraitType::Call.to_string());
+                errors::raise_error(&fmt, errors::ErrorType::MissingTrait, &node.pos, self.info);
+            }
+        };
+
+        let func = t.function;
+
+        let data: types::Data = (func)(&self, args, &node.pos);
+
+        return data;
+    }
 
     fn compile_expr(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         match node.tp {
@@ -487,8 +527,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.build_assign(node)
             }
             parser::NodeType::CALL => {
-                unimplemented!();
-                //self.build_call(node)
+                self.build_call(node)
             }
         }
     }

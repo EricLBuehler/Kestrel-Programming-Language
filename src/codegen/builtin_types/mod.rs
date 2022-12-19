@@ -17,7 +17,7 @@ fn add_simple_type<'a>(codegen: &mut codegen::CodeGen<'a>, traits: HashMap<Strin
     codegen.types.insert(String::from(name), tp);
 }
 
-fn create_trait<'a>(function: fn(&codegen::CodeGen<'a>, Vec<&Data<'a>>, &crate::parser::Position) -> Data<'a>, nargs: usize, traittype: TraitType, rettp: String, retbasictype: BasicDataType) -> Trait<'a>{
+fn create_trait<'a>(function: fn(&codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>, nargs: usize, traittype: TraitType, rettp: String, retbasictype: BasicDataType) -> Trait<'a>{
     Trait {
         nargs,
         function,

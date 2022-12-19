@@ -20,6 +20,7 @@ pub enum TraitType {
     Mul,
     Sub,
     Div,
+    Call,
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -60,6 +61,7 @@ impl std::fmt::Display for TraitType {
             TraitType::Mul => write!(f, "Mul"),
             TraitType::Sub => write!(f, "Sub"),
             TraitType::Div => write!(f, "Div"),
+            TraitType::Call => write!(f, "Call"),
         }
     }    
 }
@@ -73,7 +75,7 @@ pub struct Type<'a> {
 
 pub struct Trait<'a> {
     pub nargs: usize,
-    pub function: fn(&codegen::CodeGen<'a>, Vec<&Data<'a>>, &crate::parser::Position) -> Data<'a>,
+    pub function: fn(&codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>,
     pub traittype: TraitType,
     pub rettp: String,
     pub retbasictype: BasicDataType,

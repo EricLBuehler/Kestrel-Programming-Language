@@ -5,7 +5,7 @@ use crate::parser;
 use crate::errors;
 use std::collections::HashMap;
 
-fn i32_add<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<&Data<'a>>, pos: &parser::Position) -> Data<'a> {
+fn i32_add<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
     if args.get(1).unwrap().tp != BasicDataType::I32 {
         let fmt: String = format!("invalid types for i32 +, got {} and {}.", BasicDataType::I32, args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -20,7 +20,7 @@ fn i32_add<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<&Data<'a>>, pos: &parse
     };
 }
 
-fn i32_mul<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<&Data<'a>>, pos: &parser::Position) -> Data<'a> {
+fn i32_mul<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
     if args.get(1).unwrap().tp != BasicDataType::I32 {
         let fmt: String = format!("invalid types for i32 *, got {} and {}.", BasicDataType::I32, args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -35,7 +35,7 @@ fn i32_mul<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<&Data<'a>>, pos: &parse
     };
 }
 
-fn i32_sub<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<&Data<'a>>, pos: &parser::Position) -> Data<'a> {
+fn i32_sub<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
     if args.get(1).unwrap().tp != BasicDataType::I32 {
         let fmt: String = format!("invalid types for i32 -, got {} and {}.", BasicDataType::I32, args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -50,7 +50,7 @@ fn i32_sub<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<&Data<'a>>, pos: &parse
     };
 }
 
-fn i32_div<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<&Data<'a>>, pos: &parser::Position) -> Data<'a> {
+fn i32_div<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
     if args.get(1).unwrap().tp != BasicDataType::I32 {
         let fmt: String = format!("invalid types for i32 /, got {} and {}.", BasicDataType::I32, args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);

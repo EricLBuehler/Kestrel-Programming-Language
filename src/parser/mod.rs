@@ -411,7 +411,7 @@ impl<'life> Parser<'life> {
         self.advance();
 
         let call: nodes::CallNode = nodes::CallNode{
-            name: left.data.identifier.unwrap().name,
+            name: left,
             args,
         };
 
