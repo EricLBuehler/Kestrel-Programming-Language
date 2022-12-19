@@ -428,7 +428,6 @@ impl<'life> Parser<'life> {
         };
     
         let n: Node = self.create_node(NodeType::CALL, nodedat, pos);
-        println!("{}", n);
         return n;
     }
 
