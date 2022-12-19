@@ -115,9 +115,9 @@ impl<'life> Parser<'life> {
                 self.current = lexer::Token {
                     data: String::from("\0"),
                     tp: lexer::TokenType::EOF,
-                    line: 0,
-                    startcol: 0,
-                    endcol: 0,
+                    line: self.tokens.last().unwrap().line,
+                    startcol: self.tokens.last().unwrap().startcol,
+                    endcol: self.tokens.last().unwrap().endcol,
                 };
             }
         }
@@ -662,9 +662,8 @@ impl<'life> Parser<'life> {
         self.skip_newline();
 
         let blocks: Vec<Node> = self.block();
-
         if !self.current_is_type(TokenType::RCURLY) {
-            self.raise_error("Expected rught curly bracket.", ErrorType::InvalidTok);
+            self.raise_error("Expected right curly bracket.", ErrorType::InvalidTok);
         }
         
         self.advance();

@@ -103,7 +103,7 @@ pub fn print_tokens(len: usize, tokens: &Vec<Token>) {
 pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Token>) {  
     let mut vector: Vec<Token> = Vec::new();
 
-    for _ in 0 .. lexer.data.len() {
+    while lexer.current!='\0' {
         let cur: char = lexer.current;
         
         if cur.is_digit(10) {
@@ -255,7 +255,7 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
         tp: TokenType::EOF,
         line: lexer.line,
         startcol: lexer.col,
-        endcol: lexer.col,
+        endcol: lexer.col+1,
     });
 
     return (vector.len(), vector);
