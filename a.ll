@@ -5,15 +5,18 @@ target triple = "x86_64-unknown-linux-gnu"
 ; Function Attrs: noinline nounwind optnone
 define void @f(i32 %0) local_unnamed_addr #0 !dbg !4 {
 entry:
+  %x = alloca i32, !dbg !9
+  store i32 %0, i32* %x, !dbg !9
+  %x1 = load i32, i32* %x, !dbg !9
   %y = alloca i32, !dbg !9
-  store i32 2, i32* %y, !dbg !9
+  store i32 %x1, i32* %y, !dbg !9
   ret void, !dbg !9
 }
 
 ; Function Attrs: noinline nounwind optnone
 define void @_main() local_unnamed_addr #0 !dbg !11 {
 entry:
-  call void @f(i32 undef), !dbg !14
+  call void @f(i32 100), !dbg !14
   ret void, !dbg !14
 }
 

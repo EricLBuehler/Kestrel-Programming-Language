@@ -25,7 +25,7 @@ pub struct InkwellTypes<'ctx> {
 }
 
 pub struct Namespaces<'ctx> {
-    locals: std::collections::HashMap<String, (inkwell::values::PointerValue<'ctx>, types::DataType, types::DataMutablility)>,
+    locals: std::collections::HashMap<String, (Option<inkwell::values::PointerValue<'ctx>>, types::DataType, types::DataMutablility)>,
     functions: std::collections::HashMap<String, (inkwell::values::FunctionValue<'ctx>, types::DataType)>,
 }
 
@@ -43,7 +43,7 @@ pub struct CodeGen<'ctx> {
 
 //Codegen functions
 impl<'ctx> CodeGen<'ctx> {
-    fn get_variable(&mut self, name: &String) -> Option<&(inkwell::values::PointerValue<'ctx>, types::DataType, types::DataMutablility)>{
+    fn get_variable(&mut self, name: &String) -> Option<&(Option<inkwell::values::PointerValue<'ctx>>, types::DataType, types::DataMutablility)>{
         if self.namespaces.locals.iter().find(|x| *x.0 == *name) != None {
             return self.namespaces.locals.get(name);
         }
@@ -53,7 +53,7 @@ impl<'ctx> CodeGen<'ctx> {
     
     fn get_function(&mut self, name: &String) -> Option<(inkwell::values::PointerValue<'ctx>, types::DataType)>{
         if self.namespaces.functions.iter().find(|x| *x.0 == *name) != None {
-            return Some((self.namespaces.functions.get(name).unwrap().0.as_global_value().as_pointer_value(), types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), Vec::new(), Vec::new(), self.namespaces.functions.get(name).unwrap().1.mutability.clone())));
+            return Some((self.namespaces.functions.get(name).unwrap().0.as_global_value().as_pointer_value(), types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), self.namespaces.functions.get(name).unwrap().1.names.clone(), self.namespaces.functions.get(name).unwrap().1.types.clone(), self.namespaces.functions.get(name).unwrap().1.mutability.clone())));
         }
 
         return None;
@@ -228,7 +228,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
         }
 
-        self.namespaces.locals.insert(name, (ptr, tp, node.data.letn.as_ref().unwrap().mutability));
+        self.namespaces.locals.insert(name, (Some(ptr), tp, node.data.letn.as_ref().unwrap().mutability));
 
         let data: types::Data = types::Data {
             data: None,
@@ -258,8 +258,15 @@ impl<'ctx> CodeGen<'ctx> {
             }
         };
 
+        if ptr.is_some() {
+            let data: types::Data = types::Data {
+                data: Some(self.builder.build_load(ptr.unwrap(), name.as_str())),
+                tp,
+            };
+            return data;
+        }
         let data: types::Data = types::Data {
-            data: Some(self.builder.build_load(ptr, name.as_str())),
+            data: None,
             tp,
         };
         return data;
@@ -402,6 +409,30 @@ impl<'ctx> CodeGen<'ctx> {
         
         self.builder.position_at_end(basic_block); 
 
+        //Setup arguments
+        let mut idx: u32 = 0;
+        let mut idx_mut: usize = 0;
+        for (name, tp) in std::iter::zip(&args.name, &datatypes) { 
+            let mut argv: Option<inkwell::values::BasicValueEnum> = None;
+            if *tp != types::BasicDataType::Unit {
+                argv = func.get_nth_param(idx);
+                idx += 1;
+            }
+
+            let ptr: inkwell::values::PointerValue;
+            if argv.is_some() {
+                ptr = self.builder.build_alloca(argv.unwrap().get_type(), name.as_str());
+            
+                self.builder.build_store(ptr, argv.unwrap());
+
+                self.namespaces.locals.insert(name.to_string(), (Some(ptr), tp.clone(), mutability.get(idx_mut).unwrap().clone()));
+            }
+            else {
+                self.namespaces.locals.insert(name.to_string(), (None, tp.clone(), types::DataMutablility::Immutable));
+            }
+            idx_mut += 1;
+        }
+
         /////// Code generation start:
 
         self.compile(&node.data.func.as_ref().unwrap().blocks, true);
@@ -441,27 +472,25 @@ impl<'ctx> CodeGen<'ctx> {
             errors::raise_error(&fmt, errors::ErrorType::CannotAssign, &node.pos, self.info);
         }
 
-        let ptr: inkwell::values::PointerValue = self.namespaces.locals.get(&name).unwrap().0;
-
         if self.namespaces.locals.get(&name).unwrap().2 == types::DataMutablility::Immutable {
             let fmt: String = format!("Cannot assign to immutable variable.");
             errors::raise_error(&fmt, errors::ErrorType::ImmutableAssign, &node.pos, self.info);
         }
-        
+
         if self.namespaces.locals.get(&name).unwrap().1 != right.tp {
             let fmt: String = format!("Expected '{}' type, got '{}' type.", self.namespaces.locals.get(&name).unwrap().1.tp.to_string(), right.tp.to_string());
             errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
         }
 
-        self.builder.build_store(ptr, right.data.unwrap());
+        let ptr: Option<inkwell::values::PointerValue> = self.namespaces.locals.get(&name).unwrap().0;
 
-        self.namespaces.locals.insert(name, (ptr, right.tp, types::DataMutablility::Mutable));
+        if ptr.is_some() {
+            self.builder.build_store(ptr.unwrap(), right.data.unwrap());
 
-        let data: types::Data = types::Data {
-            data: None,
-            tp: types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), Vec::new(), Vec::new(), Vec::new()),
-        };
-        return data;
+            self.namespaces.locals.insert(name, (ptr, right.tp.clone(), types::DataMutablility::Mutable));
+        }
+
+        return right;
     }
     
     fn build_call(&mut self, node: &parser::Node) -> types::Data<'ctx> {
