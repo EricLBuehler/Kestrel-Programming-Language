@@ -402,7 +402,6 @@ impl<'life> Parser<'life> {
             self.advance();
             
             if self.current_is_type(TokenType::RPAREN) {
-                pos.endcol = self.current.endcol;
                 break;
             }
 
@@ -413,6 +412,8 @@ impl<'life> Parser<'life> {
             }
         }
 
+        pos.endcol = self.current.endcol;
+
         self.advance();
 
         let call: nodes::CallNode = nodes::CallNode{
@@ -420,7 +421,6 @@ impl<'life> Parser<'life> {
             args,
         };
 
-        pos.endcol = if call.args.last().is_some() {call.args.last().unwrap().pos.endcol} else {pos.endcol};
     
         let nodedat: nodes::NodeData = nodes::NodeData {
             binary: None,
@@ -637,6 +637,8 @@ impl<'life> Parser<'life> {
             self.raise_error("Expected right parenthesis.", ErrorType::InvalidTok);
         }
         
+        pos.endcol = self.current.endcol;
+
         self.advance();
 
         if self.current_is_type(TokenType::SMALLARROW) {
@@ -652,10 +654,6 @@ impl<'life> Parser<'life> {
                 mutability: DataMutablility::Immutable,
             });
         }
-
-        
-        pos.endcol = self.current.endcol;
-
 
 
         if !self.current_is_type(TokenType::LCURLY) {
