@@ -557,11 +557,7 @@ impl<'ctx> CodeGen<'ctx> {
         }
 
         
-        let data: types::Data = types::Data {
-            data: None,
-            tp: types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None),
-        };
-        return data;
+        return retv;
     }
 
     fn compile_expr(&mut self, node: &parser::Node) -> types::Data<'ctx> {
