@@ -8,6 +8,8 @@ use crate::errors::ErrorType;
 use crate::lexer::TokenType;
 use crate::codegen::types::{self, DataMutablility};
 
+use self::nodes::NodeData;
+
 pub struct Parser<'life> {
     pub tokens: &'life Vec<lexer::Token>,
     pub idx: usize,
@@ -23,6 +25,7 @@ pub enum NodeType {
     IDENTIFIER,
     FUNC,
     ASSIGN,
+    CALL,
 }
 
 #[derive(Clone)]
@@ -62,6 +65,7 @@ impl std::fmt::Display for Node {
             NodeType::IDENTIFIER => write!(f, "{}", self.data.identifier.as_ref().unwrap() ),
             NodeType::FUNC => write!(f, "{}", self.data.func.as_ref().unwrap() ),
             NodeType::ASSIGN => write!(f, "{}", self.data.assign.as_ref().unwrap() ),
+            NodeType::CALL => write!(f, "{}", self.data.call.as_ref().unwrap() ),
         }
     }    
 }
@@ -148,6 +152,14 @@ impl<'life> Parser<'life> {
             }
         }
     }
+
+    fn create_node(&self, tp: NodeType, data: NodeData, pos: Position) -> Node {
+        return Node {
+            tp: tp,
+            data: Box::new(data),
+            pos,
+        };
+    }
     
     fn block(&mut self) -> Vec<Node> {
         let mut nodes: Vec<Node> = Vec::new();
@@ -207,7 +219,7 @@ impl<'life> Parser<'life> {
         }
 
         self.advance();
-        while !self.current_is_type(TokenType::NEWLINE) && !self.current_is_type(TokenType::EOF) && (prec as u32) < (self.get_precedence() as u32){
+        while !self.current_is_type(TokenType::EOF) && (prec as u32) < (self.get_precedence() as u32){
             match self.current.tp {
                 TokenType::PLUS |
                 TokenType::HYPHEN |
@@ -218,6 +230,10 @@ impl<'life> Parser<'life> {
 
                 TokenType::EQUALS => {
                     left = self.generate_assign(left);
+                }
+
+                TokenType::LPAREN => {
+                    left = self.generate_call(left);
                 }
 
                 _ => {
@@ -242,6 +258,7 @@ impl<'life> Parser<'life> {
             identifier: None,
             func: None,
             assign: None,
+            call: None,
         };
 
         let pos = Position {
@@ -250,11 +267,7 @@ impl<'life> Parser<'life> {
             endcol: self.current.endcol,
         };
     
-        let n: Node = Node {
-            tp: NodeType::I32,
-            data: Box::new(nodedat),
-            pos,
-        };
+        let n: Node = self.create_node(NodeType::I32, nodedat, pos);
     
         return n;
     }
@@ -292,13 +305,10 @@ impl<'life> Parser<'life> {
             identifier: None,
             func: None,
             assign: None,
+            call: None,
         };
     
-        let n: Node = Node {
-            tp: NodeType::BINARY,
-            data: Box::new(nodedat),
-            pos,
-        };
+        let n: Node = self.create_node(NodeType::BINARY, nodedat, pos);
     
         return n;
     }
@@ -315,6 +325,7 @@ impl<'life> Parser<'life> {
             identifier: Some(identi),
             func: None,
             assign: None,
+            call: None,
         };
 
         let pos = Position {
@@ -323,11 +334,7 @@ impl<'life> Parser<'life> {
             endcol: self.current.endcol,
         };
     
-        let n: Node = Node {
-            tp: NodeType::IDENTIFIER,
-            data: Box::new(nodedat),
-            pos,
-        };
+        let n: Node = self.create_node(NodeType::IDENTIFIER, nodedat, pos);
     
         return n;
     }
@@ -359,13 +366,10 @@ impl<'life> Parser<'life> {
             identifier: None,
             func: None,
             assign: Some(assign),
+            call: None,
         };
     
-        let n: Node = Node {
-            tp: NodeType::ASSIGN,
-            data: Box::new(nodedat),
-            pos,
-        };
+        let n: Node = self.create_node(NodeType::ASSIGN, nodedat, pos);
     
         return n;
     }
@@ -379,6 +383,53 @@ impl<'life> Parser<'life> {
         }
 
         return node;
+    }
+
+    fn generate_call(&mut self, left: Node) -> Node{
+        let mut pos = Position {
+            line: self.current.line,
+            startcol: left.pos.startcol,
+            endcol: 0,
+        };
+
+        if left.tp != NodeType::IDENTIFIER {
+            self.raise_error_pos("Expected identifier", ErrorType::InvalidTok, left);
+        }
+
+        let mut args: Vec<Node> = Vec::new();
+
+        while !self.current_is_type(TokenType::RPAREN) {            
+            self.advance();
+
+            args.push(self.expr(Precedence::Lowest));
+
+            if !self.current_is_type(TokenType::COMMA) && !self.current_is_type(TokenType::RPAREN) {
+                self.raise_error("Expected comma.", ErrorType::InvalidTok);
+            }
+        }
+
+        self.advance();
+
+        let call: nodes::CallNode = nodes::CallNode{
+            name: left.data.identifier.unwrap().name,
+            args,
+        };
+
+        pos.endcol = call.args.last().unwrap().pos.endcol;
+    
+        let nodedat: nodes::NodeData = nodes::NodeData {
+            binary: None,
+            int: None,
+            letn: None,
+            identifier: None,
+            func: None,
+            assign: None,
+            call: Some(call),
+        };
+    
+        let n: Node = self.create_node(NodeType::CALL, nodedat, pos);
+        println!("{}", n);
+        return n;
     }
 
 
@@ -437,15 +488,12 @@ impl<'life> Parser<'life> {
             identifier: None,
             func: None,
             assign: None,
+            call: None,
         };
 
         pos.endcol = nodedat.letn.as_ref().unwrap().expr.pos.endcol;
     
-        let n: Node = Node {
-            tp: NodeType::LET,
-            data: Box::new(nodedat),
-            pos,
-        };
+        let n: Node = self.create_node(NodeType::LET, nodedat, pos);
 
         return n;        
     }
@@ -635,15 +683,11 @@ impl<'life> Parser<'life> {
             identifier: None,
             func: Some(func),
             assign: None,
+            call: None,
         };
 
     
-        let n: Node = Node {
-            tp: NodeType::FUNC,
-            data: Box::new(nodedat),
-            pos,
-        };
-
+        let n: Node = self.create_node(NodeType::FUNC, nodedat, pos);
 
         return n;        
     }

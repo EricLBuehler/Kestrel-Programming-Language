@@ -98,6 +98,18 @@ impl std::fmt::Display for AssignNode {
 }
 
 #[derive(Clone)]
+pub struct CallNode {
+    pub name: String,
+    pub args: Vec<crate::parser::Node>,
+}
+
+impl std::fmt::Display for CallNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Call '{}'", self.name)
+    }    
+}
+
+#[derive(Clone)]
 pub struct NodeData {
     pub binary: Option<BinaryNode>,
     pub int: Option<I32Node>,
@@ -105,4 +117,5 @@ pub struct NodeData {
     pub identifier: Option<IdentifierNode>,
     pub func: Option<FuncNode>,
     pub assign: Option<AssignNode>,
+    pub call: Option<CallNode>,
 }

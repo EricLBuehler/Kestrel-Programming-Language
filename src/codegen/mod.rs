@@ -486,6 +486,10 @@ impl<'ctx> CodeGen<'ctx> {
             parser::NodeType::ASSIGN => {
                 self.build_assign(node)
             }
+            parser::NodeType::CALL => {
+                unimplemented!();
+                //self.build_call(node)
+            }
         }
     }
 
