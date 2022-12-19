@@ -402,6 +402,7 @@ impl<'life> Parser<'life> {
             self.advance();
             
             if self.current_is_type(TokenType::RPAREN) {
+                pos.endcol = self.current.endcol;
                 break;
             }
 
@@ -419,7 +420,7 @@ impl<'life> Parser<'life> {
             args,
         };
 
-        pos.endcol = if call.args.last().is_some() {call.args.last().unwrap().pos.endcol} else {self.current.endcol};
+        pos.endcol = if call.args.last().is_some() {call.args.last().unwrap().pos.endcol} else {pos.endcol};
     
         let nodedat: nodes::NodeData = nodes::NodeData {
             binary: None,
