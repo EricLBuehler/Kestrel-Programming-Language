@@ -342,6 +342,9 @@ impl<'ctx> CodeGen<'ctx> {
         //
 
         let func: inkwell::values::FunctionValue = self.module.add_function(mangled_name.as_str(), fn_type, None);
+
+        
+        self.namespaces.functions.insert(name.clone(), (func, types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), node.data.func.as_ref().unwrap().args.name.clone(), datatypes.clone(), mutability.clone())));
         
         // Add debug information
         let mut diparamtps: Vec<inkwell::debug_info::DIType> = Vec::new();
@@ -453,8 +456,6 @@ impl<'ctx> CodeGen<'ctx> {
 
         unsafe { func.run_in_pass_manager(&manager); }
         
-        self.namespaces.functions.insert(name.clone(), (func, types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), node.data.func.as_ref().unwrap().args.name.clone(), datatypes, mutability)));
-
         let data: types::Data = types::Data {
             data: Some(inkwell::values::BasicValueEnum::PointerValue(func.as_global_value().as_pointer_value())),
             tp: self.namespaces.functions.get(&name.clone()).unwrap().1.clone(),
