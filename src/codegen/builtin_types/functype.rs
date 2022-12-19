@@ -12,6 +12,7 @@ fn fn_call<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
 
     let mut args_basic: Vec<inkwell::values::BasicMetadataValueEnum> = Vec::new();
     let types: &Vec<DataType> = &selfv.tp.types;
+    
     if args_.len() != selfv.tp.names.len(){
         let fmt: String = format!("Expected {} arguments, got {}.", selfv.tp.names.len(), args_.len());
         errors::raise_error(&fmt, errors::ErrorType::ArgumentCountMismatch, pos, codegen.info);
@@ -22,12 +23,12 @@ fn fn_call<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
         let res: Option<inkwell::values::BasicValueEnum> = arg.data;
         if res != None {
             args_basic.push(basic_to_metadata(res.unwrap()));
-            if arg.tp != *types.get(idx).unwrap(){
-                let fmt: String = format!("expected '{}' type, got '{}' type.", arg.tp.name, types.get(idx).unwrap().name);
-                errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, pos, codegen.info);
-            }
-            idx += 1;
         }
+        if arg.tp != *types.get(idx).unwrap(){
+            let fmt: String = format!("expected '{}' type, got '{}' type.", arg.tp.name, types.get(idx).unwrap().name);
+            errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, pos, codegen.info);
+        }
+        idx += 1;
     }
 
     let res: inkwell::values::CallSiteValue = codegen.builder.build_call(inkwell::values::CallableValue::try_from(selfv.data.unwrap().into_pointer_value()).unwrap(), &args_basic[..], "res");

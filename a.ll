@@ -18,6 +18,7 @@ entry:
 define void @_main() local_unnamed_addr #0 !dbg !11 {
 entry:
   call void @f(i32 100), !dbg !14
+  call void @f(), !dbg !14
   ret void, !dbg !14
 }
 
@@ -44,8 +45,8 @@ attributes #0 = { noinline nounwind optnone }
 !8 = !DIBasicType(name: "i32", size: 16, flags: DIFlagPublic)
 !9 = !DILocation(line: 0, scope: !10)
 !10 = distinct !DILexicalBlock(scope: !4, file: !2)
-!11 = distinct !DISubprogram(name: "main", linkageName: "_main", scope: null, file: !2, type: !12, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
+!11 = distinct !DISubprogram(name: "main", linkageName: "_main", scope: null, file: !2, line: 4, type: !12, scopeLine: 4, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !12 = !DISubroutineType(flags: DIFlagPublic, types: !13)
 !13 = !{!7}
-!14 = !DILocation(line: 0, column: 28, scope: !15)
-!15 = distinct !DILexicalBlock(scope: !11, file: !2, column: 28)
+!14 = !DILocation(line: 4, scope: !15)
+!15 = distinct !DILexicalBlock(scope: !11, file: !2, line: 4)

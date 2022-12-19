@@ -1,8 +1,7 @@
 fn f(x: i32) {
     let y = x * 2
-    f()
 }
 
 fn main() {
-    f(100)
+    f(f(100))
 }
