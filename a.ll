@@ -8,8 +8,9 @@ entry:
   %x = alloca i32, !dbg !9
   store i32 %0, i32* %x, !dbg !9
   %x1 = load i32, i32* %x, !dbg !9
+  %i32sum = mul i32 %x1, 2, !dbg !9
   %y = alloca i32, !dbg !9
-  store i32 %x1, i32* %y, !dbg !9
+  store i32 %i32sum, i32* %y, !dbg !9
   ret void, !dbg !9
 }
 
