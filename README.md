@@ -1,5 +1,5 @@
 # Kestrel Programming Language
-The Kestrel Programming Language is a statically typed, compiled programming language written in Rust.
+The Kestrel Programming Language is a statically and strongly typed, compiled programming language written in Rust.
 
 ## Links
 - [Inkwell LLVM wrapper](https://github.com/TheDan64/inkwell)
