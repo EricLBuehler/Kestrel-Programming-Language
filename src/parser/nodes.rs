@@ -110,6 +110,17 @@ impl std::fmt::Display for CallNode {
 }
 
 #[derive(Clone)]
+pub struct ReturnNode {
+    pub expr: crate::parser::Node,
+}
+
+impl std::fmt::Display for ReturnNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Return '{}'", self.expr)
+    }    
+}
+
+#[derive(Clone)]
 pub struct NodeData {
     pub binary: Option<BinaryNode>,
     pub int: Option<I32Node>,
@@ -118,4 +129,5 @@ pub struct NodeData {
     pub func: Option<FuncNode>,
     pub assign: Option<AssignNode>,
     pub call: Option<CallNode>,
+    pub ret: Option<ReturnNode>,
 }

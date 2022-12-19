@@ -570,6 +570,9 @@ impl<'ctx> CodeGen<'ctx> {
             parser::NodeType::CALL => {
                 self.build_call(node)
             }
+            parser::NodeType::RETURN => {
+                unimplemented!();
+            }
         }
     }
 

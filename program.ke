@@ -1,5 +1,6 @@
 fn f(x: i32) {
     let y: i32 = x * 2
+    y
 }
 
 fn main() {
