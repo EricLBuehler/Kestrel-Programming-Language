@@ -15,6 +15,7 @@ pub struct DataType {
     pub types: Vec<DataType>,
     pub name: String,
     pub mutability: Vec<DataMutablility>,
+    pub rettp: Vec<DataType>, //Just for indirection
 }
 pub enum TraitType {
     Add,
@@ -88,8 +89,7 @@ pub struct Trait<'a> {
     pub nargs: usize,
     pub function: fn(&codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>,
     pub traittype: TraitType,
-    pub rettp: String,
-    pub retbasictype: BasicDataType,
+    pub rettp: DataType
 }
 
 pub struct Method {
@@ -102,13 +102,14 @@ pub enum DataMutablility{
     Mutable,
 }
 
-pub fn new_datatype(tp: BasicDataType, name: String, names: Option<Vec<String>>, types: Vec<DataType>, mutability: Vec<DataMutablility>) -> DataType {
+pub fn new_datatype(tp: BasicDataType, name: String, names: Option<Vec<String>>, types: Vec<DataType>, mutability: Vec<DataMutablility>, rettp_opt: Option<DataType>) -> DataType {
     return DataType {
         tp,
         names,
         types,
         name,
         mutability,
+        rettp: if rettp_opt.is_some() {vec![rettp_opt.unwrap()]} else {Vec::new()}
     };
 }
 

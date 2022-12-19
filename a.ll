@@ -3,22 +3,23 @@ source_filename = "program.ke"
 target triple = "x86_64-unknown-linux-gnu"
 
 ; Function Attrs: noinline nounwind optnone
-define void @f(i32 %0) local_unnamed_addr #0 !dbg !4 {
+define i32 @f(i32 %0) local_unnamed_addr #0 !dbg !4 {
 entry:
-  %x = alloca i32, !dbg !9
-  store i32 %0, i32* %x, !dbg !9
-  %x1 = load i32, i32* %x, !dbg !9
-  %i32sum = mul i32 %x1, 2, !dbg !9
-  %y = alloca i32, !dbg !9
-  store i32 %i32sum, i32* %y, !dbg !9
-  ret void, !dbg !9
+  %x = alloca i32, !dbg !8
+  store i32 %0, i32* %x, !dbg !8
+  %x1 = load i32, i32* %x, !dbg !8
+  %i32sum = mul i32 %x1, 2, !dbg !8
+  %y = alloca i32, !dbg !8
+  store i32 %i32sum, i32* %y, !dbg !8
+  %y2 = load i32, i32* %y, !dbg !8
+  ret i32 %y2, !dbg !8
 }
 
 ; Function Attrs: noinline nounwind optnone
-define void @_main() local_unnamed_addr #0 !dbg !11 {
+define void @_main() local_unnamed_addr #0 !dbg !10 {
 entry:
-  call void @f(i32 100), !dbg !14
-  call void @f(), !dbg !14
+  %res = call i32 @f(i32 100), !dbg !14
+  %res1 = call i32 @f(i32 %res), !dbg !14
   ret void, !dbg !14
 }
 
@@ -40,13 +41,13 @@ attributes #0 = { noinline nounwind optnone }
 !3 = !{}
 !4 = distinct !DISubprogram(name: "f", linkageName: "f", scope: null, file: !2, type: !5, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !5 = !DISubroutineType(flags: DIFlagPublic, types: !6)
-!6 = !{!7, !8}
-!7 = !DIBasicType(name: "void", size: 16, flags: DIFlagPublic)
-!8 = !DIBasicType(name: "i32", size: 16, flags: DIFlagPublic)
-!9 = !DILocation(line: 0, scope: !10)
-!10 = distinct !DILexicalBlock(scope: !4, file: !2)
-!11 = distinct !DISubprogram(name: "main", linkageName: "_main", scope: null, file: !2, line: 4, type: !12, scopeLine: 4, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
-!12 = !DISubroutineType(flags: DIFlagPublic, types: !13)
-!13 = !{!7}
-!14 = !DILocation(line: 4, scope: !15)
-!15 = distinct !DILexicalBlock(scope: !11, file: !2, line: 4)
+!6 = !{!7, !7}
+!7 = !DIBasicType(name: "i32", size: 16, flags: DIFlagPublic)
+!8 = !DILocation(line: 0, scope: !9)
+!9 = distinct !DILexicalBlock(scope: !4, file: !2)
+!10 = distinct !DISubprogram(name: "main", linkageName: "_main", scope: null, file: !2, line: 5, type: !11, scopeLine: 5, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
+!11 = !DISubroutineType(flags: DIFlagPublic, types: !12)
+!12 = !{!13}
+!13 = !DIBasicType(name: "void", size: 16, flags: DIFlagPublic)
+!14 = !DILocation(line: 5, scope: !15)
+!15 = distinct !DILexicalBlock(scope: !10, file: !2, line: 5)

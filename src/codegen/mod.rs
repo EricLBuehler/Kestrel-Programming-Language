@@ -53,7 +53,7 @@ impl<'ctx> CodeGen<'ctx> {
     
     fn get_function(&mut self, name: &String) -> Option<(inkwell::values::PointerValue<'ctx>, types::DataType)>{
         if self.namespaces.functions.iter().find(|x| *x.0 == *name) != None {
-            return Some((self.namespaces.functions.get(name).unwrap().0.as_global_value().as_pointer_value(), types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), self.namespaces.functions.get(name).unwrap().1.names.clone(), self.namespaces.functions.get(name).unwrap().1.types.clone(), self.namespaces.functions.get(name).unwrap().1.mutability.clone())));
+            return Some((self.namespaces.functions.get(name).unwrap().0.as_global_value().as_pointer_value(), self.namespaces.functions.get(name).unwrap().1.clone()));
         }
 
         return None;
@@ -61,10 +61,10 @@ impl<'ctx> CodeGen<'ctx> {
 
     fn get_datatype_from_str(info: &fileinfo::FileInfo, str_rep: &String, node: &parser::Node) -> types::DataType {
         if *str_rep == types::BasicDataType::I32.to_string() {
-            return types::new_datatype(types::BasicDataType::I32, types::BasicDataType::I32.to_string(), None, Vec::new(), Vec::new());
+            return types::new_datatype(types::BasicDataType::I32, types::BasicDataType::I32.to_string(), None, Vec::new(), Vec::new(), None);
         }
         else if *str_rep == types::BasicDataType::Unit.to_string() {
-            return types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new());
+            return types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None);
         }
 
         let fmt: String = format!("Unknown type '{}'.", str_rep);
@@ -118,7 +118,7 @@ impl<'ctx> CodeGen<'ctx> {
                 names=Some(node.data.func.as_ref().unwrap().args.name.clone());
             }
 
-            return (types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), names, datatypes, mutability), inkwell::types::AnyTypeEnum::FunctionType(fntp));
+            return (types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), names, datatypes, mutability, Some(rettp_full.0.clone())), inkwell::types::AnyTypeEnum::FunctionType(fntp));
         }
         else {
             let tp: types::DataType = Self::get_datatype_from_str(info, &arg.data.as_ref().unwrap(), node);
@@ -238,7 +238,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         let data: types::Data = types::Data {
             data: None,
-            tp: types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new()),
+            tp: types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None),
         };
         return data;
     }
@@ -350,7 +350,7 @@ impl<'ctx> CodeGen<'ctx> {
         let func: inkwell::values::FunctionValue = self.module.add_function(mangled_name.as_str(), fn_type, None);
 
         
-        self.namespaces.functions.insert(name.clone(), (func, types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), Some(node.data.func.as_ref().unwrap().args.name.clone()), datatypes.clone(), mutability.clone())));
+        self.namespaces.functions.insert(name.clone(), (func, types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), Some(node.data.func.as_ref().unwrap().args.name.clone()), datatypes.clone(), mutability.clone(), Some(rettp_full.0.clone()))));
         
         // Add debug information
         let mut diparamtps: Vec<inkwell::debug_info::DIType> = Vec::new();
@@ -444,12 +444,18 @@ impl<'ctx> CodeGen<'ctx> {
 
         /////// Code generation start:
 
-        self.compile(&node.data.func.as_ref().unwrap().blocks, true);
+        let retv: types::Data = self.compile(&node.data.func.as_ref().unwrap().blocks, true);
 
         /////// End
+        
+        if retv.tp != rettp_full.0.tp && name!="main"{
+            let fmt: String = format!("Expected '{}' return type, got '{}'.", &rettp_full.0.name, retv.tp.name);
+            errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+        }
 
-        if rettp_full.0.tp != types::BasicDataType::Unit { //TODO: replace this with something user-defined (self.compile return tail expression or return stmt)
-            self.builder.build_return(Some(&self.inkwell_types.i32tp.const_int(0, false))); 
+
+        if rettp_full.0.tp != types::BasicDataType::Unit {
+            self.builder.build_return(Some(&retv.data.unwrap())); 
         }
         else {
             self.builder.build_return(None);
@@ -550,7 +556,7 @@ impl<'ctx> CodeGen<'ctx> {
                     let fmt: String = format!("Invalid i32 literal '{}'.", self_data);
                     errors::raise_error(&fmt, errors::ErrorType::InvalidLiteralForRadix, &node.pos, self.info);
                 }
-                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::I32, types::BasicDataType::I32.to_string(), None, Vec::new(), Vec::new())}
+                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::I32, types::BasicDataType::I32.to_string(), None, Vec::new(), Vec::new(), None)}
             }
             parser::NodeType::BINARY => {
                 self.build_binary(node)
@@ -576,14 +582,20 @@ impl<'ctx> CodeGen<'ctx> {
         }
     }
 
-    fn compile(&mut self, nodes: &Vec<parser::Node>, infn: bool) {
+    fn compile(&mut self, nodes: &Vec<parser::Node>, infn: bool) -> types::Data<'ctx>{
+        let mut retv: types::Data = types::Data {
+            data: None,
+            tp: types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None),
+        };
+
         for node in nodes {
             if infn && node.tp == parser::NodeType::FUNC {
                 let fmt: String = format!("Cannot define nested functions.");
                 errors::raise_error(&fmt, errors::ErrorType::NestedFunctions, &node.pos, self.info);
             }
-            self.compile_expr(node);
+            retv = self.compile_expr(node);
         }
+        return retv;
     }
 }
 

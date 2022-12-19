@@ -16,7 +16,7 @@ fn i32_add<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(codegen.builder.build_int_add(selfv, otherv, "i32sum"))),
-        tp: new_datatype(BasicDataType::I32, BasicDataType::I32.to_string(), None, Vec::new(), Vec::new()),
+        tp: new_datatype(BasicDataType::I32, BasicDataType::I32.to_string(), None, Vec::new(), Vec::new(), None),
     };
 }
 
@@ -31,7 +31,7 @@ fn i32_mul<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(codegen.builder.build_int_mul(selfv, otherv, "i32sum"))),
-        tp: new_datatype(BasicDataType::I32, BasicDataType::I32.to_string(), None, Vec::new(), Vec::new()),
+        tp: new_datatype(BasicDataType::I32, BasicDataType::I32.to_string(), None, Vec::new(), Vec::new(), None),
     };
 }
 
@@ -46,7 +46,7 @@ fn i32_sub<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(codegen.builder.build_int_sub(selfv, otherv, "i32sum"))),
-        tp: new_datatype(BasicDataType::I32, BasicDataType::I32.to_string(), None, Vec::new(), Vec::new()),
+        tp: new_datatype(BasicDataType::I32, BasicDataType::I32.to_string(), None, Vec::new(), Vec::new(), None),
     };
 }
 
@@ -61,16 +61,16 @@ fn i32_div<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(codegen.builder.build_int_signed_div(selfv, otherv, "i32sum"))),
-        tp: new_datatype(BasicDataType::I32, BasicDataType::I32.to_string(), None, Vec::new(), Vec::new()),
+        tp: new_datatype(BasicDataType::I32, BasicDataType::I32.to_string(), None, Vec::new(), Vec::new(), None),
     };
 }
 
 pub fn init_i32(codegen: &mut codegen::CodeGen) {
     let mut traits: HashMap<String, Trait> = HashMap::new();
-    traits.insert(TraitType::Add.to_string(), builtin_types::create_trait(i32_add, 2, TraitType::Add, BasicDataType::I32.to_string(), BasicDataType::I32));
-    traits.insert(TraitType::Mul.to_string(), builtin_types::create_trait(i32_mul, 2, TraitType::Mul, BasicDataType::I32.to_string(), BasicDataType::I32));
-    traits.insert(TraitType::Sub.to_string(), builtin_types::create_trait(i32_sub, 2, TraitType::Sub, BasicDataType::I32.to_string(), BasicDataType::I32));
-    traits.insert(TraitType::Div.to_string(), builtin_types::create_trait(i32_div, 2, TraitType::Div, BasicDataType::I32.to_string(), BasicDataType::I32));
+    traits.insert(TraitType::Add.to_string(), builtin_types::create_trait(i32_add, 2, TraitType::Add, new_datatype(BasicDataType::I32, BasicDataType::I32.to_string(), None, Vec::new(), Vec::new(), None)));
+    traits.insert(TraitType::Mul.to_string(), builtin_types::create_trait(i32_mul, 2, TraitType::Mul, new_datatype(BasicDataType::I32, BasicDataType::I32.to_string(), None, Vec::new(), Vec::new(), None)));
+    traits.insert(TraitType::Sub.to_string(), builtin_types::create_trait(i32_sub, 2, TraitType::Sub, new_datatype(BasicDataType::I32, BasicDataType::I32.to_string(), None, Vec::new(), Vec::new(), None)));
+    traits.insert(TraitType::Div.to_string(), builtin_types::create_trait(i32_div, 2, TraitType::Div, new_datatype(BasicDataType::I32, BasicDataType::I32.to_string(), None, Vec::new(), Vec::new(), None)));
 
     builtin_types::add_simple_type(codegen, traits, BasicDataType::I32, BasicDataType::I32.to_string().as_str());
 }

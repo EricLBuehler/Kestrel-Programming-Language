@@ -25,7 +25,7 @@ fn fn_call<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
             args_basic.push(basic_to_metadata(res.unwrap()));
         }
         if arg.tp != *types.get(idx).unwrap(){
-            let fmt: String = format!("expected '{}' type, got '{}' type.", arg.tp.name, types.get(idx).unwrap().name);
+            let fmt: String = format!("expected '{}' type, got '{}' type.", types.get(idx).unwrap().name, arg.tp.name);
             errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, pos, codegen.info);
         }
         idx += 1;
@@ -36,19 +36,19 @@ fn fn_call<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
     if res.try_as_basic_value().is_left() {
         return Data {
             data: Some(res.try_as_basic_value().left().unwrap()),
-            tp: selfv.tp.clone(),
+            tp: selfv.tp.rettp.last().unwrap().clone(),
         };
     }
 
     return Data {
         data: None,
-        tp: new_datatype(BasicDataType::Unit, BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new()),
+        tp: new_datatype(BasicDataType::Unit, BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None),
     };
 }
 
 pub fn init_func(codegen: &mut codegen::CodeGen) {
     let mut traits: HashMap<String, Trait> = HashMap::new();
-    traits.insert(TraitType::Call.to_string(), builtin_types::create_trait(fn_call, 0, TraitType::Call, BasicDataType::Unknown.to_string(), BasicDataType::Unknown));
+    traits.insert(TraitType::Call.to_string(), builtin_types::create_trait(fn_call, 0, TraitType::Call, new_datatype(BasicDataType::Unknown, BasicDataType::Unknown.to_string(), None, Vec::new(), Vec::new(), None)));
 
     builtin_types::add_simple_type(codegen, traits, BasicDataType::Func, BasicDataType::Func.to_string().as_str());
 }
