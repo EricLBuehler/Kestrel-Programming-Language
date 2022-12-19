@@ -11,7 +11,7 @@ fn i32_add<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
     }
     
-    let selfv: inkwell::values::IntValue = args.get(0).unwrap().data.unwrap().into_int_value();
+    let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();
     let otherv: inkwell::values::IntValue = args.get(1).unwrap().data.unwrap().into_int_value();
 
     return Data {
@@ -26,7 +26,7 @@ fn i32_mul<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
     }
     
-    let selfv: inkwell::values::IntValue = args.get(0).unwrap().data.unwrap().into_int_value();
+    let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();
     let otherv: inkwell::values::IntValue = args.get(1).unwrap().data.unwrap().into_int_value();
 
     return Data {
@@ -41,7 +41,7 @@ fn i32_sub<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
     }
     
-    let selfv: inkwell::values::IntValue = args.get(0).unwrap().data.unwrap().into_int_value();
+    let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();
     let otherv: inkwell::values::IntValue = args.get(1).unwrap().data.unwrap().into_int_value();
 
     return Data {
@@ -56,7 +56,7 @@ fn i32_div<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
     }
     
-    let selfv: inkwell::values::IntValue = args.get(0).unwrap().data.unwrap().into_int_value();
+    let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();
     let otherv: inkwell::values::IntValue = args.get(1).unwrap().data.unwrap().into_int_value();
 
     return Data {

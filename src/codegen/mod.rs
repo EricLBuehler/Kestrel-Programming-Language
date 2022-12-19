@@ -71,7 +71,7 @@ impl<'ctx> CodeGen<'ctx> {
         errors::raise_error(&fmt, errors::ErrorType::UnknownType, &node.pos, info);
     }
 
-    fn get_llvm_from_arg(types: &InkwellTypes<'ctx>, info: &fileinfo::FileInfo, arg: &parser::Arg, node: &parser::Node) -> (types::DataType, inkwell::types::AnyTypeEnum<'ctx>) {
+    pub fn get_llvm_from_arg(types: &InkwellTypes<'ctx>, info: &fileinfo::FileInfo, arg: &parser::Arg, node: &parser::Node) -> (types::DataType, inkwell::types::AnyTypeEnum<'ctx>) {
         if arg.isfn {
             let args: &Vec<parser::Arg> = &arg.args.as_ref().unwrap().args;
             let mut datatypes: Vec<types::DataType> = Vec::new();
@@ -126,13 +126,16 @@ impl<'ctx> CodeGen<'ctx> {
                 types::BasicDataType::Func => {
                     unimplemented!();
                 }
+                types::BasicDataType::Unknown => {
+                    unimplemented!();
+                }
                 
             }
         }
     }
 
     fn get_repr_from_intv(&self, v: &IntValue) -> String {
-        return v.to_string().split(" ").collect::<Vec<&str>>().get(1).unwrap().split("\"").collect::<Vec<&str>>().get(0).unwrap().to_string();
+        return v.to_string().split(" ").collect::<Vec<&str>>().get(1).unwrap().split("\"").collect::<Vec<&str>>().first().unwrap().to_string();
     }
 
     fn mangle_name_main(&self, name: &String) -> String {
@@ -465,20 +468,22 @@ impl<'ctx> CodeGen<'ctx> {
         let callable: types::Data = self.compile_expr(&node.data.call.as_ref().unwrap().name);
 
         let mut args: Vec<types::Data> = Vec::new();
+        let tp_name: &String = &callable.tp.name.clone();
+        args.push(callable);
 
         for arg in &node.data.call.as_ref().unwrap().args{
             let v: types::Data = self.compile_expr(arg); 
             args.push(v);
         }
 
-        let tp: &types::Type = self.get_type_from_data(&callable);
+        let tp: &types::Type = self.get_type_from_data(&args.first().unwrap());
 
         let t: &types::Trait = match tp.traits.get(&types::TraitType::Call.to_string()) {
             Some (v) => {
                 v
             }
             None => {
-                let fmt: String = format!("Type '{}' has no trait '{}'.", &callable.tp.name, &types::TraitType::Call.to_string());
+                let fmt: String = format!("Type '{}' has no trait '{}'.", tp_name, &types::TraitType::Call.to_string());
                 errors::raise_error(&fmt, errors::ErrorType::MissingTrait, &node.pos, self.info);
             }
         };

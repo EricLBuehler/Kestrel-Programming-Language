@@ -54,7 +54,7 @@ fn main() {
     let mut parser: parser::Parser = parser::Parser {
         tokens: &tokens,
         idx: 1,
-        current: tokens.get(0).unwrap().to_owned(),
+        current: tokens.first().unwrap().to_owned(),
         info: &file_info,
     };
 

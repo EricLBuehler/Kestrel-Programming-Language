@@ -3,6 +3,7 @@ use std::collections::HashMap;
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum BasicDataType {
+    Unknown,
     I32,
     Unit,
     Func,
@@ -35,6 +36,7 @@ impl std::fmt::Display for BasicDataType {
             BasicDataType::I32 => write!(f, "i32"),
             BasicDataType::Unit => write!(f, "unit"),
             BasicDataType::Func => write!(f, "fn"),
+            BasicDataType::Unknown => write!(f, "UNKNOWN"),
         }
     }    
 }
@@ -99,4 +101,15 @@ pub fn new_datatype(tp: BasicDataType, name: String, names: Vec<String>, types: 
         name,
         mutability,
     };
+}
+
+pub fn basic_to_metadata(basic: inkwell::values::BasicValueEnum) -> inkwell::values::BasicMetadataValueEnum{
+    if basic.is_int_value() {
+        return inkwell::values::BasicMetadataValueEnum::IntValue(basic.into_int_value());
+    }
+    else if basic.is_pointer_value() {
+        return inkwell::values::BasicMetadataValueEnum::PointerValue(basic.into_pointer_value());
+    }
+
+    unimplemented!("basic_to_metadata");
 }
