@@ -329,8 +329,8 @@ impl<'ctx> CodeGen<'ctx> {
             errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
         }
         if name == "main" {
-            if fn_type.get_param_types().len() != 0 {
-                let fmt: String = format!("Expected 0 arguments, got {}.", fn_type.get_param_types().len());
+            if datatypes.len() != 0 {
+                let fmt: String = format!("Expected 0 arguments, got {}.", datatypes.len());
                 errors::raise_error(&fmt, errors::ErrorType::ArgumentCountMismatch, &node.pos, self.info);
             }
 

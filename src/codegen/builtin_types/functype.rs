@@ -12,6 +12,10 @@ fn fn_call<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
 
     let mut args_basic: Vec<inkwell::values::BasicMetadataValueEnum> = Vec::new();
     let types: &Vec<DataType> = &selfv.tp.types;
+    if args_.len() != selfv.tp.names.len(){
+        let fmt: String = format!("Expected {} arguments, got {}.", selfv.tp.names.len(), args_.len());
+        errors::raise_error(&fmt, errors::ErrorType::ArgumentCountMismatch, pos, codegen.info);
+    }
 
     let mut idx: usize = 0;
     for arg in args_ {

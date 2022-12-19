@@ -419,7 +419,7 @@ impl<'life> Parser<'life> {
             args,
         };
 
-        pos.endcol = call.args.last().unwrap().pos.endcol;
+        pos.endcol = if call.args.last().is_some() {call.args.last().unwrap().pos.endcol} else {self.current.endcol};
     
         let nodedat: nodes::NodeData = nodes::NodeData {
             binary: None,
