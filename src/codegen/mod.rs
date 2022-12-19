@@ -418,6 +418,11 @@ impl<'ctx> CodeGen<'ctx> {
         
         self.builder.position_at_end(basic_block); 
 
+        
+        //Setup locals
+        let prev_locals: std::collections::HashMap<String, (Option<inkwell::values::PointerValue>, types::DataType, types::DataMutablility)> = self.namespaces.locals.to_owned();
+        self.namespaces.locals = std::collections::HashMap::new();
+        
         //Setup arguments
         let mut idx: u32 = 0;
         let mut idx_mut: usize = 0;
@@ -445,6 +450,9 @@ impl<'ctx> CodeGen<'ctx> {
         /////// Code generation start:
 
         let retv: types::Data = self.compile(&node.data.func.as_ref().unwrap().blocks, true);
+        
+        //Reset locals
+        self.namespaces.locals = prev_locals;
 
         /////// End
         
