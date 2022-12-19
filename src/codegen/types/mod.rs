@@ -11,7 +11,7 @@ pub enum BasicDataType {
 #[derive(Clone, Debug)]
 pub struct DataType {
     pub tp: BasicDataType,
-    pub names: Vec<String>,
+    pub names: Option<Vec<String>>,
     pub types: Vec<DataType>,
     pub name: String,
     pub mutability: Vec<DataMutablility>,
@@ -102,7 +102,7 @@ pub enum DataMutablility{
     Mutable,
 }
 
-pub fn new_datatype(tp: BasicDataType, name: String, names: Vec<String>, types: Vec<DataType>, mutability: Vec<DataMutablility>) -> DataType {
+pub fn new_datatype(tp: BasicDataType, name: String, names: Option<Vec<String>>, types: Vec<DataType>, mutability: Vec<DataMutablility>) -> DataType {
     return DataType {
         tp,
         names,

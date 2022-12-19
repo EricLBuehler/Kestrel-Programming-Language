@@ -13,8 +13,8 @@ fn fn_call<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
     let mut args_basic: Vec<inkwell::values::BasicMetadataValueEnum> = Vec::new();
     let types: &Vec<DataType> = &selfv.tp.types;
     
-    if args_.len() != selfv.tp.names.len(){
-        let fmt: String = format!("Expected {} arguments, got {}.", selfv.tp.names.len(), args_.len());
+    if args_.len() != selfv.tp.names.as_ref().unwrap().len(){
+        let fmt: String = format!("Expected {} arguments, got {}.", selfv.tp.names.as_ref().unwrap().len(), args_.len());
         errors::raise_error(&fmt, errors::ErrorType::ArgumentCountMismatch, pos, codegen.info);
     }
 
@@ -42,7 +42,7 @@ fn fn_call<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
 
     return Data {
         data: None,
-        tp: new_datatype(BasicDataType::Unit, BasicDataType::Unit.to_string(),Vec::new(), Vec::new(), Vec::new()),
+        tp: new_datatype(BasicDataType::Unit, BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new()),
     };
 }
 

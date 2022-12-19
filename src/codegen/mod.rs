@@ -61,10 +61,10 @@ impl<'ctx> CodeGen<'ctx> {
 
     fn get_datatype_from_str(info: &fileinfo::FileInfo, str_rep: &String, node: &parser::Node) -> types::DataType {
         if *str_rep == types::BasicDataType::I32.to_string() {
-            return types::new_datatype(types::BasicDataType::I32, types::BasicDataType::I32.to_string(), Vec::new(), Vec::new(), Vec::new());
+            return types::new_datatype(types::BasicDataType::I32, types::BasicDataType::I32.to_string(), None, Vec::new(), Vec::new());
         }
         else if *str_rep == types::BasicDataType::Unit.to_string() {
-            return types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(),Vec::new(), Vec::new(), Vec::new());
+            return types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new());
         }
 
         let fmt: String = format!("Unknown type '{}'.", str_rep);
@@ -112,7 +112,13 @@ impl<'ctx> CodeGen<'ctx> {
             else {
                 panic!("Unexpected type");
             }
-            return (types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), node.data.func.as_ref().unwrap().args.name.clone(), datatypes, mutability), inkwell::types::AnyTypeEnum::FunctionType(fntp));
+
+            let mut names: Option<Vec<String>> = None;
+            if node.tp == parser::NodeType::FUNC {
+                names=Some(node.data.func.as_ref().unwrap().args.name.clone());
+            }
+
+            return (types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), names, datatypes, mutability), inkwell::types::AnyTypeEnum::FunctionType(fntp));
         }
         else {
             let tp: types::DataType = Self::get_datatype_from_str(info, &arg.data.as_ref().unwrap(), node);
@@ -232,7 +238,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         let data: types::Data = types::Data {
             data: None,
-            tp: types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), Vec::new(), Vec::new(), Vec::new()),
+            tp: types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new()),
         };
         return data;
     }
@@ -344,7 +350,7 @@ impl<'ctx> CodeGen<'ctx> {
         let func: inkwell::values::FunctionValue = self.module.add_function(mangled_name.as_str(), fn_type, None);
 
         
-        self.namespaces.functions.insert(name.clone(), (func, types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), node.data.func.as_ref().unwrap().args.name.clone(), datatypes.clone(), mutability.clone())));
+        self.namespaces.functions.insert(name.clone(), (func, types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), Some(node.data.func.as_ref().unwrap().args.name.clone()), datatypes.clone(), mutability.clone())));
         
         // Add debug information
         let mut diparamtps: Vec<inkwell::debug_info::DIType> = Vec::new();
@@ -544,7 +550,7 @@ impl<'ctx> CodeGen<'ctx> {
                     let fmt: String = format!("Invalid i32 literal '{}'.", self_data);
                     errors::raise_error(&fmt, errors::ErrorType::InvalidLiteralForRadix, &node.pos, self.info);
                 }
-                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::I32, types::BasicDataType::I32.to_string(), Vec::new(), Vec::new(), Vec::new())}
+                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::I32, types::BasicDataType::I32.to_string(), None, Vec::new(), Vec::new())}
             }
             parser::NodeType::BINARY => {
                 self.build_binary(node)

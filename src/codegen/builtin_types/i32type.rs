@@ -16,7 +16,7 @@ fn i32_add<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(codegen.builder.build_int_add(selfv, otherv, "i32sum"))),
-        tp: new_datatype(BasicDataType::I32, BasicDataType::I32.to_string(), Vec::new(), Vec::new(), Vec::new()),
+        tp: new_datatype(BasicDataType::I32, BasicDataType::I32.to_string(), None, Vec::new(), Vec::new()),
     };
 }
 
@@ -31,7 +31,7 @@ fn i32_mul<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(codegen.builder.build_int_mul(selfv, otherv, "i32sum"))),
-        tp: new_datatype(BasicDataType::I32, BasicDataType::I32.to_string(), Vec::new(), Vec::new(), Vec::new()),
+        tp: new_datatype(BasicDataType::I32, BasicDataType::I32.to_string(), None, Vec::new(), Vec::new()),
     };
 }
 
@@ -46,7 +46,7 @@ fn i32_sub<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(codegen.builder.build_int_sub(selfv, otherv, "i32sum"))),
-        tp: new_datatype(BasicDataType::I32, BasicDataType::I32.to_string(), Vec::new(), Vec::new(), Vec::new()),
+        tp: new_datatype(BasicDataType::I32, BasicDataType::I32.to_string(), None, Vec::new(), Vec::new()),
     };
 }
 
@@ -61,7 +61,7 @@ fn i32_div<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(codegen.builder.build_int_signed_div(selfv, otherv, "i32sum"))),
-        tp: new_datatype(BasicDataType::I32, BasicDataType::I32.to_string(), Vec::new(), Vec::new(), Vec::new()),
+        tp: new_datatype(BasicDataType::I32, BasicDataType::I32.to_string(), None, Vec::new(), Vec::new()),
     };
 }
 
