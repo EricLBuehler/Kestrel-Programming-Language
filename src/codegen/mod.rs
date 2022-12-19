@@ -537,6 +537,25 @@ impl<'ctx> CodeGen<'ctx> {
         return data;
     }
 
+    fn build_return(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        let retv: types::Data = self.compile_expr(&node.data.ret.as_ref().unwrap().expr);        
+
+
+        if retv.data.is_some() {
+            self.builder.build_return(Some(&retv.data.unwrap())); 
+        }
+        else {
+            self.builder.build_return(None);
+        }
+
+        
+        let data: types::Data = types::Data {
+            data: None,
+            tp: types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None),
+        };
+        return data;
+    }
+
     fn compile_expr(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         match node.tp {
             parser::NodeType::I32 => {
@@ -577,7 +596,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.build_call(node)
             }
             parser::NodeType::RETURN => {
-                unimplemented!();
+                self.build_return(node)
             }
         }
     }
