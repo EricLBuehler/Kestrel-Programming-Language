@@ -244,7 +244,7 @@ impl<'ctx> CodeGen<'ctx> {
             None => {
                 let res: Option<(inkwell::values::PointerValue, types::DataType)> = self.get_function(&name);
                 if res==None {
-                    let fmt: String = format!("Name {} is not defined.", name);
+                    let fmt: String = format!("Name '{}' is not defined.", name);
                     errors::raise_error(&fmt, errors::ErrorType::NameNotFound, &node.pos, self.info);
                 }
                 let data: types::Data = types::Data {
@@ -289,7 +289,7 @@ impl<'ctx> CodeGen<'ctx> {
             else if tp.is_function_type() {
                 inktypes.push(inkwell::types::BasicMetadataTypeEnum::PointerType(tp.into_function_type().ptr_type(inkwell::AddressSpace::Generic)));
             }
-            else if tp.is_void_type() {
+            else if !tp.is_void_type() {
                 //Placeholder
             }
             else {
