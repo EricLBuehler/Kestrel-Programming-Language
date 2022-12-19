@@ -1,1 +1,7 @@
-fn f(x: i32) {let y = x * 2fn main() {f(100)}
+fn f(x: i32) {
+    let y = x * 2
+}
+
+fn main() {
+    f(100)
+}
