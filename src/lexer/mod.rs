@@ -20,6 +20,8 @@ pub enum TokenType {
     COMMA,
     SMALLARROW,
     U32,
+    I8,
+    U8,
 }
 
 pub struct Lexer<'life> {
@@ -68,6 +70,8 @@ impl std::fmt::Display for TokenType {
            TokenType::COMMA => write!(f, "COMMA"),
            TokenType::SMALLARROW => write!(f, "SMALLARROW"),
            TokenType::U32 => write!(f, "u32"),
+           TokenType::I8 => write!(f, "i8"),
+           TokenType::U8 => write!(f, "u8"),
        }
     }
 }
@@ -293,6 +297,12 @@ fn make_number(lexer: &mut Lexer) -> Token {
             }
             else if specified_tp==crate::codegen::types::BasicDataType::U32.to_string() {
                 tp=TokenType::U32;
+            }
+            else if specified_tp==crate::codegen::types::BasicDataType::I8.to_string() {
+                tp=TokenType::I8;
+            }
+            else if specified_tp==crate::codegen::types::BasicDataType::U8.to_string() {
+                tp=TokenType::U8;
             }
             else {
                 crate::errors::raise_error(format!("Invalid specified type {}.", specified_tp).as_str(), crate::errors::ErrorType::UnknownType, &crate::parser::Position { line, startcol: start, endcol: end+1 }, lexer.info);

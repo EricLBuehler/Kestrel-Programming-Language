@@ -6,6 +6,8 @@ use super::types::DataType;
 
 pub mod i32type;
 pub mod u32type;
+pub mod i8type;
+pub mod u8type;
 
 pub mod unittype;
 pub mod functype;
@@ -33,6 +35,8 @@ fn create_trait<'a>(function: fn(&codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::p
 pub fn init(codegen: &mut codegen::CodeGen) {
     i32type::init_i32(codegen);
     u32type::init_u32(codegen);
+    i8type::init_i8(codegen);
+    u8type::init_u8(codegen);
 
     unittype::init_unit(codegen);
     functype::init_func(codegen);

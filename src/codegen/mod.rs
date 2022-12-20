@@ -129,6 +129,10 @@ impl<'ctx> CodeGen<'ctx> {
                 types::BasicDataType::U32 => {
                     return (tp, inkwell::types::AnyTypeEnum::IntType(*types.i32tp));
                 }
+                types::BasicDataType::I8 |
+                types::BasicDataType::U8 => {
+                    return (tp, inkwell::types::AnyTypeEnum::IntType(*types.i8tp));
+                }
                 types::BasicDataType::Unit => {
                     return (tp, inkwell::types::AnyTypeEnum::VoidType(*types.voidtp));
                 }
@@ -617,6 +621,38 @@ impl<'ctx> CodeGen<'ctx> {
             
                 };
                 types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::U32, types::BasicDataType::U32.to_string(), None, Vec::new(), Vec::new(), None)}
+            }
+            parser::NodeType::I8 => {
+                let self_data: &String = &node.data.num.as_ref().unwrap().left;
+                builtin_types::i8type::check_overflow(self, self_data, &node.pos);
+                let selfv: inkwell::values::IntValue = match self.inkwell_types.i8tp.const_int_from_string(self_data.as_str(), inkwell::types::StringRadix::Decimal) {
+                    None => {
+                        let fmt: String = format!("Invalid i8 literal '{}'.", self_data);
+                        errors::raise_error(&fmt, errors::ErrorType::InvalidLiteralForRadix, &node.pos, self.info);
+                    }
+            
+                    Some(v) => {
+                        v
+                    }
+            
+                };
+                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::I8, types::BasicDataType::I8.to_string(), None, Vec::new(), Vec::new(), None)}
+            }
+            parser::NodeType::U8 => {
+                let self_data: &String = &node.data.num.as_ref().unwrap().left;
+                builtin_types::u8type::check_overflow(self, self_data, &node.pos);
+                let selfv: inkwell::values::IntValue = match self.inkwell_types.i8tp.const_int_from_string(self_data.as_str(), inkwell::types::StringRadix::Decimal) {
+                    None => {
+                        let fmt: String = format!("Invalid u8 literal '{}'.", self_data);
+                        errors::raise_error(&fmt, errors::ErrorType::InvalidLiteralForRadix, &node.pos, self.info);
+                    }
+            
+                    Some(v) => {
+                        v
+                    }
+            
+                };
+                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::U8, types::BasicDataType::U8.to_string(), None, Vec::new(), Vec::new(), None)}
             }
         }
     }
