@@ -273,6 +273,9 @@ impl<'life> Parser<'life> {
                 }
             }
         }
+        if !self.current_is_type(TokenType::NEWLINE) {
+            self.raise_error("Unexpected token.", ErrorType::InvalidTok);
+        }
         return left;
     }
 

@@ -61,19 +61,42 @@ impl<'ctx> CodeGen<'ctx> {
         return None;
     }
 
-    fn get_datatype_from_str(info: &fileinfo::FileInfo, str_rep: &String, node: &parser::Node) -> types::DataType {
+    fn get_datatype_from_str(str_rep: &String) -> Option<types::DataType> {
         if *str_rep == types::BasicDataType::I32.to_string() {
-            return types::new_datatype(types::BasicDataType::I32, types::BasicDataType::I32.to_string(), None, Vec::new(), Vec::new(), None);
+            return Some(types::new_datatype(types::BasicDataType::I32, types::BasicDataType::I32.to_string(), None, Vec::new(), Vec::new(), None));
         }
         if *str_rep == types::BasicDataType::U32.to_string() {
-            return types::new_datatype(types::BasicDataType::U32, types::BasicDataType::U32.to_string(), None, Vec::new(), Vec::new(), None);
+            return Some(types::new_datatype(types::BasicDataType::U32, types::BasicDataType::U32.to_string(), None, Vec::new(), Vec::new(), None));
+        }
+        if *str_rep == types::BasicDataType::I8.to_string() {
+            return Some(types::new_datatype(types::BasicDataType::I8, types::BasicDataType::I8.to_string(), None, Vec::new(), Vec::new(), None));
+        }
+        if *str_rep == types::BasicDataType::U8.to_string() {
+            return Some(types::new_datatype(types::BasicDataType::U8, types::BasicDataType::U8.to_string(), None, Vec::new(), Vec::new(), None));
+        }
+        if *str_rep == types::BasicDataType::I16.to_string() {
+            return Some(types::new_datatype(types::BasicDataType::I16, types::BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None));
+        }
+        if *str_rep == types::BasicDataType::U16.to_string() {
+            return Some(types::new_datatype(types::BasicDataType::U16, types::BasicDataType::U16.to_string(), None, Vec::new(), Vec::new(), None));
+        }
+        if *str_rep == types::BasicDataType::I64.to_string() {
+            return Some(types::new_datatype(types::BasicDataType::I64, types::BasicDataType::I64.to_string(), None, Vec::new(), Vec::new(), None));
+        }
+        if *str_rep == types::BasicDataType::U64.to_string() {
+            return Some(types::new_datatype(types::BasicDataType::U64, types::BasicDataType::U64.to_string(), None, Vec::new(), Vec::new(), None));
+        }
+        if *str_rep == types::BasicDataType::I128.to_string() {
+            return Some(types::new_datatype(types::BasicDataType::I128, types::BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None));
+        }
+        if *str_rep == types::BasicDataType::U128.to_string() {
+            return Some(types::new_datatype(types::BasicDataType::U128, types::BasicDataType::U128.to_string(), None, Vec::new(), Vec::new(), None));
         }
         else if *str_rep == types::BasicDataType::Unit.to_string() {
-            return types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None);
+            return Some(types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None));
         }
 
-        let fmt: String = format!("Unknown type '{}'.", str_rep);
-        errors::raise_error(&fmt, errors::ErrorType::UnknownType, &node.pos, info);
+        return None;
     }
 
     pub fn get_llvm_from_arg(types: &InkwellTypes<'ctx>, info: &fileinfo::FileInfo, arg: &parser::Arg, node: &parser::Node) -> (types::DataType, inkwell::types::AnyTypeEnum<'ctx>) {
@@ -126,30 +149,34 @@ impl<'ctx> CodeGen<'ctx> {
             return (types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), names, datatypes, mutability, Some(rettp_full.0.clone())), inkwell::types::AnyTypeEnum::FunctionType(fntp));
         }
         else {
-            let tp: types::DataType = Self::get_datatype_from_str(info, &arg.data.as_ref().unwrap(), node);
-            match tp.tp {
+            let tp: Option<types::DataType> = Self::get_datatype_from_str(&arg.data.as_ref().unwrap());
+            if tp.is_none() {
+                let fmt: String = format!("Unknown type '{}'.", &arg.data.as_ref().unwrap());
+                errors::raise_error(&fmt, errors::ErrorType::UnknownType, &node.pos, info);
+            }
+            match tp.as_ref().unwrap().tp {
                 types::BasicDataType::I32 |
                 types::BasicDataType::U32 => {
-                    return (tp, inkwell::types::AnyTypeEnum::IntType(*types.i32tp));
+                    return (tp.unwrap(), inkwell::types::AnyTypeEnum::IntType(*types.i32tp));
                 }
                 types::BasicDataType::I8 |
                 types::BasicDataType::U8 => {
-                    return (tp, inkwell::types::AnyTypeEnum::IntType(*types.i8tp));
+                    return (tp.unwrap(), inkwell::types::AnyTypeEnum::IntType(*types.i8tp));
                 }
                 types::BasicDataType::I16 |
                 types::BasicDataType::U16 => {
-                    return (tp, inkwell::types::AnyTypeEnum::IntType(*types.i16tp));
+                    return (tp.unwrap(), inkwell::types::AnyTypeEnum::IntType(*types.i16tp));
                 }
                 types::BasicDataType::I64 |
                 types::BasicDataType::U64 => {
-                    return (tp, inkwell::types::AnyTypeEnum::IntType(*types.i64tp));
+                    return (tp.unwrap(), inkwell::types::AnyTypeEnum::IntType(*types.i64tp));
                 }
                 types::BasicDataType::I128 |
                 types::BasicDataType::U128 => {
-                    return (tp, inkwell::types::AnyTypeEnum::IntType(*types.i128tp));
+                    return (tp.unwrap(), inkwell::types::AnyTypeEnum::IntType(*types.i128tp));
                 }
                 types::BasicDataType::Unit => {
-                    return (tp, inkwell::types::AnyTypeEnum::VoidType(*types.voidtp));
+                    return (tp.unwrap(), inkwell::types::AnyTypeEnum::VoidType(*types.voidtp));
                 }
                 types::BasicDataType::Func => {
                     unimplemented!();

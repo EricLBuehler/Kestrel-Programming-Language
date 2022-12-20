@@ -16,8 +16,9 @@ entry:
 ; Function Attrs: noinline nounwind optnone
 define void @_main() local_unnamed_addr #0 !dbg !10 {
 entry:
+  %x = alloca i8, !dbg !14
+  store i8 100, i8* %x, !dbg !14
   %res = call i32 @f(i32 100), !dbg !14
-  %res1 = call i32 @f(i32 %res), !dbg !14
   ret void, !dbg !14
 }
 
