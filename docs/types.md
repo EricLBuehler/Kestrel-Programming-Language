@@ -10,8 +10,22 @@ The ```i32``` type is a signed 32-bit integer. It is the default size for intege
 ## ```u32```
 The ```u32``` type is an unsigned 32-bit integer.
 ```
-255
+1024
 128u32
+```
+
+## ```i8```
+The ```i8``` type is a signed 8-bit integer. It is the default size for integer literals. 
+```
+64
+32i8
+```
+
+## ```u8```
+The ```u8``` type is an unsigned 8-bit integer.
+```
+255
+128u8
 ```
 
 ## ```unit```
