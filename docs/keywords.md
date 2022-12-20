@@ -9,7 +9,7 @@ let <mutability> name: type = value
 
 
 ## ```fn```
-The ```fn``` keyword defines a function. If no ```return``` statement is executed, the last expression will be returned.
+The ```fn``` keyword defines a function. If no ```return``` statement is executed, the last expression will be returned. Return type specification is optional.
 
 ```
 fn f(name: <mutability> type, ...) -> tp {
