@@ -46,7 +46,7 @@ impl<'ctx> CodeGen<'ctx> {
         if self.namespaces.locals.iter().find(|x| *x.0 == *name) != None {
             return self.namespaces.locals.get(name);
         }
-
+        
         return None
     }
     
@@ -632,10 +632,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
 
     let inkwelltypes = InkwellTypes {
         i8tp: &context.i8_type(),
-        i16tp: &context.i16_type(),
         i32tp: &context.i32_type(),
-        i64tp: &context.i64_type(),
-        i128tp: &context.i128_type(),
         voidtp: &context.void_type(),
     };
 
