@@ -24,4 +24,5 @@ unit
 The ```fn``` type represents a function pointer. Return type specification is optional.
 ```
 fn(type) -> tp
+fn(type)
 ```
