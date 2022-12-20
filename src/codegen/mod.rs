@@ -5,7 +5,6 @@ use inkwell::context::Context;
 use inkwell::module::Module;
 use inkwell::passes::PassManagerSubType;
 use inkwell::types::BasicType;
-use inkwell::values::IntValue;
 use crate::fileinfo;
 use inkwell::debug_info::AsDIScope;
 
@@ -141,10 +140,6 @@ impl<'ctx> CodeGen<'ctx> {
                 
             }
         }
-    }
-
-    fn get_repr_from_intv(&self, v: &IntValue) -> String {
-        return v.to_string().split(" ").collect::<Vec<&str>>().get(1).unwrap().split("\"").collect::<Vec<&str>>().first().unwrap().to_string();
     }
 
     fn mangle_name_main(&self, name: &String) -> String {

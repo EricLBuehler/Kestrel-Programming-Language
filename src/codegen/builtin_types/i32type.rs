@@ -1,5 +1,3 @@
-use inkwell::values::IntValue;
-
 use crate::codegen::types::{Trait, TraitType, Data, new_datatype, BasicDataType};
 use crate::codegen;
 use crate::codegen::builtin_types;
