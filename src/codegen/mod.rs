@@ -19,10 +19,7 @@ extern crate guess_host_triple;
 
 pub struct InkwellTypes<'ctx> {
     i8tp: &'ctx inkwell::types::IntType<'ctx>,
-    i16tp: &'ctx inkwell::types::IntType<'ctx>,
     i32tp: &'ctx inkwell::types::IntType<'ctx>,
-    i64tp: &'ctx inkwell::types::IntType<'ctx>,
-    i128tp: &'ctx inkwell::types::IntType<'ctx>,
     voidtp: &'ctx inkwell::types::VoidType<'ctx>,
 }
 
