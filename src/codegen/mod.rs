@@ -19,7 +19,10 @@ extern crate guess_host_triple;
 
 pub struct InkwellTypes<'ctx> {
     i8tp: &'ctx inkwell::types::IntType<'ctx>,
+    i16tp: &'ctx inkwell::types::IntType<'ctx>,
     i32tp: &'ctx inkwell::types::IntType<'ctx>,
+    i64tp: &'ctx inkwell::types::IntType<'ctx>,
+    i128tp: &'ctx inkwell::types::IntType<'ctx>,
     voidtp: &'ctx inkwell::types::VoidType<'ctx>,
 }
 
@@ -132,6 +135,18 @@ impl<'ctx> CodeGen<'ctx> {
                 types::BasicDataType::I8 |
                 types::BasicDataType::U8 => {
                     return (tp, inkwell::types::AnyTypeEnum::IntType(*types.i8tp));
+                }
+                types::BasicDataType::I16 |
+                types::BasicDataType::U16 => {
+                    return (tp, inkwell::types::AnyTypeEnum::IntType(*types.i16tp));
+                }
+                types::BasicDataType::I64 |
+                types::BasicDataType::U64 => {
+                    return (tp, inkwell::types::AnyTypeEnum::IntType(*types.i64tp));
+                }
+                types::BasicDataType::I128 |
+                types::BasicDataType::U128 => {
+                    return (tp, inkwell::types::AnyTypeEnum::IntType(*types.i128tp));
                 }
                 types::BasicDataType::Unit => {
                     return (tp, inkwell::types::AnyTypeEnum::VoidType(*types.voidtp));
@@ -654,6 +669,102 @@ impl<'ctx> CodeGen<'ctx> {
                 };
                 types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::U8, types::BasicDataType::U8.to_string(), None, Vec::new(), Vec::new(), None)}
             }
+            parser::NodeType::I16 => {
+                let self_data: &String = &node.data.num.as_ref().unwrap().left;
+                builtin_types::i16type::check_overflow(self, self_data, &node.pos);
+                let selfv: inkwell::values::IntValue = match self.inkwell_types.i16tp.const_int_from_string(self_data.as_str(), inkwell::types::StringRadix::Decimal) {
+                    None => {
+                        let fmt: String = format!("Invalid i16 literal '{}'.", self_data);
+                        errors::raise_error(&fmt, errors::ErrorType::InvalidLiteralForRadix, &node.pos, self.info);
+                    }
+            
+                    Some(v) => {
+                        v
+                    }
+            
+                };
+                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::I16, types::BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None)}
+            }
+            parser::NodeType::U16 => {
+                let self_data: &String = &node.data.num.as_ref().unwrap().left;
+                builtin_types::u16type::check_overflow(self, self_data, &node.pos);
+                let selfv: inkwell::values::IntValue = match self.inkwell_types.i16tp.const_int_from_string(self_data.as_str(), inkwell::types::StringRadix::Decimal) {
+                    None => {
+                        let fmt: String = format!("Invalid u16 literal '{}'.", self_data);
+                        errors::raise_error(&fmt, errors::ErrorType::InvalidLiteralForRadix, &node.pos, self.info);
+                    }
+            
+                    Some(v) => {
+                        v
+                    }
+            
+                };
+                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::U16, types::BasicDataType::U16.to_string(), None, Vec::new(), Vec::new(), None)}
+            }
+            parser::NodeType::I64 => {
+                let self_data: &String = &node.data.num.as_ref().unwrap().left;
+                builtin_types::i64type::check_overflow(self, self_data, &node.pos);
+                let selfv: inkwell::values::IntValue = match self.inkwell_types.i64tp.const_int_from_string(self_data.as_str(), inkwell::types::StringRadix::Decimal) {
+                    None => {
+                        let fmt: String = format!("Invalid i64 literal '{}'.", self_data);
+                        errors::raise_error(&fmt, errors::ErrorType::InvalidLiteralForRadix, &node.pos, self.info);
+                    }
+            
+                    Some(v) => {
+                        v
+                    }
+            
+                };
+                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::I64, types::BasicDataType::I64.to_string(), None, Vec::new(), Vec::new(), None)}
+            }
+            parser::NodeType::U64 => {
+                let self_data: &String = &node.data.num.as_ref().unwrap().left;
+                builtin_types::u64type::check_overflow(self, self_data, &node.pos);
+                let selfv: inkwell::values::IntValue = match self.inkwell_types.i64tp.const_int_from_string(self_data.as_str(), inkwell::types::StringRadix::Decimal) {
+                    None => {
+                        let fmt: String = format!("Invalid u64 literal '{}'.", self_data);
+                        errors::raise_error(&fmt, errors::ErrorType::InvalidLiteralForRadix, &node.pos, self.info);
+                    }
+            
+                    Some(v) => {
+                        v
+                    }
+            
+                };
+                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::U64, types::BasicDataType::U64.to_string(), None, Vec::new(), Vec::new(), None)}
+            }
+            parser::NodeType::I128 => {
+                let self_data: &String = &node.data.num.as_ref().unwrap().left;
+                builtin_types::i128type::check_overflow(self, self_data, &node.pos);
+                let selfv: inkwell::values::IntValue = match self.inkwell_types.i128tp.const_int_from_string(self_data.as_str(), inkwell::types::StringRadix::Decimal) {
+                    None => {
+                        let fmt: String = format!("Invalid i128 literal '{}'.", self_data);
+                        errors::raise_error(&fmt, errors::ErrorType::InvalidLiteralForRadix, &node.pos, self.info);
+                    }
+            
+                    Some(v) => {
+                        v
+                    }
+            
+                };
+                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::I128, types::BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None)}
+            }
+            parser::NodeType::U128 => {
+                let self_data: &String = &node.data.num.as_ref().unwrap().left;
+                builtin_types::u128type::check_overflow(self, self_data, &node.pos);
+                let selfv: inkwell::values::IntValue = match self.inkwell_types.i128tp.const_int_from_string(self_data.as_str(), inkwell::types::StringRadix::Decimal) {
+                    None => {
+                        let fmt: String = format!("Invalid u128 literal '{}'.", self_data);
+                        errors::raise_error(&fmt, errors::ErrorType::InvalidLiteralForRadix, &node.pos, self.info);
+                    }
+            
+                    Some(v) => {
+                        v
+                    }
+            
+                };
+                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::U128, types::BasicDataType::U128.to_string(), None, Vec::new(), Vec::new(), None)}
+            }
         }
     }
 
@@ -688,7 +799,10 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
 
     let inkwelltypes = InkwellTypes {
         i8tp: &context.i8_type(),
+        i16tp: &context.i16_type(),
         i32tp: &context.i32_type(),
+        i64tp: &context.i64_type(),
+        i128tp: &context.i128_type(),
         voidtp: &context.void_type(),
     };
 

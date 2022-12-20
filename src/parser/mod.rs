@@ -30,6 +30,12 @@ pub enum NodeType {
     U32,
     I8,
     U8,
+    I16,
+    U16,
+    I64,
+    U64,
+    I128,
+    U128,
 }
 
 #[derive(Clone)]
@@ -64,16 +70,22 @@ impl std::fmt::Display for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.tp {
             NodeType::BINARY => write!(f, "{}", self.data.binary.as_ref().unwrap() ),
-            NodeType::I32 => write!(f, "{}", self.data.num.as_ref().unwrap() ),
             NodeType::LET => write!(f, "{}", self.data.letn.as_ref().unwrap() ),
             NodeType::IDENTIFIER => write!(f, "{}", self.data.identifier.as_ref().unwrap() ),
             NodeType::FUNC => write!(f, "{}", self.data.func.as_ref().unwrap() ),
             NodeType::ASSIGN => write!(f, "{}", self.data.assign.as_ref().unwrap() ),
             NodeType::CALL => write!(f, "{}", self.data.call.as_ref().unwrap() ),
             NodeType::RETURN => write!(f, "{}", self.data.ret.as_ref().unwrap() ),
-            NodeType::U32 => write!(f, "{}", self.data.num.as_ref().unwrap() ),
-            NodeType::I8 => write!(f, "{}", self.data.num.as_ref().unwrap() ),
-            NodeType::U8 => write!(f, "{}", self.data.num.as_ref().unwrap() ),
+            NodeType::I8 |
+            NodeType::U8 |
+            NodeType::I16 |
+            NodeType::U16 |
+            NodeType::I32 |
+            NodeType::U32 |
+            NodeType::I64 |
+            NodeType::U64 |
+            NodeType::I128 |
+            NodeType::U128 => write!(f, "{}", self.data.num.as_ref().unwrap() ),
         }
     }    
 }
@@ -199,6 +211,12 @@ impl<'life> Parser<'life> {
             TokenType::U32 => Some(self.generate_u32(self.current.data.clone())),
             TokenType::I8 => Some(self.generate_i8(self.current.data.clone())),
             TokenType::U8 => Some(self.generate_u8(self.current.data.clone())),
+            TokenType::I16 => Some(self.generate_i16(self.current.data.clone())),
+            TokenType::U16 => Some(self.generate_u16(self.current.data.clone())),
+            TokenType::I64 => Some(self.generate_i64(self.current.data.clone())),
+            TokenType::U64 => Some(self.generate_u64(self.current.data.clone())),
+            TokenType::I128 => Some(self.generate_i128(self.current.data.clone())),
+            TokenType::U128 => Some(self.generate_u128(self.current.data.clone())),
             TokenType::IDENTIFIER => Some(self.generate_identifier(self.current.data.clone())),
             TokenType::LPAREN => Some(self.generate_grouped()),
             _ => None,
@@ -532,6 +550,168 @@ impl<'life> Parser<'life> {
         };
     
         let n: Node = self.create_node(NodeType::U8, nodedat, pos);
+    
+        return n;
+    }
+    
+    fn generate_i16(&mut self, data: String) -> Node{
+        let int: nodes::NumNode = nodes::NumNode{
+            left: data.clone()
+        };
+    
+        let nodedat: nodes::NodeData = nodes::NodeData {
+            binary: None,
+            num: Some(int),
+            letn: None,
+            identifier: None,
+            func: None,
+            assign: None,
+            call: None,
+            ret: None,
+        };
+
+        let pos = Position {
+            line: self.current.line,
+            startcol: self.current.startcol,
+            endcol: self.current.endcol,
+        };
+    
+        let n: Node = self.create_node(NodeType::I16, nodedat, pos);
+    
+        return n;
+    }
+    
+    fn generate_u16(&mut self, data: String) -> Node{
+        let int: nodes::NumNode = nodes::NumNode{
+            left: data.clone()
+        };
+    
+        let nodedat: nodes::NodeData = nodes::NodeData {
+            binary: None,
+            num: Some(int),
+            letn: None,
+            identifier: None,
+            func: None,
+            assign: None,
+            call: None,
+            ret: None,
+        };
+
+        let pos = Position {
+            line: self.current.line,
+            startcol: self.current.startcol,
+            endcol: self.current.endcol,
+        };
+    
+        let n: Node = self.create_node(NodeType::U16, nodedat, pos);
+    
+        return n;
+    }
+    
+    fn generate_i64(&mut self, data: String) -> Node{
+        let int: nodes::NumNode = nodes::NumNode{
+            left: data.clone()
+        };
+    
+        let nodedat: nodes::NodeData = nodes::NodeData {
+            binary: None,
+            num: Some(int),
+            letn: None,
+            identifier: None,
+            func: None,
+            assign: None,
+            call: None,
+            ret: None,
+        };
+
+        let pos = Position {
+            line: self.current.line,
+            startcol: self.current.startcol,
+            endcol: self.current.endcol,
+        };
+    
+        let n: Node = self.create_node(NodeType::I64, nodedat, pos);
+    
+        return n;
+    }
+    
+    fn generate_u64(&mut self, data: String) -> Node{
+        let int: nodes::NumNode = nodes::NumNode{
+            left: data.clone()
+        };
+    
+        let nodedat: nodes::NodeData = nodes::NodeData {
+            binary: None,
+            num: Some(int),
+            letn: None,
+            identifier: None,
+            func: None,
+            assign: None,
+            call: None,
+            ret: None,
+        };
+
+        let pos = Position {
+            line: self.current.line,
+            startcol: self.current.startcol,
+            endcol: self.current.endcol,
+        };
+    
+        let n: Node = self.create_node(NodeType::U64, nodedat, pos);
+    
+        return n;
+    }
+    
+    fn generate_i128(&mut self, data: String) -> Node{
+        let int: nodes::NumNode = nodes::NumNode{
+            left: data.clone()
+        };
+    
+        let nodedat: nodes::NodeData = nodes::NodeData {
+            binary: None,
+            num: Some(int),
+            letn: None,
+            identifier: None,
+            func: None,
+            assign: None,
+            call: None,
+            ret: None,
+        };
+
+        let pos = Position {
+            line: self.current.line,
+            startcol: self.current.startcol,
+            endcol: self.current.endcol,
+        };
+    
+        let n: Node = self.create_node(NodeType::I128, nodedat, pos);
+    
+        return n;
+    }
+    
+    fn generate_u128(&mut self, data: String) -> Node{
+        let int: nodes::NumNode = nodes::NumNode{
+            left: data.clone()
+        };
+    
+        let nodedat: nodes::NodeData = nodes::NodeData {
+            binary: None,
+            num: Some(int),
+            letn: None,
+            identifier: None,
+            func: None,
+            assign: None,
+            call: None,
+            ret: None,
+        };
+
+        let pos = Position {
+            line: self.current.line,
+            startcol: self.current.startcol,
+            endcol: self.current.endcol,
+        };
+    
+        let n: Node = self.create_node(NodeType::U128, nodedat, pos);
     
         return n;
     }

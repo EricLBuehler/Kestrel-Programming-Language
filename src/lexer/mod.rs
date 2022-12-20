@@ -22,6 +22,12 @@ pub enum TokenType {
     U32,
     I8,
     U8,
+    I16,
+    U16,
+    I64,
+    U64,
+    I128,
+    U128,
 }
 
 pub struct Lexer<'life> {
@@ -72,6 +78,12 @@ impl std::fmt::Display for TokenType {
            TokenType::U32 => write!(f, "u32"),
            TokenType::I8 => write!(f, "i8"),
            TokenType::U8 => write!(f, "u8"),
+           TokenType::I16 => write!(f, "i16"),
+           TokenType::U16 => write!(f, "u16"),
+           TokenType::I64 => write!(f, "i64"),
+           TokenType::U64 => write!(f, "u64"),
+           TokenType::I128 => write!(f, "i128"),
+           TokenType::U128 => write!(f, "u128"),
        }
     }
 }
@@ -303,6 +315,24 @@ fn make_number(lexer: &mut Lexer) -> Token {
             }
             else if specified_tp==crate::codegen::types::BasicDataType::U8.to_string() {
                 tp=TokenType::U8;
+            }
+            else if specified_tp==crate::codegen::types::BasicDataType::I16.to_string() {
+                tp=TokenType::I16;
+            }
+            else if specified_tp==crate::codegen::types::BasicDataType::U16.to_string() {
+                tp=TokenType::U16;
+            }
+            else if specified_tp==crate::codegen::types::BasicDataType::I64.to_string() {
+                tp=TokenType::I64;
+            }
+            else if specified_tp==crate::codegen::types::BasicDataType::U64.to_string() {
+                tp=TokenType::U64;
+            }
+            else if specified_tp==crate::codegen::types::BasicDataType::I128.to_string() {
+                tp=TokenType::I128;
+            }
+            else if specified_tp==crate::codegen::types::BasicDataType::U128.to_string() {
+                tp=TokenType::U128;
             }
             else {
                 crate::errors::raise_error(format!("Invalid specified type {}.", specified_tp).as_str(), crate::errors::ErrorType::UnknownType, &crate::parser::Position { line, startcol: start, endcol: end+1 }, lexer.info);

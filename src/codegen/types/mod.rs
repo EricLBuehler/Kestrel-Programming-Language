@@ -10,6 +10,12 @@ pub enum BasicDataType {
     U32,
     I8,
     U8,
+    I16,
+    U16,
+    I64,
+    U64,
+    I128,
+    U128,
 }
 #[derive(Clone, Debug)]
 pub struct DataType {
@@ -44,6 +50,12 @@ impl std::fmt::Display for BasicDataType {
             BasicDataType::U32 => write!(f, "u32"),
             BasicDataType::I8 => write!(f, "i8"),
             BasicDataType::U8 => write!(f, "u8"),
+            BasicDataType::I16 => write!(f, "i16"),
+            BasicDataType::U16 => write!(f, "u16"),
+            BasicDataType::I64 => write!(f, "i64"),
+            BasicDataType::U64 => write!(f, "u64"),
+            BasicDataType::I128 => write!(f, "i128"),
+            BasicDataType::U128 => write!(f, "u128"),
         }
     }    
 }
