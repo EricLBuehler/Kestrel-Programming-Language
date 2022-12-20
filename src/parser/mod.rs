@@ -36,6 +36,7 @@ pub enum NodeType {
     U64,
     I128,
     U128,
+    TO,
 }
 
 #[derive(Clone)]
@@ -86,6 +87,7 @@ impl std::fmt::Display for Node {
             NodeType::U64 |
             NodeType::I128 |
             NodeType::U128 => write!(f, "{}", self.data.num.as_ref().unwrap() ),
+            NodeType::TO => write!(f, "{}", self.data.to.as_ref().unwrap() ),
         }
     }    
 }
@@ -268,6 +270,15 @@ impl<'life> Parser<'life> {
                     left = self.generate_call(left);
                 }
 
+                TokenType::KEYWORD => {
+                    if self.current.data=="to" {
+                        left = self.generate_to(left);
+                    }
+                    else {
+                        return left;
+                    }
+                }
+
                 _ => {
                     return left;
                 }
@@ -295,6 +306,7 @@ impl<'life> Parser<'life> {
             assign: None,
             call: None,
             ret: None,
+            to: None,
         };
 
         let pos = Position {
@@ -343,6 +355,7 @@ impl<'life> Parser<'life> {
             assign: None,
             call: None,
             ret: None,
+            to: None,
         };
     
         let n: Node = self.create_node(NodeType::BINARY, nodedat, pos);
@@ -364,6 +377,7 @@ impl<'life> Parser<'life> {
             assign: None,
             call: None,
             ret: None,
+            to: None,
         };
 
         let pos = Position {
@@ -406,6 +420,7 @@ impl<'life> Parser<'life> {
             assign: Some(assign),
             call: None,
             ret: None,
+            to: None,
         };
     
         let n: Node = self.create_node(NodeType::ASSIGN, nodedat, pos);
@@ -470,6 +485,7 @@ impl<'life> Parser<'life> {
             assign: None,
             call: Some(call),
             ret: None,
+            to: None,
         };
     
         let n: Node = self.create_node(NodeType::CALL, nodedat, pos);
@@ -490,6 +506,7 @@ impl<'life> Parser<'life> {
             assign: None,
             call: None,
             ret: None,
+            to: None,
         };
 
         let pos = Position {
@@ -517,6 +534,7 @@ impl<'life> Parser<'life> {
             assign: None,
             call: None,
             ret: None,
+            to: None,
         };
 
         let pos = Position {
@@ -544,6 +562,7 @@ impl<'life> Parser<'life> {
             assign: None,
             call: None,
             ret: None,
+            to: None,
         };
 
         let pos = Position {
@@ -571,6 +590,7 @@ impl<'life> Parser<'life> {
             assign: None,
             call: None,
             ret: None,
+            to: None,
         };
 
         let pos = Position {
@@ -598,6 +618,7 @@ impl<'life> Parser<'life> {
             assign: None,
             call: None,
             ret: None,
+            to: None,
         };
 
         let pos = Position {
@@ -625,6 +646,7 @@ impl<'life> Parser<'life> {
             assign: None,
             call: None,
             ret: None,
+            to: None,
         };
 
         let pos = Position {
@@ -652,6 +674,7 @@ impl<'life> Parser<'life> {
             assign: None,
             call: None,
             ret: None,
+            to: None,
         };
 
         let pos = Position {
@@ -679,6 +702,7 @@ impl<'life> Parser<'life> {
             assign: None,
             call: None,
             ret: None,
+            to: None,
         };
 
         let pos = Position {
@@ -706,6 +730,7 @@ impl<'life> Parser<'life> {
             assign: None,
             call: None,
             ret: None,
+            to: None,
         };
 
         let pos = Position {
@@ -715,6 +740,45 @@ impl<'life> Parser<'life> {
         };
     
         let n: Node = self.create_node(NodeType::U128, nodedat, pos);
+    
+        return n;
+    }
+    
+    fn generate_to(&mut self, left: Node) -> Node{
+        let mut pos = Position {
+            line: left.pos.line,
+            startcol: left.pos.startcol,
+            endcol: 0,
+        };
+
+        self.advance();
+
+        if self.current_is_type(TokenType::IDENTIFIER) {
+            self.raise_error_pos("Expected identifier", ErrorType::InvalidTok, left);
+        }
+        
+        let to: nodes::ToNode = nodes::ToNode{
+            left,
+            name: self.current.data.clone(),
+        };
+
+        pos.endcol = self.current.endcol;
+
+        self.advance();
+
+        let nodedat: nodes::NodeData = nodes::NodeData {
+            binary: None,
+            num: None,
+            letn: None,
+            identifier: None,
+            func: None,
+            assign: None,
+            call: None,
+            ret: None,
+            to: Some(to),
+        };
+    
+        let n: Node = self.create_node(NodeType::TO, nodedat, pos);
     
         return n;
     }
@@ -777,6 +841,7 @@ impl<'life> Parser<'life> {
             assign: None,
             call: None,
             ret: None,
+            to: None,
         };
 
         pos.endcol = nodedat.letn.as_ref().unwrap().expr.pos.endcol;
@@ -970,6 +1035,7 @@ impl<'life> Parser<'life> {
             assign: None,
             call: None,
             ret: None,
+            to: None,
         };
 
     
@@ -1002,6 +1068,7 @@ impl<'life> Parser<'life> {
             assign: None,
             call: None,
             ret: Some(retn),
+            to: None,
         };
 
         pos.endcol = nodedat.ret.as_ref().unwrap().expr.pos.endcol;

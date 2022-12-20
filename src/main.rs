@@ -40,6 +40,7 @@ fn main() {
                                             String::from("fn"),
                                             String::from("mut"),
                                             String::from("return"),
+                                            String::from("to"),
                                             ];
 
     let mut lexer: lexer::Lexer = lexer::Lexer {

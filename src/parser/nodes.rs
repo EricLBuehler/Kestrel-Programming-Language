@@ -121,6 +121,18 @@ impl std::fmt::Display for ReturnNode {
 }
 
 #[derive(Clone)]
+pub struct ToNode {
+    pub left: crate::parser::Node,
+    pub name: String,
+}
+
+impl std::fmt::Display for ToNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "'{}' to {}", self.left, self.name)
+    }    
+}
+
+#[derive(Clone)]
 pub struct NodeData {
     pub binary: Option<BinaryNode>,
     pub num: Option<NumNode>,
@@ -130,4 +142,5 @@ pub struct NodeData {
     pub assign: Option<AssignNode>,
     pub call: Option<CallNode>,
     pub ret: Option<ReturnNode>,
+    pub to: Option<ToNode>,
 }
