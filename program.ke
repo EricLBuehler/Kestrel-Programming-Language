@@ -4,6 +4,5 @@ fn f(x: u32) -> u32{
 }
 
 fn main() {
-    let x = 100i8 as u32
     f(100u32)
 }

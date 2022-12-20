@@ -609,6 +609,23 @@ impl<'ctx> CodeGen<'ctx> {
         return retv;
     }
 
+    fn build_to(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        let left: types::Data = self.compile_expr(&node.data.to.as_ref().unwrap().left);     
+        let tp_name: &String = &node.data.to.as_ref().unwrap().name;
+
+        let tp: types::DataType = if Self::get_datatype_from_str(tp_name).is_none() {
+            let fmt: String = format!("Unknown type '{}'.", tp_name);
+            errors::raise_error(&fmt, errors::ErrorType::MissingTrait, &node.pos, self.info);
+        } else {
+            Self::get_datatype_from_str(tp_name).unwrap()
+        };
+
+        println!("{}", tp);
+        
+        
+        return left;
+    }
+
     fn compile_expr(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         match node.tp {
             parser::NodeType::I32 => {
@@ -791,6 +808,9 @@ impl<'ctx> CodeGen<'ctx> {
             
                 };
                 types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::U128, types::BasicDataType::U128.to_string(), None, Vec::new(), Vec::new(), None)}
+            }
+            parser::NodeType::TO => {
+                self.build_to(node)
             }
         }
     }

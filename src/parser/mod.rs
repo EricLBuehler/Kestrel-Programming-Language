@@ -169,6 +169,14 @@ impl<'life> Parser<'life> {
             TokenType::LPAREN => {
                 Precedence::Call
             }
+            TokenType::KEYWORD => {
+                if self.current.data == "to" {
+                    Precedence::To
+                }
+                else {
+                    Precedence::Lowest
+                }
+            }
             _ => {
                 Precedence::Lowest
             }
@@ -205,6 +213,24 @@ impl<'life> Parser<'life> {
             }
         }
         
+    }
+
+    fn is_atomic(&mut self) -> bool{
+        match self.current.tp {
+            TokenType::I32 |
+            TokenType::U32 |
+            TokenType::I8 |
+            TokenType::U8 |
+            TokenType::I16 |
+            TokenType::U16 |
+            TokenType::I64 |
+            TokenType::U64 |
+            TokenType::I128 |
+            TokenType::U128 |
+            TokenType::IDENTIFIER |
+            TokenType::LPAREN => return true,
+            _ => return false,
+        }
     }
     
     fn atom(&mut self) -> Option<Node> {
@@ -284,7 +310,7 @@ impl<'life> Parser<'life> {
                 }
             }
         }
-        if !self.current_is_type(TokenType::NEWLINE) {
+        if self.is_atomic() {
             self.raise_error("Unexpected token.", ErrorType::InvalidTok);
         }
         return left;
@@ -458,7 +484,7 @@ impl<'life> Parser<'life> {
             if self.current_is_type(TokenType::RPAREN) {
                 break;
             }
-
+            
             args.push(self.expr(Precedence::Lowest));
 
             if !self.current_is_type(TokenType::COMMA) && !self.current_is_type(TokenType::RPAREN) {
@@ -753,8 +779,8 @@ impl<'life> Parser<'life> {
 
         self.advance();
 
-        if self.current_is_type(TokenType::IDENTIFIER) {
-            self.raise_error_pos("Expected identifier", ErrorType::InvalidTok, left);
+        if !self.current_is_type(TokenType::IDENTIFIER) {
+            self.raise_error("Expected identifier", ErrorType::InvalidTok);
         }
         
         let to: nodes::ToNode = nodes::ToNode{
