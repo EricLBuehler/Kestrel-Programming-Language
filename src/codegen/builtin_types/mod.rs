@@ -5,6 +5,7 @@ use crate::codegen::types::{Type, BasicDataType, Trait, TraitType, Data};
 use super::types::DataType;
 
 pub mod i32type;
+pub mod u32type;
 
 pub mod unittype;
 pub mod functype;
@@ -31,6 +32,7 @@ fn create_trait<'a>(function: fn(&codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::p
 
 pub fn init(codegen: &mut codegen::CodeGen) {
     i32type::init_i32(codegen);
+    u32type::init_u32(codegen);
 
     unittype::init_unit(codegen);
     functype::init_func(codegen);

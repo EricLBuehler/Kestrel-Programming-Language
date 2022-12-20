@@ -62,6 +62,9 @@ impl<'ctx> CodeGen<'ctx> {
         if *str_rep == types::BasicDataType::I32.to_string() {
             return types::new_datatype(types::BasicDataType::I32, types::BasicDataType::I32.to_string(), None, Vec::new(), Vec::new(), None);
         }
+        if *str_rep == types::BasicDataType::U32.to_string() {
+            return types::new_datatype(types::BasicDataType::U32, types::BasicDataType::U32.to_string(), None, Vec::new(), Vec::new(), None);
+        }
         else if *str_rep == types::BasicDataType::Unit.to_string() {
             return types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None);
         }
@@ -122,7 +125,8 @@ impl<'ctx> CodeGen<'ctx> {
         else {
             let tp: types::DataType = Self::get_datatype_from_str(info, &arg.data.as_ref().unwrap(), node);
             match tp.tp {
-                types::BasicDataType::I32 => {
+                types::BasicDataType::I32 |
+                types::BasicDataType::U32 => {
                     return (tp, inkwell::types::AnyTypeEnum::IntType(*types.i32tp));
                 }
                 types::BasicDataType::Unit => {
@@ -562,7 +566,7 @@ impl<'ctx> CodeGen<'ctx> {
     fn compile_expr(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         match node.tp {
             parser::NodeType::I32 => {
-                let self_data: &String = &node.data.int.as_ref().unwrap().left;
+                let self_data: &String = &node.data.num.as_ref().unwrap().left;
                 builtin_types::i32type::check_overflow(self, self_data, &node.pos);
                 let selfv: inkwell::values::IntValue = match self.inkwell_types.i32tp.const_int_from_string(self_data.as_str(), inkwell::types::StringRadix::Decimal) {
                     None => {
@@ -597,6 +601,22 @@ impl<'ctx> CodeGen<'ctx> {
             }
             parser::NodeType::RETURN => {
                 self.build_return(node)
+            }
+            parser::NodeType::U32 => {
+                let self_data: &String = &node.data.num.as_ref().unwrap().left;
+                builtin_types::u32type::check_overflow(self, self_data, &node.pos);
+                let selfv: inkwell::values::IntValue = match self.inkwell_types.i32tp.const_int_from_string(self_data.as_str(), inkwell::types::StringRadix::Decimal) {
+                    None => {
+                        let fmt: String = format!("Invalid u32 literal '{}'.", self_data);
+                        errors::raise_error(&fmt, errors::ErrorType::InvalidLiteralForRadix, &node.pos, self.info);
+                    }
+            
+                    Some(v) => {
+                        v
+                    }
+            
+                };
+                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::U32, types::BasicDataType::U32.to_string(), None, Vec::new(), Vec::new(), None)}
             }
         }
     }

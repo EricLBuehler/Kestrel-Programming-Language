@@ -49,6 +49,7 @@ fn main() {
         len: file_data_bytes.len(),
         line: 0,
         col: 0,
+        info: &file_info,
     };
 
     let (_, tokens) = lexer::generate_tokens(&mut lexer, &mut keywords);

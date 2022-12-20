@@ -33,13 +33,13 @@ impl std::fmt::Display for BinaryNode {
 }
 
 #[derive(Clone)]
-pub struct I32Node {
+pub struct NumNode {
     pub left: String,
 }
 
-impl std::fmt::Display for I32Node {
+impl std::fmt::Display for NumNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "i32 '{}'", self.left)
+        write!(f, "Num '{}'", self.left)
     }    
 }
 
@@ -123,7 +123,7 @@ impl std::fmt::Display for ReturnNode {
 #[derive(Clone)]
 pub struct NodeData {
     pub binary: Option<BinaryNode>,
-    pub int: Option<I32Node>,
+    pub num: Option<NumNode>,
     pub letn: Option<LetNode>,
     pub identifier: Option<IdentifierNode>,
     pub func: Option<FuncNode>,

@@ -7,6 +7,7 @@ pub enum BasicDataType {
     I32,
     Unit,
     Func,
+    U32,
 }
 #[derive(Clone, Debug)]
 pub struct DataType {
@@ -38,6 +39,7 @@ impl std::fmt::Display for BasicDataType {
             BasicDataType::Unit => write!(f, "unit"),
             BasicDataType::Func => write!(f, "fn"),
             BasicDataType::Unknown => write!(f, "UNKNOWN"),
+            BasicDataType::U32 => write!(f, "u32"),
         }
     }    
 }

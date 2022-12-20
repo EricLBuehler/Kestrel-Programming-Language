@@ -19,6 +19,7 @@ pub enum TokenType {
     COLON,
     COMMA,
     SMALLARROW,
+    U32,
 }
 
 pub struct Lexer<'life> {
@@ -28,6 +29,7 @@ pub struct Lexer<'life> {
     pub len: usize,
     pub line: usize,
     pub col: usize,
+    pub info: &'life crate::fileinfo::FileInfo<'life>,
 }
 
 #[derive(Clone)]
@@ -65,6 +67,7 @@ impl std::fmt::Display for TokenType {
            TokenType::COLON => write!(f, "COLON"),
            TokenType::COMMA => write!(f, "COMMA"),
            TokenType::SMALLARROW => write!(f, "SMALLARROW"),
+           TokenType::U32 => write!(f, "u32"),
        }
     }
 }
@@ -268,16 +271,40 @@ fn make_number(lexer: &mut Lexer) -> Token {
     let mut end: usize = lexer.col;
     let mut line: usize = lexer.line;
 
+    let mut tp: TokenType = TokenType::I32;
+
     while lexer.current.is_numeric() || lexer.current=='_' {
         data.push(lexer.current);
         end=lexer.col;
         line=lexer.line;
         advance(lexer);
+        if lexer.current == 'u' || lexer.current == 'i' {
+            let mut specified_tp: String = String::from(lexer.current);
+            advance(lexer);
+            while lexer.current.is_numeric() {
+                specified_tp.push(lexer.current.to_ascii_lowercase());
+                end=lexer.col;
+                line=lexer.line;
+                advance(lexer);
+            }
+
+            if specified_tp==crate::codegen::types::BasicDataType::I32.to_string() {
+                tp=TokenType::I32;
+            }
+            else if specified_tp==crate::codegen::types::BasicDataType::U32.to_string() {
+                tp=TokenType::U32;
+            }
+            else {
+                crate::errors::raise_error(format!("Invalid specified type {}.", specified_tp).as_str(), crate::errors::ErrorType::UnknownType, &crate::parser::Position { line, startcol: start, endcol: end+1 }, lexer.info);
+            }
+
+            break;            
+        }
     }
     
     let tok = Token {
         data: data,
-        tp: TokenType::I32,
+        tp,
         line,
         startcol: start,
         endcol: end+1,

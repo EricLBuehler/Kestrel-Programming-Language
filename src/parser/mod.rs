@@ -27,6 +27,7 @@ pub enum NodeType {
     ASSIGN,
     CALL,
     RETURN,
+    U32,
 }
 
 #[derive(Clone)]
@@ -61,13 +62,14 @@ impl std::fmt::Display for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.tp {
             NodeType::BINARY => write!(f, "{}", self.data.binary.as_ref().unwrap() ),
-            NodeType::I32 => write!(f, "{}", self.data.int.as_ref().unwrap() ),
+            NodeType::I32 => write!(f, "{}", self.data.num.as_ref().unwrap() ),
             NodeType::LET => write!(f, "{}", self.data.letn.as_ref().unwrap() ),
             NodeType::IDENTIFIER => write!(f, "{}", self.data.identifier.as_ref().unwrap() ),
             NodeType::FUNC => write!(f, "{}", self.data.func.as_ref().unwrap() ),
             NodeType::ASSIGN => write!(f, "{}", self.data.assign.as_ref().unwrap() ),
             NodeType::CALL => write!(f, "{}", self.data.call.as_ref().unwrap() ),
             NodeType::RETURN => write!(f, "{}", self.data.ret.as_ref().unwrap() ),
+            NodeType::U32 => write!(f, "{}", self.data.num.as_ref().unwrap() ),
         }
     }    
 }
@@ -189,7 +191,8 @@ impl<'life> Parser<'life> {
     
     fn atom(&mut self) -> Option<Node> {
         match self.current.tp {
-            TokenType::I32 => Some(self.generate_int(self.current.data.clone())),
+            TokenType::I32 => Some(self.generate_i32(self.current.data.clone())),
+            TokenType::U32 => Some(self.generate_u32(self.current.data.clone())),
             TokenType::IDENTIFIER => Some(self.generate_identifier(self.current.data.clone())),
             TokenType::LPAREN => Some(self.generate_grouped()),
             _ => None,
@@ -251,14 +254,14 @@ impl<'life> Parser<'life> {
 
     // Expressions
     
-    fn generate_int(&mut self, data: String) -> Node{
-        let int: nodes::I32Node = nodes::I32Node{
+    fn generate_i32(&mut self, data: String) -> Node{
+        let int: nodes::NumNode = nodes::NumNode{
             left: data.clone()
         };
     
         let nodedat: nodes::NodeData = nodes::NodeData {
             binary: None,
-            int: Some(int),
+            num: Some(int),
             letn: None,
             identifier: None,
             func: None,
@@ -306,7 +309,7 @@ impl<'life> Parser<'life> {
 
         let nodedat: nodes::NodeData = nodes::NodeData {
             binary: Some(bin),
-            int: None,
+            num: None,
             letn: None,
             identifier: None,
             func: None,
@@ -327,7 +330,7 @@ impl<'life> Parser<'life> {
     
         let nodedat: nodes::NodeData = nodes::NodeData {
             binary: None,
-            int: None,
+            num: None,
             letn: None,
             identifier: Some(identi),
             func: None,
@@ -369,7 +372,7 @@ impl<'life> Parser<'life> {
     
         let nodedat: nodes::NodeData = nodes::NodeData {
             binary: None,
-            int: None,
+            num: None,
             letn: None,
             identifier: None,
             func: None,
@@ -433,7 +436,7 @@ impl<'life> Parser<'life> {
     
         let nodedat: nodes::NodeData = nodes::NodeData {
             binary: None,
-            int: None,
+            num: None,
             letn: None,
             identifier: None,
             func: None,
@@ -443,6 +446,33 @@ impl<'life> Parser<'life> {
         };
     
         let n: Node = self.create_node(NodeType::CALL, nodedat, pos);
+        return n;
+    }
+    
+    fn generate_u32(&mut self, data: String) -> Node{
+        let int: nodes::NumNode = nodes::NumNode{
+            left: data.clone()
+        };
+    
+        let nodedat: nodes::NodeData = nodes::NodeData {
+            binary: None,
+            num: Some(int),
+            letn: None,
+            identifier: None,
+            func: None,
+            assign: None,
+            call: None,
+            ret: None,
+        };
+
+        let pos = Position {
+            line: self.current.line,
+            startcol: self.current.startcol,
+            endcol: self.current.endcol,
+        };
+    
+        let n: Node = self.create_node(NodeType::U32, nodedat, pos);
+    
         return n;
     }
 
@@ -497,7 +527,7 @@ impl<'life> Parser<'life> {
     
         let nodedat: nodes::NodeData = nodes::NodeData {
             binary: None,
-            int: None,
+            num: None,
             letn: Some(letn),
             identifier: None,
             func: None,
@@ -690,7 +720,7 @@ impl<'life> Parser<'life> {
     
         let nodedat: nodes::NodeData = nodes::NodeData {
             binary: None,
-            int: None,
+            num: None,
             letn: None,
             identifier: None,
             func: Some(func),
@@ -722,7 +752,7 @@ impl<'life> Parser<'life> {
     
         let nodedat: nodes::NodeData = nodes::NodeData {
             binary: None,
-            int: None,
+            num: None,
             letn:  None,
             identifier: None,
             func: None,

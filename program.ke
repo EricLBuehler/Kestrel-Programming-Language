@@ -1,8 +1,8 @@
-fn f(x: i32) -> i32{
-    let y: i32 = 100
+fn f(x: u32) -> u32{
+    let y: u32 = 100u32
     return y
 }
 
 fn main() {
-    f(f(100))
+    f(f(100u32))
 }
