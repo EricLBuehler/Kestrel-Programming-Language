@@ -20,7 +20,10 @@ extern crate guess_host_triple;
 
 pub struct InkwellTypes<'ctx> {
     i8tp: &'ctx inkwell::types::IntType<'ctx>,
+    i16tp: &'ctx inkwell::types::IntType<'ctx>,
     i32tp: &'ctx inkwell::types::IntType<'ctx>,
+    i64tp: &'ctx inkwell::types::IntType<'ctx>,
+    i128tp: &'ctx inkwell::types::IntType<'ctx>,
     voidtp: &'ctx inkwell::types::VoidType<'ctx>,
 }
 
@@ -568,6 +571,7 @@ impl<'ctx> CodeGen<'ctx> {
         match node.tp {
             parser::NodeType::I32 => {
                 let self_data: &String = &node.data.int.as_ref().unwrap().left;
+                builtin_types::i32type::check_overflow(self, self_data, &node.pos);
                 let selfv: inkwell::values::IntValue = match self.inkwell_types.i32tp.const_int_from_string(self_data.as_str(), inkwell::types::StringRadix::Decimal) {
                     None => {
                         let fmt: String = format!("Invalid i32 literal '{}'.", self_data);
@@ -579,10 +583,6 @@ impl<'ctx> CodeGen<'ctx> {
                     }
             
                 };
-                if self.get_repr_from_intv(&selfv) != *self_data {
-                    let fmt: String = format!("Invalid i32 literal '{}'.", self_data);
-                    errors::raise_error(&fmt, errors::ErrorType::InvalidLiteralForRadix, &node.pos, self.info);
-                }
                 types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::I32, types::BasicDataType::I32.to_string(), None, Vec::new(), Vec::new(), None)}
             }
             parser::NodeType::BINARY => {
@@ -640,7 +640,10 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
 
     let inkwelltypes = InkwellTypes {
         i8tp: &context.i8_type(),
+        i16tp: &context.i16_type(),
         i32tp: &context.i32_type(),
+        i64tp: &context.i64_type(),
+        i128tp: &context.i128_type(),
         voidtp: &context.void_type(),
     };
 

@@ -7,12 +7,10 @@ define i32 @f(i32 %0) local_unnamed_addr #0 !dbg !4 {
 entry:
   %x = alloca i32, !dbg !8
   store i32 %0, i32* %x, !dbg !8
-  %x1 = load i32, i32* %x, !dbg !8
-  %i32sum = mul i32 %x1, 2, !dbg !8
   %y = alloca i32, !dbg !8
-  store i32 %i32sum, i32* %y, !dbg !8
-  %y2 = load i32, i32* %y, !dbg !8
-  ret i32 %y2, !dbg !8
+  store i32 100, i32* %y, !dbg !8
+  %y1 = load i32, i32* %y, !dbg !8
+  ret i32 %y1, !dbg !8
 }
 
 ; Function Attrs: noinline nounwind optnone

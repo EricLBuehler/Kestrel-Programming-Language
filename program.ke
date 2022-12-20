@@ -1,5 +1,5 @@
 fn f(x: i32) -> i32{
-    let y: i32 = x * 2
+    let y: i32 = 100
     return y
 }
 
