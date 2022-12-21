@@ -41,3 +41,16 @@ fn name(parameter: <mutability> type, ...) -> tp {
 }
 ```
 
+## ```to```
+The ```to``` keyword converts one primitive data type to another, with overflow checking.
+
+```
+100u32 to i8
+```
+
+## ```as```
+The ```as``` keyword converts one primitive data type to another, with **no** overflow checking.
+
+```
+1000u32 as i8
+```
