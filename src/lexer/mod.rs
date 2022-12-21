@@ -29,6 +29,8 @@ pub enum TokenType {
     I128,
     U128,
     UNKNOWN,
+    F32,
+    F64,
 }
 
 pub struct Lexer<'life> {
@@ -86,6 +88,8 @@ impl std::fmt::Display for TokenType {
            TokenType::I128 => write!(f, "i128"),
            TokenType::U128 => write!(f, "u128"),
            TokenType::UNKNOWN => write!(f, "UNKNOWN"),
+           TokenType::F32 => write!(f, "f32"),
+           TokenType::F64 => write!(f, "f64"),
        }
     }
 }
@@ -306,7 +310,32 @@ fn make_number(lexer: &mut Lexer) -> Token {
         end=lexer.col;
         line=lexer.line;
         advance(lexer);
-        if lexer.current == 'u' || lexer.current == 'i' {
+        if lexer.current == '.' {
+            tp=TokenType::F32;
+            data.push(lexer.current);
+            advance(lexer);
+        }
+        if lexer.current == 'f' {            
+            let mut specified_tp: String = String::from(lexer.current);
+            advance(lexer);
+            while lexer.current.is_numeric() {
+                specified_tp.push(lexer.current.to_ascii_lowercase());
+                end=lexer.col;
+                line=lexer.line;
+                advance(lexer);
+            }
+
+            if specified_tp==crate::codegen::types::BasicDataType::F32.to_string() {
+                tp=TokenType::F32;
+            }
+            else if specified_tp==crate::codegen::types::BasicDataType::F64.to_string() {
+                tp=TokenType::F64;
+            }
+            else {
+                crate::errors::raise_error(format!("Invalid specified type {}.", specified_tp).as_str(), crate::errors::ErrorType::UnknownType, &crate::parser::Position { line, startcol: start, endcol: end+1 }, lexer.info);
+            }
+        }
+        else if lexer.current == 'u' || lexer.current == 'i' {
             let mut specified_tp: String = String::from(lexer.current);
             advance(lexer);
             while lexer.current.is_numeric() {

@@ -38,6 +38,8 @@ pub enum NodeType {
     U128,
     TO,
     AS,
+    F32,
+    F64,
 }
 
 #[derive(Clone)]
@@ -87,6 +89,8 @@ impl std::fmt::Display for Node {
             NodeType::I64 |
             NodeType::U64 |
             NodeType::I128 |
+            NodeType::F32 |
+            NodeType::F64 |
             NodeType::U128 => write!(f, "{}", self.data.num.as_ref().unwrap() ),
             NodeType::TO |
             NodeType::AS => write!(f, "{}", self.data.to.as_ref().unwrap() ),
@@ -222,6 +226,8 @@ impl<'life> Parser<'life> {
 
     fn is_atomic(&mut self) -> bool{
         match self.current.tp {
+            TokenType::F32 |
+            TokenType::F64 |
             TokenType::I32 |
             TokenType::U32 |
             TokenType::I8 |
@@ -252,6 +258,8 @@ impl<'life> Parser<'life> {
             TokenType::U128 => Some(self.generate_u128(self.current.data.clone())),
             TokenType::IDENTIFIER => Some(self.generate_identifier(self.current.data.clone())),
             TokenType::LPAREN => Some(self.generate_grouped()),
+            TokenType::F32 => Some(self.generate_f32(self.current.data.clone())),
+            TokenType::F64 => Some(self.generate_f64(self.current.data.clone())),
             _ => None,
         }
     }
@@ -844,6 +852,62 @@ impl<'life> Parser<'life> {
         };
     
         let n: Node = self.create_node(NodeType::AS, nodedat, pos);
+    
+        return n;
+    }
+    
+    fn generate_f32(&mut self, data: String) -> Node{
+        let int: nodes::NumNode = nodes::NumNode{
+            left: data.clone()
+        };
+    
+        let nodedat: nodes::NodeData = nodes::NodeData {
+            binary: None,
+            num: Some(int),
+            letn: None,
+            identifier: None,
+            func: None,
+            assign: None,
+            call: None,
+            ret: None,
+            to: None,
+        };
+
+        let pos = Position {
+            line: self.current.line,
+            startcol: self.current.startcol,
+            endcol: self.current.endcol,
+        };
+    
+        let n: Node = self.create_node(NodeType::F32, nodedat, pos);
+    
+        return n;
+    }
+    
+    fn generate_f64(&mut self, data: String) -> Node{
+        let int: nodes::NumNode = nodes::NumNode{
+            left: data.clone()
+        };
+    
+        let nodedat: nodes::NodeData = nodes::NodeData {
+            binary: None,
+            num: Some(int),
+            letn: None,
+            identifier: None,
+            func: None,
+            assign: None,
+            call: None,
+            ret: None,
+            to: None,
+        };
+
+        let pos = Position {
+            line: self.current.line,
+            startcol: self.current.startcol,
+            endcol: self.current.endcol,
+        };
+    
+        let n: Node = self.create_node(NodeType::F64, nodedat, pos);
     
         return n;
     }

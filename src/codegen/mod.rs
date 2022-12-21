@@ -23,6 +23,8 @@ pub struct InkwellTypes<'ctx> {
     i32tp: &'ctx inkwell::types::IntType<'ctx>,
     i64tp: &'ctx inkwell::types::IntType<'ctx>,
     i128tp: &'ctx inkwell::types::IntType<'ctx>,
+    f32tp: &'ctx inkwell::types::FloatType<'ctx>,
+    f64tp: &'ctx inkwell::types::FloatType<'ctx>,
     voidtp: &'ctx inkwell::types::VoidType<'ctx>,
 }
 
@@ -65,32 +67,38 @@ impl<'ctx> CodeGen<'ctx> {
         if *str_rep == types::BasicDataType::I32.to_string() {
             return Some(types::new_datatype(types::BasicDataType::I32, types::BasicDataType::I32.to_string(), None, Vec::new(), Vec::new(), None));
         }
-        if *str_rep == types::BasicDataType::U32.to_string() {
+        else if *str_rep == types::BasicDataType::U32.to_string() {
             return Some(types::new_datatype(types::BasicDataType::U32, types::BasicDataType::U32.to_string(), None, Vec::new(), Vec::new(), None));
         }
-        if *str_rep == types::BasicDataType::I8.to_string() {
+        else if *str_rep == types::BasicDataType::I8.to_string() {
             return Some(types::new_datatype(types::BasicDataType::I8, types::BasicDataType::I8.to_string(), None, Vec::new(), Vec::new(), None));
         }
-        if *str_rep == types::BasicDataType::U8.to_string() {
+        else if *str_rep == types::BasicDataType::U8.to_string() {
             return Some(types::new_datatype(types::BasicDataType::U8, types::BasicDataType::U8.to_string(), None, Vec::new(), Vec::new(), None));
         }
-        if *str_rep == types::BasicDataType::I16.to_string() {
+        else if *str_rep == types::BasicDataType::I16.to_string() {
             return Some(types::new_datatype(types::BasicDataType::I16, types::BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None));
         }
-        if *str_rep == types::BasicDataType::U16.to_string() {
+        else if *str_rep == types::BasicDataType::U16.to_string() {
             return Some(types::new_datatype(types::BasicDataType::U16, types::BasicDataType::U16.to_string(), None, Vec::new(), Vec::new(), None));
         }
-        if *str_rep == types::BasicDataType::I64.to_string() {
+        else if *str_rep == types::BasicDataType::I64.to_string() {
             return Some(types::new_datatype(types::BasicDataType::I64, types::BasicDataType::I64.to_string(), None, Vec::new(), Vec::new(), None));
         }
-        if *str_rep == types::BasicDataType::U64.to_string() {
+        else if *str_rep == types::BasicDataType::U64.to_string() {
             return Some(types::new_datatype(types::BasicDataType::U64, types::BasicDataType::U64.to_string(), None, Vec::new(), Vec::new(), None));
         }
-        if *str_rep == types::BasicDataType::I128.to_string() {
+        else if *str_rep == types::BasicDataType::I128.to_string() {
             return Some(types::new_datatype(types::BasicDataType::I128, types::BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None));
         }
-        if *str_rep == types::BasicDataType::U128.to_string() {
+        else if *str_rep == types::BasicDataType::U128.to_string() {
             return Some(types::new_datatype(types::BasicDataType::U128, types::BasicDataType::U128.to_string(), None, Vec::new(), Vec::new(), None));
+        }
+        else if *str_rep == types::BasicDataType::F32.to_string() {
+            return Some(types::new_datatype(types::BasicDataType::F32, types::BasicDataType::F32.to_string(), None, Vec::new(), Vec::new(), None));
+        }
+        else if *str_rep == types::BasicDataType::F64.to_string() {
+            return Some(types::new_datatype(types::BasicDataType::F64, types::BasicDataType::F64.to_string(), None, Vec::new(), Vec::new(), None));
         }
         else if *str_rep == types::BasicDataType::Unit.to_string() {
             return Some(types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None));
@@ -121,6 +129,12 @@ impl<'ctx> CodeGen<'ctx> {
             types::BasicDataType::U128 => {
                 return Some(inkwell::types::AnyTypeEnum::IntType(*types.i128tp));
             }
+            types::BasicDataType::F32 => {
+                return Some(inkwell::types::AnyTypeEnum::FloatType(*types.f32tp));
+            }
+            types::BasicDataType::F64 => {
+                return Some(inkwell::types::AnyTypeEnum::FloatType(*types.f64tp));
+            }
             types::BasicDataType::Unit => {
                 return Some(inkwell::types::AnyTypeEnum::VoidType(*types.voidtp));
             }
@@ -147,6 +161,9 @@ impl<'ctx> CodeGen<'ctx> {
                 if tp.is_int_type() {
                     inktypes.push(inkwell::types::BasicMetadataTypeEnum::IntType(tp.into_int_type()));
                 }
+                else if tp.is_float_type() {
+                    inktypes.push(inkwell::types::BasicMetadataTypeEnum::FloatType(tp.into_float_type()));
+                }
                 else if tp.is_function_type() {
                     inktypes.push(inkwell::types::BasicMetadataTypeEnum::PointerType(tp.into_function_type().ptr_type(inkwell::AddressSpace::Generic)));
                 }
@@ -164,6 +181,9 @@ impl<'ctx> CodeGen<'ctx> {
             
             if tp.is_int_type() {
                 fntp = tp.into_int_type().fn_type(&inktypes[..], false);
+            }
+            else if tp.is_float_type() {
+                fntp = tp.into_float_type().fn_type(&inktypes[..], false);
             }
             else if tp.is_function_type() {
                 fntp = tp.into_function_type().ptr_type(inkwell::AddressSpace::Generic).fn_type(&inktypes[..], false);
@@ -351,6 +371,9 @@ impl<'ctx> CodeGen<'ctx> {
             if tp.is_int_type() {
                 inktypes.push(inkwell::types::BasicMetadataTypeEnum::IntType(tp.into_int_type()));
             }
+            if tp.is_float_type() {
+                inktypes.push(inkwell::types::BasicMetadataTypeEnum::FloatType(tp.into_float_type()));
+            }
             else if tp.is_function_type() {
                 inktypes.push(inkwell::types::BasicMetadataTypeEnum::PointerType(tp.into_function_type().ptr_type(inkwell::AddressSpace::Generic)));
             }
@@ -369,6 +392,9 @@ impl<'ctx> CodeGen<'ctx> {
         
         if tp.is_int_type() {
             fn_type = tp.into_int_type().fn_type(&inktypes[..], false);
+        }
+        else if tp.is_float_type() {
+            fn_type = tp.into_float_type().fn_type(&inktypes[..], false);
         }
         else if tp.is_function_type() {
             fn_type = tp.into_function_type().ptr_type(inkwell::AddressSpace::Generic).fn_type(&inktypes[..], false);
@@ -635,7 +661,7 @@ impl<'ctx> CodeGen<'ctx> {
         let anytp: Option<inkwell::types::AnyTypeEnum> = Self::get_anytp_from_tp(&self.inkwell_types, &Some(tp.clone()));
 
         if !anytp.is_none() && anytp.unwrap().is_int_type() && left.data.unwrap().is_int_value() {
-            let res: inkwell::values::IntValue = self.builder.build_int_cast(left.data.unwrap().into_int_value(), anytp.unwrap().into_int_type(), "cast");
+            let res: inkwell::values::IntValue = self.builder.build_int_cast(left.data.unwrap().into_int_value(), anytp.unwrap().into_int_type(), "icast");
 
             match tp.tp {
                 types::BasicDataType::I8 => {
@@ -678,6 +704,26 @@ impl<'ctx> CodeGen<'ctx> {
                 tp: tp.clone(),
             };
         }
+        else if !anytp.is_none() && anytp.unwrap().is_float_type() && left.data.unwrap().is_float_value() {
+            let res: inkwell::values::FloatValue = self.builder.build_float_cast(left.data.unwrap().into_float_value(), anytp.unwrap().into_float_type(), "fcast");
+
+            match tp.tp {
+                types::BasicDataType::F32 => {
+                    builtin_types::f32type::check_overflow(self, &res.to_string(), &node.pos);
+                }
+                types::BasicDataType::F64 => {
+                    builtin_types::f64type::check_overflow(self, &res.to_string(), &node.pos);
+                }
+                _ => {
+                    unreachable!();
+                }
+            }
+
+            return types::Data {
+                data: Some(inkwell::values::BasicValueEnum::FloatValue(res)),
+                tp: tp.clone(),
+            };
+        }
         else {
             let fmt: String = format!("Non primitive cast from '{}' to '{}'.", left.tp.name, tp_name);
             errors::raise_error(&fmt, errors::ErrorType::InvalidCast, &node.pos, self.info);
@@ -707,6 +753,14 @@ impl<'ctx> CodeGen<'ctx> {
 
             return types::Data {
                 data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
+                tp: tp.clone(),
+            };
+        }
+        else if !anytp.is_none() && anytp.unwrap().is_float_type() && left.data.unwrap().is_float_value() {
+            let res: inkwell::values::FloatValue = self.builder.build_float_cast(left.data.unwrap().into_float_value(), anytp.unwrap().into_float_type(), "fcast");
+
+            return types::Data {
+                data: Some(inkwell::values::BasicValueEnum::FloatValue(res)),
                 tp: tp.clone(),
             };
         }
@@ -905,6 +959,18 @@ impl<'ctx> CodeGen<'ctx> {
             parser::NodeType::AS => {
                 self.build_as(node)
             }
+            parser::NodeType::F32 => {
+                let self_data: &String = &node.data.num.as_ref().unwrap().left;
+                builtin_types::f32type::check_overflow_literal(self, self_data, &node.pos);
+                let selfv: inkwell::values::FloatValue = self.inkwell_types.f32tp.const_float_from_string(self_data.as_str());
+                types::Data {data: Some(inkwell::values::BasicValueEnum::FloatValue(selfv)), tp: types::new_datatype(types::BasicDataType::F32, types::BasicDataType::F32.to_string(), None, Vec::new(), Vec::new(), None)}
+            }
+            parser::NodeType::F64 => {
+                let self_data: &String = &node.data.num.as_ref().unwrap().left;
+                builtin_types::f64type::check_overflow_literal(self, self_data, &node.pos);
+                let selfv: inkwell::values::FloatValue = self.inkwell_types.f64tp.const_float_from_string(self_data.as_str());
+                types::Data {data: Some(inkwell::values::BasicValueEnum::FloatValue(selfv)), tp: types::new_datatype(types::BasicDataType::F64, types::BasicDataType::F64.to_string(), None, Vec::new(), Vec::new(), None)}
+            }
         }
     }
 
@@ -943,6 +1009,8 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
         i32tp: &context.i32_type(),
         i64tp: &context.i64_type(),
         i128tp: &context.i128_type(),
+        f32tp: &context.f32_type(),
+        f64tp: &context.f64_type(),
         voidtp: &context.void_type(),
     };
 
