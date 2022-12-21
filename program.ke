@@ -1,9 +1,9 @@
 fn f(x: f32) -> f32{
-    let y: f32 = 100u32 as f32
+    let y: f32 = 100u32 to f32
     return y
 }
 
 fn main() {
-    let x = 1.23
+    let x = 1000000f32 to i32
     f(100f32)
 }

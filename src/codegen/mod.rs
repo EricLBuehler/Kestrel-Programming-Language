@@ -665,34 +665,34 @@ impl<'ctx> CodeGen<'ctx> {
 
             match tp.tp {
                 types::BasicDataType::I8 => {
-                    builtin_types::i8type::check_overflow(self, &res.to_string(), &node.pos);
+                    builtin_types::i8type::check_overflow_literal(self, &res.to_string(), &node.pos);
                 }
                 types::BasicDataType::I16 => {
-                    builtin_types::i16type::check_overflow(self, &res.to_string(), &node.pos);
+                    builtin_types::i16type::check_overflow_literal(self, &res.to_string(), &node.pos);
                 }
                 types::BasicDataType::I32 => {
-                    builtin_types::i32type::check_overflow(self, &res.to_string(), &node.pos);
+                    builtin_types::i32type::check_overflow_literal(self, &res.to_string(), &node.pos);
                 }
                 types::BasicDataType::I64 => {
-                    builtin_types::i64type::check_overflow(self, &res.to_string(), &node.pos);
+                    builtin_types::i64type::check_overflow_literal(self, &res.to_string(), &node.pos);
                 }
                 types::BasicDataType::I128 => {
-                    builtin_types::i128type::check_overflow(self, &res.to_string(), &node.pos);
+                    builtin_types::i128type::check_overflow_literal(self, &res.to_string(), &node.pos);
                 }
                 types::BasicDataType::U8 => {
-                    builtin_types::u8type::check_overflow(self, &res.to_string(), &node.pos);
+                    builtin_types::u8type::check_overflow_literal(self, &res.to_string(), &node.pos);
                 }
                 types::BasicDataType::U16 => {
-                    builtin_types::u16type::check_overflow(self, &res.to_string(), &node.pos);
+                    builtin_types::u16type::check_overflow_literal(self, &res.to_string(), &node.pos);
                 }
                 types::BasicDataType::U32 => {
-                    builtin_types::u32type::check_overflow(self, &res.to_string(), &node.pos);
+                    builtin_types::u32type::check_overflow_literal(self, &res.to_string(), &node.pos);
                 }
                 types::BasicDataType::U64 => {
-                    builtin_types::u64type::check_overflow(self, &res.to_string(), &node.pos);
+                    builtin_types::u64type::check_overflow_literal(self, &res.to_string(), &node.pos);
                 }
                 types::BasicDataType::U128 => {
-                    builtin_types::u128type::check_overflow(self, &res.to_string(), &node.pos);
+                    builtin_types::u128type::check_overflow_literal(self, &res.to_string(), &node.pos);
                 }
                 _ => {
                     unreachable!();
@@ -709,10 +709,10 @@ impl<'ctx> CodeGen<'ctx> {
 
             match tp.tp {
                 types::BasicDataType::F32 => {
-                    builtin_types::f32type::check_overflow(self, &res.to_string(), &node.pos);
+                    builtin_types::f32type::check_overflow_literal(self, &res.to_string(), &node.pos);
                 }
                 types::BasicDataType::F64 => {
-                    builtin_types::f64type::check_overflow(self, &res.to_string(), &node.pos);
+                    builtin_types::f64type::check_overflow_literal(self, &res.to_string(), &node.pos);
                 }
                 _ => {
                     unreachable!();
@@ -721,6 +721,75 @@ impl<'ctx> CodeGen<'ctx> {
 
             return types::Data {
                 data: Some(inkwell::values::BasicValueEnum::FloatValue(res)),
+                tp: tp.clone(),
+            };
+        }
+        else if !anytp.is_none() && anytp.unwrap().is_float_type() && left.data.unwrap().is_int_value() {
+            let res: inkwell::values::FloatValue = left.data.unwrap().into_int_value().const_signed_to_float(anytp.unwrap().into_float_type());
+            
+            match tp.tp {
+                types::BasicDataType::F32 => {
+                    builtin_types::f32type::check_overflow_literal(self, &builtin_types::float_repr(res), &node.pos);
+                }
+                types::BasicDataType::F64 => {
+                    builtin_types::f64type::check_overflow_literal(self, &builtin_types::float_repr(res), &node.pos);
+                }
+                _ => {
+                    unreachable!();
+                }
+            }
+
+            return types::Data {
+                data: Some(inkwell::values::BasicValueEnum::FloatValue(res)),
+                tp: tp.clone(),
+            };
+        }
+        else if !anytp.is_none() && anytp.unwrap().is_int_type() && left.data.unwrap().is_float_value() {
+            let res: inkwell::values::IntValue = if builtin_types::int_issigned(tp.clone()) {
+                left.data.unwrap().into_float_value().const_to_signed_int(anytp.unwrap().into_int_type())
+            }
+            else {
+                left.data.unwrap().into_float_value().const_to_unsigned_int(anytp.unwrap().into_int_type())
+            };
+            
+            match tp.tp {
+                types::BasicDataType::I8 => {
+                    builtin_types::i8type::check_overflow_literal(self, &builtin_types::int_repr(res), &node.pos);
+                }
+                types::BasicDataType::I16 => {
+                    builtin_types::i16type::check_overflow_literal(self, &builtin_types::int_repr(res), &node.pos);
+                }
+                types::BasicDataType::I32 => {
+                    builtin_types::i32type::check_overflow_literal(self, &builtin_types::int_repr(res), &node.pos);
+                }
+                types::BasicDataType::I64 => {
+                    builtin_types::i64type::check_overflow_literal(self, &builtin_types::int_repr(res), &node.pos);
+                }
+                types::BasicDataType::I128 => {
+                    builtin_types::i128type::check_overflow_literal(self, &builtin_types::int_repr(res), &node.pos);
+                }
+                types::BasicDataType::U8 => {
+                    builtin_types::u8type::check_overflow_literal(self, &builtin_types::int_repr(res), &node.pos);
+                }
+                types::BasicDataType::U16 => {
+                    builtin_types::u16type::check_overflow_literal(self, &builtin_types::int_repr(res), &node.pos);
+                }
+                types::BasicDataType::U32 => {
+                    builtin_types::u32type::check_overflow_literal(self, &builtin_types::int_repr(res), &node.pos);
+                }
+                types::BasicDataType::U64 => {
+                    builtin_types::u64type::check_overflow_literal(self, &builtin_types::int_repr(res), &node.pos);
+                }
+                types::BasicDataType::U128 => {
+                    builtin_types::u128type::check_overflow_literal(self, &builtin_types::int_repr(res), &node.pos);
+                }
+                _ => {
+                    unreachable!();
+                }
+            }
+
+            return types::Data {
+                data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
                 tp: tp.clone(),
             };
         }
@@ -764,6 +833,27 @@ impl<'ctx> CodeGen<'ctx> {
                 tp: tp.clone(),
             };
         }
+        else if !anytp.is_none() && anytp.unwrap().is_float_type() && left.data.unwrap().is_int_value() {
+            let res: inkwell::values::FloatValue = left.data.unwrap().into_int_value().const_signed_to_float(anytp.unwrap().into_float_type());
+            
+            return types::Data {
+                data: Some(inkwell::values::BasicValueEnum::FloatValue(res)),
+                tp: tp.clone(),
+            };
+        }
+        else if !anytp.is_none() && anytp.unwrap().is_int_type() && left.data.unwrap().is_float_value() {
+            let res: inkwell::values::IntValue = if builtin_types::int_issigned(left.tp) {
+                left.data.unwrap().into_float_value().const_to_signed_int(left.data.unwrap().get_type().into_int_type())
+            }
+            else {
+                left.data.unwrap().into_float_value().const_to_unsigned_int(left.data.unwrap().get_type().into_int_type())
+            };
+
+            return types::Data {
+                data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
+                tp: tp.clone(),
+            };
+        } 
         else {
             let fmt: String = format!("Non primitive cast from '{}' to '{}'.", left.tp.name, tp_name);
             errors::raise_error(&fmt, errors::ErrorType::InvalidCast, &node.pos, self.info);

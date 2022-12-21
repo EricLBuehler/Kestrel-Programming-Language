@@ -3,22 +3,22 @@ source_filename = "program.ke"
 target triple = "x86_64-unknown-linux-gnu"
 
 ; Function Attrs: noinline nounwind optnone
-define i32 @f(i32 %0) local_unnamed_addr #0 !dbg !4 {
+define float @f(float %0) local_unnamed_addr #0 !dbg !4 {
 entry:
-  %x = alloca i32, !dbg !8
-  store i32 %0, i32* %x, !dbg !8
-  %y = alloca i32, !dbg !8
-  store i32 100, i32* %y, !dbg !8
-  %y1 = load i32, i32* %y, !dbg !8
-  ret i32 %y1, !dbg !8
+  %x = alloca float, !dbg !8
+  store float %0, float* %x, !dbg !8
+  %y = alloca float, !dbg !8
+  store float 1.000000e+02, float* %y, !dbg !8
+  %y1 = load float, float* %y, !dbg !8
+  ret float %y1, !dbg !8
 }
 
 ; Function Attrs: noinline nounwind optnone
 define void @_main() local_unnamed_addr #0 !dbg !10 {
 entry:
-  %x = alloca float, !dbg !14
-  store float 0x3FF3AE1480000000, float* %x, !dbg !14
-  %res = call i32 @f(i32 100), !dbg !14
+  %x = alloca i32, !dbg !14
+  store i32 1000000, i32* %x, !dbg !14
+  %res = call float @f(float 1.000000e+02), !dbg !14
   ret void, !dbg !14
 }
 
@@ -41,7 +41,7 @@ attributes #0 = { noinline nounwind optnone }
 !4 = distinct !DISubprogram(name: "f", linkageName: "f", scope: null, file: !2, type: !5, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !5 = !DISubroutineType(flags: DIFlagPublic, types: !6)
 !6 = !{!7, !7}
-!7 = !DIBasicType(name: "i32", size: 16, flags: DIFlagPublic)
+!7 = !DIBasicType(name: "float", size: 16, flags: DIFlagPublic)
 !8 = !DILocation(line: 0, scope: !9)
 !9 = distinct !DILexicalBlock(scope: !4, file: !2)
 !10 = distinct !DISubprogram(name: "main", linkageName: "_main", scope: null, file: !2, line: 5, type: !11, scopeLine: 5, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)

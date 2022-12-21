@@ -29,7 +29,7 @@ fn f32_add<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
     let otherv: inkwell::values::FloatValue = args.get(1).unwrap().data.unwrap().into_float_value();
 
     let res: inkwell::values::FloatValue = codegen.builder.build_float_add(selfv, otherv, "f32sum");
-    check_overflow(codegen, &res.to_string(), pos);
+    check_overflow(codegen, &builtin_types::float_repr(res), pos);
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::FloatValue(res)),
@@ -47,7 +47,7 @@ fn f32_mul<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
     let otherv: inkwell::values::FloatValue = args.get(1).unwrap().data.unwrap().into_float_value();
 
     let res: inkwell::values::FloatValue = codegen.builder.build_float_mul(selfv, otherv, "f32mul");
-    check_overflow(codegen, &res.to_string(), pos);
+    check_overflow(codegen, &builtin_types::float_repr(res), pos);
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::FloatValue(res)),
@@ -65,7 +65,7 @@ fn f32_sub<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
     let otherv: inkwell::values::FloatValue = args.get(1).unwrap().data.unwrap().into_float_value();
 
     let res: inkwell::values::FloatValue = codegen.builder.build_float_sub(selfv, otherv, "f32sub");
-    check_overflow(codegen, &res.to_string(), pos);
+    check_overflow(codegen, &builtin_types::float_repr(res), pos);
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::FloatValue(res)),
@@ -83,7 +83,7 @@ fn f32_div<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
     let otherv: inkwell::values::FloatValue = args.get(1).unwrap().data.unwrap().into_float_value();
 
     let res: inkwell::values::FloatValue = codegen.builder.build_float_div(selfv, otherv, "f32div");
-    check_overflow(codegen, &res.to_string(), pos);
+    check_overflow(codegen, &builtin_types::float_repr(res), pos);
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::FloatValue(res)),
