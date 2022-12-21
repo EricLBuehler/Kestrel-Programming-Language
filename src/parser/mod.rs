@@ -778,19 +778,15 @@ impl<'life> Parser<'life> {
         };
 
         self.advance();
-
-        if !self.current_is_type(TokenType::IDENTIFIER) {
-            self.raise_error("Expected identifier", ErrorType::InvalidTok);
-        }
         
+        let res: (usize, Arg) = self.parse_type(DataMutablility::Immutable);
+
         let to: nodes::ToNode = nodes::ToNode{
             left,
-            name: self.current.data.clone(),
+            tp: res.1,
         };
 
-        pos.endcol = self.current.endcol;
-
-        self.advance();
+        pos.endcol = res.0;
 
         let nodedat: nodes::NodeData = nodes::NodeData {
             binary: None,
@@ -839,7 +835,7 @@ impl<'life> Parser<'life> {
         if self.current_is_type(TokenType::COLON) {
             self.advance();
     
-            tp=Some(self.parse_argument(mutability));
+            tp=Some(self.parse_type(mutability).1);
         }
 
 
@@ -877,7 +873,7 @@ impl<'life> Parser<'life> {
         return n;        
     }
 
-    fn parse_argument(&mut self, mutability: DataMutablility) -> Arg{
+    fn parse_type(&mut self, mutability: DataMutablility) -> (usize, Arg){
         if !self.current_is_type(TokenType::IDENTIFIER) {
             if !self.current_is_type(TokenType::KEYWORD) || (self.current_is_type(TokenType::IDENTIFIER) && self.current.data != "fn") {
                 self.raise_error("Expected identifier.", ErrorType::InvalidTok);
@@ -906,18 +902,21 @@ impl<'life> Parser<'life> {
                     self.advance();
                     mutability = DataMutablility::Mutable;
                 }
-                args_.args.push(self.parse_argument(mutability));
+                args_.args.push(self.parse_type(mutability).1);
             }
             
             if !self.current_is_type(TokenType::RPAREN) {
                 self.raise_error("Expected right parenthesis.", ErrorType::InvalidTok);
             }
 
+            let mut end: usize = self.current.endcol;
+
             self.advance();
 
             if self.current_is_type(TokenType::SMALLARROW) {
                 self.advance();
-                args_.rettp.push(self.parse_argument(DataMutablility::Immutable));
+                end = self.current.endcol;
+                args_.rettp.push(self.parse_type(DataMutablility::Immutable).1);
             }
             else {
                 args_.rettp.push(Arg {
@@ -928,21 +927,22 @@ impl<'life> Parser<'life> {
                 });
             }
 
-            return Arg {
+            return (end, Arg {
                 isfn: true,
                 data: None,
                 args: Some(args_),
                 mutability,
-            };
+            });
         }
         else {
+            let end: usize = self.current.endcol;
             self.advance();
-            return Arg {
+            return (end, Arg {
                 isfn: false,
                 data: Some(tp),
                 args: None,
                 mutability,
-            };
+            });
         }
     }
 
@@ -996,7 +996,7 @@ impl<'life> Parser<'life> {
 
             self.advance();
 
-            args.args.push(self.parse_argument(mutability));
+            args.args.push(self.parse_type(mutability).1);
             if !self.current_is_type(TokenType::COMMA) && !self.current_is_type(TokenType::RPAREN) {
                 self.raise_error("Expected comma.", ErrorType::InvalidTok);
             }
@@ -1019,7 +1019,7 @@ impl<'life> Parser<'life> {
         if self.current_is_type(TokenType::SMALLARROW) {
             self.advance();
 
-            args.rettp.push(self.parse_argument(DataMutablility::Immutable));
+            args.rettp.push(self.parse_type(DataMutablility::Immutable).1);
         }
         else {
             args.rettp.push(Arg {

@@ -123,12 +123,12 @@ impl std::fmt::Display for ReturnNode {
 #[derive(Clone)]
 pub struct ToNode {
     pub left: crate::parser::Node,
-    pub name: String,
+    pub tp: crate::parser::Arg,
 }
 
 impl std::fmt::Display for ToNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "'{}' to {}", self.left, self.name)
+        write!(f, "'{}' to '{}'", self.left, if self.tp.isfn {"fn"} else {self.tp.data.as_ref().unwrap().as_str()})
     }    
 }
 

@@ -618,7 +618,12 @@ impl<'ctx> CodeGen<'ctx> {
 
     fn build_to(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         let left: types::Data = self.compile_expr(&node.data.to.as_ref().unwrap().left);     
-        let tp_name: &String = &node.data.to.as_ref().unwrap().name;
+        let arg: &parser::Arg = &node.data.to.as_ref().unwrap().tp;  
+        if arg.isfn {
+            let fmt: String = format!("Non primitive cast from '{}' to 'fn'.", left.tp.name);
+            errors::raise_error(&fmt, errors::ErrorType::InvalidCast, &node.pos, self.info);
+        }
+        let tp_name: &String = &arg.data.as_ref().unwrap();
 
         let tp: types::DataType = if Self::get_datatype_from_str(tp_name).is_none() {
             let fmt: String = format!("Unknown type '{}'.", tp_name);
