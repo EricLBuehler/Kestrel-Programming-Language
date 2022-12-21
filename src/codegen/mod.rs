@@ -635,8 +635,46 @@ impl<'ctx> CodeGen<'ctx> {
         let anytp: Option<inkwell::types::AnyTypeEnum> = Self::get_anytp_from_tp(&self.inkwell_types, &Some(tp.clone()));
 
         if !anytp.is_none() && anytp.unwrap().is_int_type() && left.data.unwrap().is_int_value() {
+            let res: inkwell::values::IntValue = self.builder.build_int_cast(left.data.unwrap().into_int_value(), anytp.unwrap().into_int_type(), "cast");
+
+            match tp.tp {
+                types::BasicDataType::I8 => {
+                    builtin_types::i8type::check_overflow(self, &res.to_string(), &node.pos);
+                }
+                types::BasicDataType::I16 => {
+                    builtin_types::i16type::check_overflow(self, &res.to_string(), &node.pos);
+                }
+                types::BasicDataType::I32 => {
+                    builtin_types::i32type::check_overflow(self, &res.to_string(), &node.pos);
+                }
+                types::BasicDataType::I64 => {
+                    builtin_types::i64type::check_overflow(self, &res.to_string(), &node.pos);
+                }
+                types::BasicDataType::I128 => {
+                    builtin_types::i128type::check_overflow(self, &res.to_string(), &node.pos);
+                }
+                types::BasicDataType::U8 => {
+                    builtin_types::u8type::check_overflow(self, &res.to_string(), &node.pos);
+                }
+                types::BasicDataType::U16 => {
+                    builtin_types::u16type::check_overflow(self, &res.to_string(), &node.pos);
+                }
+                types::BasicDataType::U32 => {
+                    builtin_types::u32type::check_overflow(self, &res.to_string(), &node.pos);
+                }
+                types::BasicDataType::U64 => {
+                    builtin_types::u64type::check_overflow(self, &res.to_string(), &node.pos);
+                }
+                types::BasicDataType::U128 => {
+                    builtin_types::u128type::check_overflow(self, &res.to_string(), &node.pos);
+                }
+                _ => {
+                    unreachable!();
+                }
+            }
+
             return types::Data {
-                data: Some(inkwell::values::BasicValueEnum::IntValue(self.builder.build_int_cast(left.data.unwrap().into_int_value(), anytp.unwrap().into_int_type(), "cast"))),
+                data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
                 tp: tp.clone(),
             };
         }
@@ -650,7 +688,7 @@ impl<'ctx> CodeGen<'ctx> {
         match node.tp {
             parser::NodeType::I32 => {
                 let self_data: &String = &node.data.num.as_ref().unwrap().left;
-                builtin_types::i32type::check_overflow(self, self_data, &node.pos);
+                builtin_types::i32type::check_overflow_literal(self, self_data, &node.pos);
                 let selfv: inkwell::values::IntValue = match self.inkwell_types.i32tp.const_int_from_string(self_data.as_str(), inkwell::types::StringRadix::Decimal) {
                     None => {
                         let fmt: String = format!("Invalid i32 literal '{}'.", self_data);
@@ -687,7 +725,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
             parser::NodeType::U32 => {
                 let self_data: &String = &node.data.num.as_ref().unwrap().left;
-                builtin_types::u32type::check_overflow(self, self_data, &node.pos);
+                builtin_types::u32type::check_overflow_literal(self, self_data, &node.pos);
                 let selfv: inkwell::values::IntValue = match self.inkwell_types.i32tp.const_int_from_string(self_data.as_str(), inkwell::types::StringRadix::Decimal) {
                     None => {
                         let fmt: String = format!("Invalid u32 literal '{}'.", self_data);
@@ -703,7 +741,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
             parser::NodeType::I8 => {
                 let self_data: &String = &node.data.num.as_ref().unwrap().left;
-                builtin_types::i8type::check_overflow(self, self_data, &node.pos);
+                builtin_types::i8type::check_overflow_literal(self, self_data, &node.pos);
                 let selfv: inkwell::values::IntValue = match self.inkwell_types.i8tp.const_int_from_string(self_data.as_str(), inkwell::types::StringRadix::Decimal) {
                     None => {
                         let fmt: String = format!("Invalid i8 literal '{}'.", self_data);
@@ -719,7 +757,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
             parser::NodeType::U8 => {
                 let self_data: &String = &node.data.num.as_ref().unwrap().left;
-                builtin_types::u8type::check_overflow(self, self_data, &node.pos);
+                builtin_types::u8type::check_overflow_literal(self, self_data, &node.pos);
                 let selfv: inkwell::values::IntValue = match self.inkwell_types.i8tp.const_int_from_string(self_data.as_str(), inkwell::types::StringRadix::Decimal) {
                     None => {
                         let fmt: String = format!("Invalid u8 literal '{}'.", self_data);
@@ -735,7 +773,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
             parser::NodeType::I16 => {
                 let self_data: &String = &node.data.num.as_ref().unwrap().left;
-                builtin_types::i16type::check_overflow(self, self_data, &node.pos);
+                builtin_types::i16type::check_overflow_literal(self, self_data, &node.pos);
                 let selfv: inkwell::values::IntValue = match self.inkwell_types.i16tp.const_int_from_string(self_data.as_str(), inkwell::types::StringRadix::Decimal) {
                     None => {
                         let fmt: String = format!("Invalid i16 literal '{}'.", self_data);
@@ -751,7 +789,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
             parser::NodeType::U16 => {
                 let self_data: &String = &node.data.num.as_ref().unwrap().left;
-                builtin_types::u16type::check_overflow(self, self_data, &node.pos);
+                builtin_types::u16type::check_overflow_literal(self, self_data, &node.pos);
                 let selfv: inkwell::values::IntValue = match self.inkwell_types.i16tp.const_int_from_string(self_data.as_str(), inkwell::types::StringRadix::Decimal) {
                     None => {
                         let fmt: String = format!("Invalid u16 literal '{}'.", self_data);
@@ -767,7 +805,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
             parser::NodeType::I64 => {
                 let self_data: &String = &node.data.num.as_ref().unwrap().left;
-                builtin_types::i64type::check_overflow(self, self_data, &node.pos);
+                builtin_types::i64type::check_overflow_literal(self, self_data, &node.pos);
                 let selfv: inkwell::values::IntValue = match self.inkwell_types.i64tp.const_int_from_string(self_data.as_str(), inkwell::types::StringRadix::Decimal) {
                     None => {
                         let fmt: String = format!("Invalid i64 literal '{}'.", self_data);
@@ -783,7 +821,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
             parser::NodeType::U64 => {
                 let self_data: &String = &node.data.num.as_ref().unwrap().left;
-                builtin_types::u64type::check_overflow(self, self_data, &node.pos);
+                builtin_types::u64type::check_overflow_literal(self, self_data, &node.pos);
                 let selfv: inkwell::values::IntValue = match self.inkwell_types.i64tp.const_int_from_string(self_data.as_str(), inkwell::types::StringRadix::Decimal) {
                     None => {
                         let fmt: String = format!("Invalid u64 literal '{}'.", self_data);
@@ -799,7 +837,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
             parser::NodeType::I128 => {
                 let self_data: &String = &node.data.num.as_ref().unwrap().left;
-                builtin_types::i128type::check_overflow(self, self_data, &node.pos);
+                builtin_types::i128type::check_overflow_literal(self, self_data, &node.pos);
                 let selfv: inkwell::values::IntValue = match self.inkwell_types.i128tp.const_int_from_string(self_data.as_str(), inkwell::types::StringRadix::Decimal) {
                     None => {
                         let fmt: String = format!("Invalid i128 literal '{}'.", self_data);
@@ -815,7 +853,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
             parser::NodeType::U128 => {
                 let self_data: &String = &node.data.num.as_ref().unwrap().left;
-                builtin_types::u128type::check_overflow(self, self_data, &node.pos);
+                builtin_types::u128type::check_overflow_literal(self, self_data, &node.pos);
                 let selfv: inkwell::values::IntValue = match self.inkwell_types.i128tp.const_int_from_string(self_data.as_str(), inkwell::types::StringRadix::Decimal) {
                     None => {
                         let fmt: String = format!("Invalid u128 literal '{}'.", self_data);

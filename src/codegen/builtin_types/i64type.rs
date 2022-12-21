@@ -7,6 +7,13 @@ use std::collections::HashMap;
 
 pub fn check_overflow<'a>(codegen: &codegen::CodeGen<'a>, data: &String, pos: &parser::Position) {
     if data.parse::<i64>().is_err() {
+        let fmt: String = format!("i64 overflow.");
+        errors::raise_error(&fmt, errors::ErrorType::Overflow, pos, codegen.info);
+    }
+}
+
+pub fn check_overflow_literal<'a>(codegen: &codegen::CodeGen<'a>, data: &String, pos: &parser::Position) {
+    if data.parse::<i64>().is_err() {
         let fmt: String = format!("Invalid i64 literal '{}'.", data);
         errors::raise_error(&fmt, errors::ErrorType::InvalidLiteralForRadix, pos, codegen.info);
     }

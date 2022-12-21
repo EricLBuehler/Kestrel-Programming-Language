@@ -14,6 +14,7 @@ pub enum ErrorType {
     TypeMismatch,
     ImmutableAssign,
     InvalidCast,
+    Overflow,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -32,6 +33,7 @@ impl std::fmt::Display for ErrorType {
             ErrorType::TypeMismatch => write!(f, "mismatch of types"),
             ErrorType::ImmutableAssign => write!(f, "cannot assign to immutable variable"),
             ErrorType::InvalidCast => write!(f, "invalid cast"),
+            ErrorType::Overflow => write!(f, "operation overflows"),
         }
     }
 }
