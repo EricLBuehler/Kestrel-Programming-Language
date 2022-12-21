@@ -11,7 +11,7 @@ The ```i8``` type is a signed 8-bit integer. This is the equivalent of ```char``
 The ```i16``` type is a signed 16-bit integer.
 
 ## ```i32```
-The ```i32``` type is a signed 32-bit integer. It is the default type for integer literals.
+The ```i32``` type is a signed 32-bit integer. It is the default type for integer literals. This is the equivalent of ```int``` in ```C```.
 
 ## ```i64```
 The ```i64``` type is a signed 64-bit integer. This is the equivalent of ```long``` in ```C```.
