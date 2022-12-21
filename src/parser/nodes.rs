@@ -133,6 +133,18 @@ impl std::fmt::Display for ToNode {
 }
 
 #[derive(Clone)]
+pub struct AsNode {
+    pub left: crate::parser::Node,
+    pub tp: crate::parser::Arg,
+}
+
+impl std::fmt::Display for AsNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "'{}' as '{}'", self.left, if self.tp.isfn {"fn"} else {self.tp.data.as_ref().unwrap().as_str()})
+    }    
+}
+
+#[derive(Clone)]
 pub struct NodeData {
     pub binary: Option<BinaryNode>,
     pub num: Option<NumNode>,

@@ -684,6 +684,38 @@ impl<'ctx> CodeGen<'ctx> {
         }
     }
 
+    fn build_as(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        let left: types::Data = self.compile_expr(&node.data.to.as_ref().unwrap().left);     
+        let arg: &parser::Arg = &node.data.to.as_ref().unwrap().tp;  
+        if arg.isfn {
+            let fmt: String = format!("Non primitive cast from '{}' to 'fn'.", left.tp.name);
+            errors::raise_error(&fmt, errors::ErrorType::InvalidCast, &node.pos, self.info);
+        }
+        let tp_name: &String = &arg.data.as_ref().unwrap();
+
+        let tp: types::DataType = if Self::get_datatype_from_str(tp_name).is_none() {
+            let fmt: String = format!("Unknown type '{}'.", tp_name);
+            errors::raise_error(&fmt, errors::ErrorType::MissingTrait, &node.pos, self.info);
+        } else {
+            Self::get_datatype_from_str(tp_name).unwrap()
+        };
+
+        let anytp: Option<inkwell::types::AnyTypeEnum> = Self::get_anytp_from_tp(&self.inkwell_types, &Some(tp.clone()));
+
+        if !anytp.is_none() && anytp.unwrap().is_int_type() && left.data.unwrap().is_int_value() {
+            let res: inkwell::values::IntValue = self.builder.build_int_cast(left.data.unwrap().into_int_value(), anytp.unwrap().into_int_type(), "cast");
+
+            return types::Data {
+                data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
+                tp: tp.clone(),
+            };
+        }
+        else {
+            let fmt: String = format!("Non primitive cast from '{}' to '{}'.", left.tp.name, tp_name);
+            errors::raise_error(&fmt, errors::ErrorType::InvalidCast, &node.pos, self.info);
+        }
+    }
+
     fn compile_expr(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         match node.tp {
             parser::NodeType::I32 => {
@@ -869,6 +901,9 @@ impl<'ctx> CodeGen<'ctx> {
             }
             parser::NodeType::TO => {
                 self.build_to(node)
+            }
+            parser::NodeType::AS => {
+                self.build_as(node)
             }
         }
     }
