@@ -99,6 +99,40 @@ impl<'ctx> CodeGen<'ctx> {
         return None;
     }
 
+    fn get_anytp_from_tp(types: &InkwellTypes<'ctx>, tp: &Option<types::DataType>) -> Option<inkwell::types::AnyTypeEnum<'ctx>> {
+        match tp.as_ref().unwrap().tp {
+            types::BasicDataType::I32 |
+            types::BasicDataType::U32 => {
+                return Some(inkwell::types::AnyTypeEnum::IntType(*types.i32tp));
+            }
+            types::BasicDataType::I8 |
+            types::BasicDataType::U8 => {
+                return Some(inkwell::types::AnyTypeEnum::IntType(*types.i8tp));
+            }
+            types::BasicDataType::I16 |
+            types::BasicDataType::U16 => {
+                return Some(inkwell::types::AnyTypeEnum::IntType(*types.i16tp));
+            }
+            types::BasicDataType::I64 |
+            types::BasicDataType::U64 => {
+                return Some(inkwell::types::AnyTypeEnum::IntType(*types.i64tp));
+            }
+            types::BasicDataType::I128 |
+            types::BasicDataType::U128 => {
+                return Some(inkwell::types::AnyTypeEnum::IntType(*types.i128tp));
+            }
+            types::BasicDataType::Unit => {
+                return Some(inkwell::types::AnyTypeEnum::VoidType(*types.voidtp));
+            }
+            types::BasicDataType::Func => {
+                return None;
+            }
+            types::BasicDataType::Unknown => {
+                return None;
+            }    
+        }
+    }
+
     pub fn get_llvm_from_arg(types: &InkwellTypes<'ctx>, info: &fileinfo::FileInfo, arg: &parser::Arg, node: &parser::Node) -> (types::DataType, inkwell::types::AnyTypeEnum<'ctx>) {
         if arg.isfn {
             let args: &Vec<parser::Arg> = &arg.args.as_ref().unwrap().args;
@@ -154,38 +188,11 @@ impl<'ctx> CodeGen<'ctx> {
                 let fmt: String = format!("Unknown type '{}'.", &arg.data.as_ref().unwrap());
                 errors::raise_error(&fmt, errors::ErrorType::UnknownType, &node.pos, info);
             }
-            match tp.as_ref().unwrap().tp {
-                types::BasicDataType::I32 |
-                types::BasicDataType::U32 => {
-                    return (tp.unwrap(), inkwell::types::AnyTypeEnum::IntType(*types.i32tp));
-                }
-                types::BasicDataType::I8 |
-                types::BasicDataType::U8 => {
-                    return (tp.unwrap(), inkwell::types::AnyTypeEnum::IntType(*types.i8tp));
-                }
-                types::BasicDataType::I16 |
-                types::BasicDataType::U16 => {
-                    return (tp.unwrap(), inkwell::types::AnyTypeEnum::IntType(*types.i16tp));
-                }
-                types::BasicDataType::I64 |
-                types::BasicDataType::U64 => {
-                    return (tp.unwrap(), inkwell::types::AnyTypeEnum::IntType(*types.i64tp));
-                }
-                types::BasicDataType::I128 |
-                types::BasicDataType::U128 => {
-                    return (tp.unwrap(), inkwell::types::AnyTypeEnum::IntType(*types.i128tp));
-                }
-                types::BasicDataType::Unit => {
-                    return (tp.unwrap(), inkwell::types::AnyTypeEnum::VoidType(*types.voidtp));
-                }
-                types::BasicDataType::Func => {
-                    unimplemented!();
-                }
-                types::BasicDataType::Unknown => {
-                    unimplemented!();
-                }
-                
+            let anytp: Option<inkwell::types::AnyTypeEnum> = Self::get_anytp_from_tp(&types, &tp);
+            if anytp.is_none() {
+                unimplemented!();
             }
+            return (tp.unwrap(), anytp.unwrap());
         }
     }
 
@@ -620,10 +627,18 @@ impl<'ctx> CodeGen<'ctx> {
             Self::get_datatype_from_str(tp_name).unwrap()
         };
 
-        println!("{}", tp);
-        
-        
-        return left;
+        let anytp: Option<inkwell::types::AnyTypeEnum> = Self::get_anytp_from_tp(&self.inkwell_types, &Some(tp.clone()));
+
+        if !anytp.is_none() && anytp.unwrap().is_int_type() && left.data.unwrap().is_int_value() {
+            return types::Data {
+                data: Some(inkwell::values::BasicValueEnum::IntValue(self.builder.build_int_cast(left.data.unwrap().into_int_value(), anytp.unwrap().into_int_type(), "cast"))),
+                tp: tp.clone(),
+            };
+        }
+        else {
+            let fmt: String = format!("Non primitive cast from '{}' to '{}'.", left.tp.name, tp_name);
+            errors::raise_error(&fmt, errors::ErrorType::InvalidCast, &node.pos, self.info);
+        }
     }
 
     fn compile_expr(&mut self, node: &parser::Node) -> types::Data<'ctx> {

@@ -13,6 +13,7 @@ pub enum ErrorType {
     ArgumentCountMismatch,
     TypeMismatch,
     ImmutableAssign,
+    InvalidCast,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -30,6 +31,7 @@ impl std::fmt::Display for ErrorType {
             ErrorType::ArgumentCountMismatch => write!(f, "invalid number of arguments were passed to a function"),
             ErrorType::TypeMismatch => write!(f, "mismatch of types"),
             ErrorType::ImmutableAssign => write!(f, "cannot assign to immutable variable"),
+            ErrorType::InvalidCast => write!(f, "invalid cast"),
         }
     }
 }
