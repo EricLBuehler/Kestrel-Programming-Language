@@ -28,6 +28,7 @@ pub enum TokenType {
     U64,
     I128,
     U128,
+    UNKNOWN,
 }
 
 pub struct Lexer<'life> {
@@ -84,6 +85,7 @@ impl std::fmt::Display for TokenType {
            TokenType::U64 => write!(f, "u64"),
            TokenType::I128 => write!(f, "i128"),
            TokenType::U128 => write!(f, "u128"),
+           TokenType::UNKNOWN => write!(f, "UNKNOWN"),
        }
     }
 }
@@ -263,7 +265,17 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
             advance(lexer);
             lexer.col = 0;
         }
+        else if cur.is_whitespace() {
+            advance(lexer);
+        }
         else {
+            vector.push(Token {
+                data: String::from(cur),
+                tp: TokenType::UNKNOWN,
+                line: lexer.line,
+                startcol: lexer.col,
+                endcol: lexer.col+1,
+            });
             advance(lexer);
         }
 
