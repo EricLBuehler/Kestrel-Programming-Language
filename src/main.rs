@@ -41,6 +41,7 @@ fn main() {
                                             String::from("mut"),
                                             String::from("return"),
                                             String::from("to"),
+                                            String::from("as"),
                                             ];
 
     let mut lexer: lexer::Lexer = lexer::Lexer {
