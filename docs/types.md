@@ -30,6 +30,12 @@ The ```i128``` type is a signed 128-bit integer. It is the default size for inte
 ## ```u128```
 The ```u128``` type is an unsigned 128-bit integer. Postfix integer literals with ```u128```.
 
+## ```f32```
+The ```f32``` type is a 32-bit floating point number. Postfix integer literals with ```f32```. This is the equivalent of ```float``` in ```C```.
+
+## ```f64```
+The ```f64``` type is a 64-bit floating point number. Postfix integer literals with ```f64```. This is the equivalent of ```double``` in ```C```.
+
 ## ```unit```
 The ```unit``` type represents data with no type information (```void``` in ```C``` or ```()``` in ```Rust```).
 ```
