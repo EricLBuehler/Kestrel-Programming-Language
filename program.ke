@@ -4,6 +4,6 @@ fn f(x: f32) -> f32{
 
 fn main() {
     let x = 1.23
-    &x
+    &f
     f(x)
 }
