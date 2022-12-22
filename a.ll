@@ -11,15 +11,8 @@ entry:
   %f32sum = fadd float %x1, 1.000000e+01, !dbg !9
   %y = alloca float, !dbg !9
   store float %f32sum, float* %y, !dbg !9
-  %1 = bitcast float* %y to i8*
-  tail call void @free(i8* %1), !dbg !9
-  %2 = bitcast float* %x to i8*
-  tail call void @free(i8* %2), !dbg !9
   ret void, !dbg !9
 }
-
-; Function Attrs: nounwind
-declare void @free(i8* nocapture) local_unnamed_addr #1
 
 ; Function Attrs: noinline nounwind optnone
 define void @_main() local_unnamed_addr #0 !dbg !11 {
@@ -28,8 +21,6 @@ entry:
   store float 0x3FF3AE1480000000, float* %x, !dbg !14
   %x1 = load float, float* %x, !dbg !14
   call void @f(float %x1), !dbg !14
-  %0 = bitcast float* %x to i8*
-  tail call void @free(i8* %0), !dbg !14
   ret void, !dbg !14
 }
 
@@ -41,7 +32,6 @@ entry:
 }
 
 attributes #0 = { noinline nounwind optnone }
-attributes #1 = { nounwind }
 
 !llvm.module.flags = !{!0}
 !llvm.dbg.cu = !{!1}

@@ -528,14 +528,6 @@ impl<'ctx> CodeGen<'ctx> {
         /////// Code generation start:
 
         let retv: types::Data = self.compile(&node.data.func.as_ref().unwrap().blocks, true);
-
-        for var in &self.namespaces.locals {
-            if !var.1.1.is_ref{
-                if var.1.0.is_some() {
-                    self.builder.build_free(var.1.0.unwrap());
-                }
-            }
-        }
         
         //Reset locals
         self.namespaces.locals = prev_locals;
