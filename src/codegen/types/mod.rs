@@ -27,6 +27,7 @@ pub struct DataType {
     pub name: String,
     pub mutability: Vec<DataMutablility>,
     pub rettp: Vec<DataType>, //Just for indirection
+    pub is_ref: bool,
 }
 pub enum TraitType {
     Add,
@@ -124,14 +125,15 @@ pub enum DataMutablility{
     Mutable,
 }
 
-pub fn new_datatype(tp: BasicDataType, name: String, names: Option<Vec<String>>, types: Vec<DataType>, mutability: Vec<DataMutablility>, rettp_opt: Option<DataType>) -> DataType {
+pub fn new_datatype(tp: BasicDataType, name: String, names: Option<Vec<String>>, types: Vec<DataType>, mutability: Vec<DataMutablility>, rettp_opt: Option<DataType>, is_ref: bool) -> DataType {
     return DataType {
         tp,
         names,
         types,
         name,
         mutability,
-        rettp: if rettp_opt.is_some() {vec![rettp_opt.unwrap()]} else {Vec::new()}
+        rettp: if rettp_opt.is_some() {vec![rettp_opt.unwrap()]} else {Vec::new()},
+        is_ref,
     };
 }
 

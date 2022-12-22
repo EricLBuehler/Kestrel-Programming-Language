@@ -59,6 +59,7 @@ pub struct Position{
 #[derive(Clone, Debug, PartialEq)]
 pub struct Type {
     pub isfn: bool,
+    pub isref: bool,
     pub data: Option<String>,
     pub args: Option<Args>,
     pub mutability: types::DataMutablility,
@@ -795,7 +796,7 @@ impl<'life> Parser<'life> {
 
         self.advance();
         
-        let res: (usize, Type) = self.parse_type(DataMutablility::Immutable);
+        let res: (usize, Type) = self.parse_type(DataMutablility::Immutable, false);
 
         let to: nodes::ToNode = nodes::ToNode{
             left,
@@ -830,7 +831,7 @@ impl<'life> Parser<'life> {
 
         self.advance();
         
-        let res: (usize, Type) = self.parse_type(DataMutablility::Immutable);
+        let res: (usize, Type) = self.parse_type(DataMutablility::Immutable, false);
 
         let to: nodes::ToNode = nodes::ToNode{
             left,
@@ -941,7 +942,7 @@ impl<'life> Parser<'life> {
         if self.current_is_type(TokenType::COLON) {
             self.advance();
     
-            tp=Some(self.parse_type(mutability).1);
+            tp=Some(self.parse_type(mutability, false).1);
         }
 
 
@@ -979,7 +980,14 @@ impl<'life> Parser<'life> {
         return n;        
     }
 
-    fn parse_type(&mut self, mutability: DataMutablility) -> (usize, Type){
+    fn parse_type(&mut self, mutability: DataMutablility, allow_ref: bool) -> (usize, Type){
+        let mut isref: bool = false;
+
+        if self.current_is_type(TokenType::AMPERSAND) && allow_ref {
+            self.advance();
+            isref = true;
+        }
+
         if !self.current_is_type(TokenType::IDENTIFIER) {
             if !self.current_is_type(TokenType::KEYWORD) || (self.current_is_type(TokenType::IDENTIFIER) && self.current.data != "fn") {
                 self.raise_error("Expected identifier.", ErrorType::InvalidTok);
@@ -1008,7 +1016,7 @@ impl<'life> Parser<'life> {
                     self.advance();
                     mutability = DataMutablility::Mutable;
                 }
-                args_.args.push(self.parse_type(mutability).1);
+                args_.args.push(self.parse_type(mutability, true).1);
             }
             
             if !self.current_is_type(TokenType::RPAREN) {
@@ -1022,11 +1030,12 @@ impl<'life> Parser<'life> {
             if self.current_is_type(TokenType::SMALLARROW) {
                 self.advance();
                 end = self.current.endcol;
-                args_.rettp.push(self.parse_type(DataMutablility::Immutable).1);
+                args_.rettp.push(self.parse_type(DataMutablility::Immutable, false).1);
             }
             else {
                 args_.rettp.push(Type {
                     isfn: false,
+                    isref: false,
                     data: Some(String::from("unit")),
                     args: None,
                     mutability: DataMutablility::Immutable,
@@ -1035,6 +1044,7 @@ impl<'life> Parser<'life> {
 
             return (end, Type {
                 isfn: true,
+                isref: isref,
                 data: None,
                 args: Some(args_),
                 mutability,
@@ -1045,6 +1055,7 @@ impl<'life> Parser<'life> {
             self.advance();
             return (end, Type {
                 isfn: false,
+                isref: isref,
                 data: Some(tp),
                 args: None,
                 mutability,
@@ -1102,12 +1113,19 @@ impl<'life> Parser<'life> {
 
             self.advance();
 
-            args.args.push(self.parse_type(mutability).1);
+            args.args.push(self.parse_type(mutability, true).1);
             if !self.current_is_type(TokenType::COMMA) && !self.current_is_type(TokenType::RPAREN) {
                 self.raise_error("Expected comma.", ErrorType::InvalidTok);
             }
-
+            
             args.name.push(name);
+
+            if self.current_is_type(TokenType::RPAREN) {
+                break;
+            }
+
+            self.advance();
+
         }
 
         //
@@ -1125,11 +1143,12 @@ impl<'life> Parser<'life> {
         if self.current_is_type(TokenType::SMALLARROW) {
             self.advance();
 
-            args.rettp.push(self.parse_type(DataMutablility::Immutable).1);
+            args.rettp.push(self.parse_type(DataMutablility::Immutable, false).1);
         }
         else {
             args.rettp.push(Type {
                 isfn: false,
+                isref: false,
                 data: Some(String::from("unit")),
                 args: None,
                 mutability: DataMutablility::Immutable,

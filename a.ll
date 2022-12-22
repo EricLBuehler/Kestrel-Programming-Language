@@ -3,22 +3,31 @@ source_filename = "program.ke"
 target triple = "x86_64-unknown-linux-gnu"
 
 ; Function Attrs: noinline nounwind optnone
-define float @f(float %0) local_unnamed_addr #0 !dbg !4 {
+define void @f(float %0, float %1) local_unnamed_addr #0 !dbg !4 {
 entry:
-  %x = alloca float, !dbg !8
-  store float %0, float* %x, !dbg !8
-  %x1 = load float, float* %x, !dbg !8
-  %f32sum = fadd float %x1, 2.000000e+00, !dbg !8
-  ret float %f32sum, !dbg !8
+  %x = alloca float, !dbg !9
+  store float %0, float* %x, !dbg !9
+  %y = alloca float, !dbg !9
+  store float %1, float* %y, !dbg !9
+  %2 = bitcast float* %x to i8*
+  tail call void @free(i8* %2), !dbg !9
+  %3 = bitcast float* %y to i8*
+  tail call void @free(i8* %3), !dbg !9
+  ret void, !dbg !9
 }
 
+; Function Attrs: nounwind
+declare void @free(i8* nocapture) local_unnamed_addr #1
+
 ; Function Attrs: noinline nounwind optnone
-define void @_main() local_unnamed_addr #0 !dbg !10 {
+define void @_main() local_unnamed_addr #0 !dbg !11 {
 entry:
   %x = alloca float, !dbg !14
   store float 0x3FF3AE1480000000, float* %x, !dbg !14
   %x1 = load float, float* %x, !dbg !14
-  %res = call float @f(float %x1), !dbg !14
+  call void @f(float %x1, float 1.000000e+00), !dbg !14
+  %0 = bitcast float* %x to i8*
+  tail call void @free(i8* %0), !dbg !14
   ret void, !dbg !14
 }
 
@@ -30,6 +39,7 @@ entry:
 }
 
 attributes #0 = { noinline nounwind optnone }
+attributes #1 = { nounwind }
 
 !llvm.module.flags = !{!0}
 !llvm.dbg.cu = !{!1}
@@ -40,13 +50,13 @@ attributes #0 = { noinline nounwind optnone }
 !3 = !{}
 !4 = distinct !DISubprogram(name: "f", linkageName: "f", scope: null, file: !2, type: !5, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !5 = !DISubroutineType(flags: DIFlagPublic, types: !6)
-!6 = !{!7, !7}
-!7 = !DIBasicType(name: "float", size: 16, flags: DIFlagPublic)
-!8 = !DILocation(line: 0, scope: !9)
-!9 = distinct !DILexicalBlock(scope: !4, file: !2)
-!10 = distinct !DISubprogram(name: "main", linkageName: "_main", scope: null, file: !2, line: 4, type: !11, scopeLine: 4, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
-!11 = !DISubroutineType(flags: DIFlagPublic, types: !12)
-!12 = !{!13}
-!13 = !DIBasicType(name: "void", size: 16, flags: DIFlagPublic)
+!6 = !{!7, !8, !8}
+!7 = !DIBasicType(name: "void", size: 16, flags: DIFlagPublic)
+!8 = !DIBasicType(name: "float", size: 16, flags: DIFlagPublic)
+!9 = !DILocation(line: 0, scope: !10)
+!10 = distinct !DILexicalBlock(scope: !4, file: !2)
+!11 = distinct !DISubprogram(name: "main", linkageName: "_main", scope: null, file: !2, line: 4, type: !12, scopeLine: 4, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
+!12 = !DISubroutineType(flags: DIFlagPublic, types: !13)
+!13 = !{!7}
 !14 = !DILocation(line: 4, scope: !15)
-!15 = distinct !DILexicalBlock(scope: !10, file: !2, line: 4)
+!15 = distinct !DILexicalBlock(scope: !11, file: !2, line: 4)
