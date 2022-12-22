@@ -72,7 +72,7 @@ impl std::fmt::Display for IdentifierNode {
 pub struct FuncNode {
     pub name: String,
     pub blocks: Vec<crate::parser::Node>,
-    pub args: crate::parser::Types,
+    pub args: crate::parser::Args,
 }
 
 impl std::fmt::Display for FuncNode {

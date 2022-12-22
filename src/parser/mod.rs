@@ -60,11 +60,11 @@ pub struct Position{
 pub struct Type {
     pub isfn: bool,
     pub data: Option<String>,
-    pub args: Option<Types>,
+    pub args: Option<Args>,
     pub mutability: types::DataMutablility,
 }
 #[derive(Clone, Debug, PartialEq)]
-pub struct Types {
+pub struct Args {
     pub name: Vec<String>,
     pub args: Vec<Type>,
     pub rettp: Vec<Type>, //Only 1 element, Vec for indirection
@@ -988,7 +988,7 @@ impl<'life> Parser<'life> {
         
         let tp: String = self.current.data.clone();
         if tp == "fn" {
-            let mut args_ = Types {
+            let mut args_: Args = Args {
                 name: Vec::new(),
                 args: Vec::new(),
                 rettp: Vec::new(),
@@ -1076,7 +1076,7 @@ impl<'life> Parser<'life> {
         self.advance();
 
         // Parse Arguments
-        let mut args: Types = Types {
+        let mut args: Args = Args {
             name: Vec::new(),
             args: Vec::new(),
             rettp: Vec::new(),
