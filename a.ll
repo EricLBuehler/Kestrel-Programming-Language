@@ -7,18 +7,18 @@ define float @f(float %0) local_unnamed_addr #0 !dbg !4 {
 entry:
   %x = alloca float, !dbg !8
   store float %0, float* %x, !dbg !8
-  %y = alloca float, !dbg !8
-  store float 1.000000e+02, float* %y, !dbg !8
-  %y1 = load float, float* %y, !dbg !8
-  ret float %y1, !dbg !8
+  %x1 = load float, float* %x, !dbg !8
+  %f32sum = fadd float %x1, 2.000000e+00, !dbg !8
+  ret float %f32sum, !dbg !8
 }
 
 ; Function Attrs: noinline nounwind optnone
 define void @_main() local_unnamed_addr #0 !dbg !10 {
 entry:
-  %x = alloca i32, !dbg !14
-  store i32 1000000, i32* %x, !dbg !14
-  %res = call float @f(float 1.000000e+02), !dbg !14
+  %x = alloca float, !dbg !14
+  store float 0x3FF3AE1480000000, float* %x, !dbg !14
+  %x1 = load float, float* %x, !dbg !14
+  %res = call float @f(float %x1), !dbg !14
   ret void, !dbg !14
 }
 
@@ -44,9 +44,9 @@ attributes #0 = { noinline nounwind optnone }
 !7 = !DIBasicType(name: "float", size: 16, flags: DIFlagPublic)
 !8 = !DILocation(line: 0, scope: !9)
 !9 = distinct !DILexicalBlock(scope: !4, file: !2)
-!10 = distinct !DISubprogram(name: "main", linkageName: "_main", scope: null, file: !2, line: 5, type: !11, scopeLine: 5, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
+!10 = distinct !DISubprogram(name: "main", linkageName: "_main", scope: null, file: !2, line: 4, type: !11, scopeLine: 4, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !11 = !DISubroutineType(flags: DIFlagPublic, types: !12)
 !12 = !{!13}
 !13 = !DIBasicType(name: "void", size: 16, flags: DIFlagPublic)
-!14 = !DILocation(line: 5, scope: !15)
-!15 = distinct !DILexicalBlock(scope: !10, file: !2, line: 5)
+!14 = !DILocation(line: 4, scope: !15)
+!15 = distinct !DILexicalBlock(scope: !10, file: !2, line: 4)

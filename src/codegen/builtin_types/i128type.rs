@@ -5,13 +5,6 @@ use crate::parser;
 use crate::errors;
 use std::collections::HashMap;
 
-pub fn check_overflow<'a>(codegen: &codegen::CodeGen<'a>, data: &String, pos: &parser::Position) {
-    if data.parse::<i128>().is_err() {
-        let fmt: String = format!("i128 overflow.");
-        errors::raise_error(&fmt, errors::ErrorType::Overflow, pos, codegen.info);
-    }
-}
-
 pub fn check_overflow_literal<'a>(codegen: &codegen::CodeGen<'a>, data: &String, pos: &parser::Position) {
     if data.parse::<i128>().is_err() {
         let fmt: String = format!("Invalid i128 literal '{}'.", data);
@@ -29,7 +22,6 @@ fn i128_add<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parse
     let otherv: inkwell::values::IntValue = args.get(1).unwrap().data.unwrap().into_int_value();
 
     let res: inkwell::values::IntValue = codegen.builder.build_int_add(selfv, otherv, "i128sum");
-    check_overflow(codegen, &res.to_string(), pos);
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
@@ -47,7 +39,6 @@ fn i128_mul<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parse
     let otherv: inkwell::values::IntValue = args.get(1).unwrap().data.unwrap().into_int_value();
 
     let res: inkwell::values::IntValue = codegen.builder.build_int_mul(selfv, otherv, "i128mul");
-    check_overflow(codegen, &res.to_string(), pos);
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
@@ -65,7 +56,6 @@ fn i128_sub<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parse
     let otherv: inkwell::values::IntValue = args.get(1).unwrap().data.unwrap().into_int_value();
 
     let res: inkwell::values::IntValue = codegen.builder.build_int_sub(selfv, otherv, "i128sub");
-    check_overflow(codegen, &res.to_string(), pos);
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
@@ -83,7 +73,6 @@ fn i128_div<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parse
     let otherv: inkwell::values::IntValue = args.get(1).unwrap().data.unwrap().into_int_value();
 
     let res: inkwell::values::IntValue = codegen.builder.build_int_signed_div(selfv, otherv, "i128div");
-    check_overflow(codegen, &res.to_string(), pos);
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),

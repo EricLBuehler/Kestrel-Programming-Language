@@ -5,13 +5,6 @@ use crate::parser;
 use crate::errors;
 use std::collections::HashMap;
 
-pub fn check_overflow<'a>(codegen: &codegen::CodeGen<'a>, data: &String, pos: &parser::Position) {
-    if data.parse::<u8>().is_err() {
-        let fmt: String = format!("u8 overflow.");
-        errors::raise_error(&fmt, errors::ErrorType::Overflow, pos, codegen.info);
-    }
-}
-
 pub fn check_overflow_literal<'a>(codegen: &codegen::CodeGen<'a>, data: &String, pos: &parser::Position) {
     if data.parse::<u8>().is_err() {
         let fmt: String = format!("Invalid u8 literal '{}'.", data);
@@ -29,7 +22,6 @@ fn u8_add<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
     let otherv: inkwell::values::IntValue = args.get(1).unwrap().data.unwrap().into_int_value();
 
     let res: inkwell::values::IntValue = codegen.builder.build_int_add(selfv, otherv, "u8sum");
-    check_overflow(codegen, &res.to_string(), pos);
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
@@ -47,7 +39,6 @@ fn u8_mul<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
     let otherv: inkwell::values::IntValue = args.get(1).unwrap().data.unwrap().into_int_value();
 
     let res: inkwell::values::IntValue = codegen.builder.build_int_mul(selfv, otherv, "u8mul");
-    check_overflow(codegen, &res.to_string(), pos);
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
@@ -66,7 +57,6 @@ fn u8_sub<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
 
     let res: inkwell::values::IntValue = codegen.builder.build_int_sub(selfv, otherv, "u8sub");
     
-    check_overflow(codegen, &res.to_string(), pos);
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
@@ -84,7 +74,6 @@ fn u8_div<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
     let otherv: inkwell::values::IntValue = args.get(1).unwrap().data.unwrap().into_int_value();
 
     let res: inkwell::values::IntValue = codegen.builder.build_int_unsigned_div(selfv, otherv, "u8div");
-    check_overflow(codegen, &res.to_string(), pos);
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
