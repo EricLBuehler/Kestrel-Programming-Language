@@ -48,7 +48,7 @@ pub struct LetNode {
     pub name: String,
     pub expr: crate::parser::Node,
     pub mutability: crate::codegen::types::DataMutablility,
-    pub tp: Option<crate::parser::Arg>,
+    pub tp: Option<crate::parser::Type>,
 }
 
 impl std::fmt::Display for LetNode {
@@ -72,7 +72,7 @@ impl std::fmt::Display for IdentifierNode {
 pub struct FuncNode {
     pub name: String,
     pub blocks: Vec<crate::parser::Node>,
-    pub args: crate::parser::Args,
+    pub args: crate::parser::Types,
 }
 
 impl std::fmt::Display for FuncNode {
@@ -123,7 +123,7 @@ impl std::fmt::Display for ReturnNode {
 #[derive(Clone)]
 pub struct ToNode {
     pub left: crate::parser::Node,
-    pub tp: crate::parser::Arg,
+    pub tp: crate::parser::Type,
 }
 
 impl std::fmt::Display for ToNode {
@@ -135,7 +135,7 @@ impl std::fmt::Display for ToNode {
 #[derive(Clone)]
 pub struct AsNode {
     pub left: crate::parser::Node,
-    pub tp: crate::parser::Arg,
+    pub tp: crate::parser::Type,
 }
 
 impl std::fmt::Display for AsNode {

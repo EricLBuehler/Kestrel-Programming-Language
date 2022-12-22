@@ -57,17 +57,17 @@ pub struct Position{
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Arg {
+pub struct Type {
     pub isfn: bool,
     pub data: Option<String>,
-    pub args: Option<Args>,
+    pub args: Option<Types>,
     pub mutability: types::DataMutablility,
 }
 #[derive(Clone, Debug, PartialEq)]
-pub struct Args {
+pub struct Types {
     pub name: Vec<String>,
-    pub args: Vec<Arg>,
-    pub rettp: Vec<Arg>, //Only 1 element, Vec for indirection
+    pub args: Vec<Type>,
+    pub rettp: Vec<Type>, //Only 1 element, Vec for indirection
 }
 
 impl std::fmt::Display for Node {
@@ -795,7 +795,7 @@ impl<'life> Parser<'life> {
 
         self.advance();
         
-        let res: (usize, Arg) = self.parse_type(DataMutablility::Immutable);
+        let res: (usize, Type) = self.parse_type(DataMutablility::Immutable);
 
         let to: nodes::ToNode = nodes::ToNode{
             left,
@@ -830,7 +830,7 @@ impl<'life> Parser<'life> {
 
         self.advance();
         
-        let res: (usize, Arg) = self.parse_type(DataMutablility::Immutable);
+        let res: (usize, Type) = self.parse_type(DataMutablility::Immutable);
 
         let to: nodes::ToNode = nodes::ToNode{
             left,
@@ -921,7 +921,7 @@ impl<'life> Parser<'life> {
             endcol: 0,
         };
 
-        let mut tp: Option<Arg> = None;
+        let mut tp: Option<Type> = None;
 
         self.advance();
         
@@ -980,7 +980,7 @@ impl<'life> Parser<'life> {
         return n;        
     }
 
-    fn parse_type(&mut self, mutability: DataMutablility) -> (usize, Arg){
+    fn parse_type(&mut self, mutability: DataMutablility) -> (usize, Type){
         if !self.current_is_type(TokenType::IDENTIFIER) {
             if !self.current_is_type(TokenType::KEYWORD) || (self.current_is_type(TokenType::IDENTIFIER) && self.current.data != "fn") {
                 self.raise_error("Expected identifier.", ErrorType::InvalidTok);
@@ -989,7 +989,7 @@ impl<'life> Parser<'life> {
         
         let tp: String = self.current.data.clone();
         if tp == "fn" {
-            let mut args_ = Args {
+            let mut args_ = Types {
                 name: Vec::new(),
                 args: Vec::new(),
                 rettp: Vec::new(),
@@ -1026,7 +1026,7 @@ impl<'life> Parser<'life> {
                 args_.rettp.push(self.parse_type(DataMutablility::Immutable).1);
             }
             else {
-                args_.rettp.push(Arg {
+                args_.rettp.push(Type {
                     isfn: false,
                     data: Some(String::from("unit")),
                     args: None,
@@ -1034,7 +1034,7 @@ impl<'life> Parser<'life> {
                 });
             }
 
-            return (end, Arg {
+            return (end, Type {
                 isfn: true,
                 data: None,
                 args: Some(args_),
@@ -1044,7 +1044,7 @@ impl<'life> Parser<'life> {
         else {
             let end: usize = self.current.endcol;
             self.advance();
-            return (end, Arg {
+            return (end, Type {
                 isfn: false,
                 data: Some(tp),
                 args: None,
@@ -1077,7 +1077,7 @@ impl<'life> Parser<'life> {
         self.advance();
 
         // Parse Arguments
-        let mut args: Args = Args {
+        let mut args: Types = Types {
             name: Vec::new(),
             args: Vec::new(),
             rettp: Vec::new(),
@@ -1129,7 +1129,7 @@ impl<'life> Parser<'life> {
             args.rettp.push(self.parse_type(DataMutablility::Immutable).1);
         }
         else {
-            args.rettp.push(Arg {
+            args.rettp.push(Type {
                 isfn: false,
                 data: Some(String::from("unit")),
                 args: None,

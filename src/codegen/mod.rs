@@ -147,9 +147,9 @@ impl<'ctx> CodeGen<'ctx> {
         }
     }
 
-    pub fn get_llvm_from_arg(types: &InkwellTypes<'ctx>, info: &fileinfo::FileInfo, arg: &parser::Arg, node: &parser::Node) -> (types::DataType, inkwell::types::AnyTypeEnum<'ctx>) {
+    pub fn get_llvm_from_arg(types: &InkwellTypes<'ctx>, info: &fileinfo::FileInfo, arg: &parser::Type, node: &parser::Node) -> (types::DataType, inkwell::types::AnyTypeEnum<'ctx>) {
         if arg.isfn {
-            let args: &Vec<parser::Arg> = &arg.args.as_ref().unwrap().args;
+            let args: &Vec<parser::Type> = &arg.args.as_ref().unwrap().args;
             let mut datatypes: Vec<types::DataType> = Vec::new();
             let mut mutability: Vec<types::DataMutablility> = Vec::new();
             let mut inktypes: Vec<inkwell::types::BasicMetadataTypeEnum> = Vec::new();
@@ -644,7 +644,7 @@ impl<'ctx> CodeGen<'ctx> {
 
     fn build_to(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         let left: types::Data = self.compile_expr(&node.data.to.as_ref().unwrap().left);     
-        let arg: &parser::Arg = &node.data.to.as_ref().unwrap().tp;  
+        let arg: &parser::Type = &node.data.to.as_ref().unwrap().tp;  
         if arg.isfn {
             let fmt: String = format!("Non primitive cast from '{}' to 'fn'.", left.tp.name);
             errors::raise_error(&fmt, errors::ErrorType::InvalidCast, &node.pos, self.info);
@@ -801,7 +801,7 @@ impl<'ctx> CodeGen<'ctx> {
 
     fn build_as(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         let left: types::Data = self.compile_expr(&node.data.to.as_ref().unwrap().left);     
-        let arg: &parser::Arg = &node.data.to.as_ref().unwrap().tp;  
+        let arg: &parser::Type = &node.data.to.as_ref().unwrap().tp;  
         if arg.isfn {
             let fmt: String = format!("Non primitive cast from '{}' to 'fn'.", left.tp.name);
             errors::raise_error(&fmt, errors::ErrorType::InvalidCast, &node.pos, self.info);
