@@ -860,6 +860,14 @@ impl<'ctx> CodeGen<'ctx> {
         }
     }
 
+    fn build_ref(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        let right: types::Data = self.compile_expr(&node.data.refn.as_ref().unwrap().right);        
+
+        println!("{:?}", right);
+
+        unimplemented!();
+    }
+
     fn compile_expr(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         match node.tp {
             parser::NodeType::I32 => {
@@ -1060,6 +1068,9 @@ impl<'ctx> CodeGen<'ctx> {
                 builtin_types::f64type::check_overflow_literal(self, self_data, &node.pos);
                 let selfv: inkwell::values::FloatValue = self.inkwell_types.f64tp.const_float_from_string(self_data.as_str());
                 types::Data {data: Some(inkwell::values::BasicValueEnum::FloatValue(selfv)), tp: types::new_datatype(types::BasicDataType::F64, types::BasicDataType::F64.to_string(), None, Vec::new(), Vec::new(), None)}
+            }
+            parser::NodeType::REF => {
+                self.build_ref(node)
             }
         }
     }
