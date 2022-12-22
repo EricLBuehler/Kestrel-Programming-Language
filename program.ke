@@ -1,8 +1,8 @@
-fn f(x: f32, y: f32){
-
+fn f(x: f32,){
+    let y = x+10f32
 }
 
 fn main() {
     let x = 1.23
-    f(x,1f32)
+    f(x)
 }
