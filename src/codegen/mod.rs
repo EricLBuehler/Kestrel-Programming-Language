@@ -200,7 +200,7 @@ impl<'ctx> CodeGen<'ctx> {
                 names=Some(node.data.func.as_ref().unwrap().args.name.clone());
             }
 
-            return (types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), names, datatypes, mutability, Some(rettp_full.0.clone()), arg.isref), inkwell::types::AnyTypeEnum::FunctionType(fntp));
+            return (types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), names, datatypes, mutability, Some(rettp_full.0.clone()), false), inkwell::types::AnyTypeEnum::FunctionType(fntp));
         }
         else {
             let tp: Option<types::DataType> = Self::get_datatype_from_str(&arg.data.as_ref().unwrap());
@@ -332,8 +332,9 @@ impl<'ctx> CodeGen<'ctx> {
             }
             Some(v) => {
                 if !self.get_variable(&name).unwrap().3.owned {
+                    let transferred: String = String::from("Name '{}' was transferred here.");
                     let fmt: String = format!("Name '{}' is not owned.", name);
-                    errors::raise_error(&fmt, errors::ErrorType::NameNotOwned, &node.pos, self.info);
+                    errors::raise_error_multi(errors::ErrorType::NameNotOwned, vec![transferred, fmt], vec![&self.get_variable(&name).unwrap().3.transferred.as_ref().unwrap(), &node.pos], self.info);
                 }
                 (v.0, v.1.clone())
             }

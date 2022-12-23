@@ -1,5 +1,6 @@
 use colored::Colorize;
 
+#[derive(Clone)]
 pub enum ErrorType {
     InvalidTok,    
     InvalidDataTypes,
@@ -66,5 +67,38 @@ pub fn raise_error(error: &str, errtp: ErrorType, pos: &crate::parser::Position,
 pub fn raise_error_no_pos(error: &str, errtp: ErrorType) -> !{
     let header: String = format!("error[E{:0>3}]: {}", errtp as u8 + 1, error);
     println!("{}", header.red().bold());
+    std::process::exit(1);
+}
+
+pub fn raise_error_multi(errtp: ErrorType, err: Vec<String>, pos: Vec<&crate::parser::Position>, info: &crate::fileinfo::FileInfo) -> !{
+    let mut idx: usize = 0;
+    for (error, pos) in std::iter::zip(&err, pos) {
+        let location: String = format!("{}:{}:{}", info.name, pos.line+1, pos.startcol+1);
+        if idx != err.len()-1 {
+            let header: String = format!("{}", error);
+            println!("{}", header.yellow().bold());
+        }
+        else {
+            let header: String = format!("error[E{:0>3}]: {}", errtp.clone() as u8 + 1, error);
+            println!("{}", header.red().bold());
+        }
+        idx += 1;
+        println!("{}", location.red());
+        let lines = Vec::from_iter(info.data.split(|num| *num as char == '\n'));
+
+        let snippet: String = format!("{}", String::from_utf8(lines.get(pos.line).unwrap().to_vec()).unwrap().blue());
+        let mut arrows: String = String::new();
+        for idx in 0..snippet.len() {
+            if (idx as usize)>=pos.startcol && (idx as usize)<pos.endcol {
+                arrows += "^";
+            }
+            else {
+                arrows += " ";
+            }
+        }
+        let linestr = (pos.line+1).to_string().blue().bold();
+        println!("{} | {}", linestr, snippet);
+        println!("{} | {}", " ".repeat(linestr.len()), arrows.green());
+    }
     std::process::exit(1);
 }
