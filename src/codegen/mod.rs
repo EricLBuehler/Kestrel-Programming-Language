@@ -861,11 +861,7 @@ impl<'ctx> CodeGen<'ctx> {
     }
 
     fn build_ref(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let expr: types::Data = self.compile_expr(&node.data.refn.as_ref().unwrap().expr);        
-
-        println!("{:?}", expr);
-        
-        unimplemented!();
+        return self.compile_expr(&node.data.refn.as_ref().unwrap().expr);
     }
 
     fn compile_expr(&mut self, node: &parser::Node) -> types::Data<'ctx> {
