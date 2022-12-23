@@ -35,6 +35,8 @@ pub enum TraitType {
     Sub,
     Div,
     Call,
+    Neg,
+    Pos,
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -96,6 +98,8 @@ impl std::fmt::Display for TraitType {
             TraitType::Mul => write!(f, "Mul"),
             TraitType::Sub => write!(f, "Sub"),
             TraitType::Div => write!(f, "Div"),
+            TraitType::Pos => write!(f, "Pos"),
+            TraitType::Neg => write!(f, "Neg"),
             TraitType::Call => write!(f, "Call"),
         }
     }    

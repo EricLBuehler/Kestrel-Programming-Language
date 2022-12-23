@@ -1,6 +1,5 @@
 #[derive(Clone, Copy)]
 pub enum BinaryOpType {
-    DEFAULT,
     ADD,
     SUB,
     MUL,
@@ -14,7 +13,23 @@ impl std::fmt::Display for BinaryOpType {
             BinaryOpType::SUB => write!(f, "-"),
             BinaryOpType::MUL => write!(f, "*"),
             BinaryOpType::DIV => write!(f, "/"),
-            _ => write!(f, ""),
+        }
+    }    
+}
+
+#[derive(Clone, Copy)]
+pub enum UnaryOpType {
+    POS,
+    NEG,
+    REF,
+}
+
+impl std::fmt::Display for UnaryOpType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            UnaryOpType::NEG => write!(f, "-"),
+            UnaryOpType::REF => write!(f, "&"),
+            UnaryOpType::POS => write!(f, "+"),
         }
     }    
 }
@@ -145,13 +160,14 @@ impl std::fmt::Display for AsNode {
 }
 
 #[derive(Clone)]
-pub struct RefNode {
-    pub expr: crate::parser::Node,
+pub struct UnaryNode{
+    pub op: UnaryOpType,
+    pub right: crate::parser::Node,
 }
 
-impl std::fmt::Display for RefNode {
+impl std::fmt::Display for UnaryNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "&'{}'", self.expr)
+        write!(f, "Unary {} '{}'", self.op, self.right)
     }    
 }
 
@@ -166,5 +182,5 @@ pub struct NodeData {
     pub call: Option<CallNode>,
     pub ret: Option<ReturnNode>,
     pub to: Option<ToNode>,
-    pub refn: Option<RefNode>,
+    pub unary: Option<UnaryNode>,
 }

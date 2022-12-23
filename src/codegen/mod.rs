@@ -243,7 +243,7 @@ impl<'ctx> CodeGen<'ctx> {
         args.push(left);
         args.push(right);
 
-        let traittp = match node.data.binary.as_ref().unwrap().op {
+        let traittp: types::TraitType = match node.data.binary.as_ref().unwrap().op {
             parser::nodes::BinaryOpType::ADD => {
                 types::TraitType::Add
             }
@@ -255,9 +255,6 @@ impl<'ctx> CodeGen<'ctx> {
             }
             parser::nodes::BinaryOpType::DIV => {
                 types::TraitType::Div
-            }
-            _ => {
-                unreachable!();
             }
         };
 
@@ -861,7 +858,49 @@ impl<'ctx> CodeGen<'ctx> {
     }
 
     fn build_ref(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        return self.compile_expr(&node.data.refn.as_ref().unwrap().expr);
+        return self.compile_expr(&node.data.unary.as_ref().unwrap().right);
+    }
+
+    fn build_unary(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        let unary: &parser::nodes::UnaryNode = node.data.unary.as_ref().unwrap();
+
+        let right: types::Data = self.compile_expr(&unary.right);
+
+        let mut args: Vec<types::Data> = Vec::new();
+
+        let tp: &types::Type = self.get_type_from_data(&right);
+
+        let tp_str: &String = &right.tp.name.clone();
+
+        args.push(right);
+
+        let traittp: types::TraitType = match node.data.unary.as_ref().unwrap().op {
+            parser::nodes::UnaryOpType::NEG => {
+                types::TraitType::Neg
+            }
+            parser::nodes::UnaryOpType::POS => {
+                types::TraitType::Pos                
+            }
+            _ => {
+                unreachable!();
+            }
+        };
+
+        let t: &types::Trait = match tp.traits.get(&traittp.to_string()) {
+            Some (v) => {
+                v
+            }
+            None => {
+                let fmt: String = format!("Type '{}' has no trait '{}'.", tp_str, &traittp.to_string());
+                errors::raise_error(&fmt, errors::ErrorType::MissingTrait, &node.pos, self.info);
+            }
+        };
+
+        let func = t.function;
+
+        let data: types::Data = (func)(&self, args, &node.pos);
+
+        return data;
     }
 
     fn compile_expr(&mut self, node: &parser::Node) -> types::Data<'ctx> {
@@ -1067,6 +1106,9 @@ impl<'ctx> CodeGen<'ctx> {
             }
             parser::NodeType::REF => {
                 self.build_ref(node)
+            }
+            parser::NodeType::UNARY => {
+                self.build_unary(node)
             }
         }
     }

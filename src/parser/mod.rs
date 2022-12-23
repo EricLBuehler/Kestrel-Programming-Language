@@ -40,6 +40,7 @@ pub enum NodeType {
     AS,
     F32,
     F64,
+    UNARY,
     REF,
 }
 
@@ -96,7 +97,8 @@ impl std::fmt::Display for Node {
             NodeType::U128 => write!(f, "{}", self.data.num.as_ref().unwrap() ),
             NodeType::TO |
             NodeType::AS => write!(f, "{}", self.data.to.as_ref().unwrap() ),
-            NodeType::REF => write!(f, "{}", self.data.refn.as_ref().unwrap() ),
+            NodeType::UNARY |
+            NodeType::REF => write!(f, "{}", self.data.unary.as_ref().unwrap() ),
         }
     }    
 }
@@ -262,6 +264,9 @@ impl<'life> Parser<'life> {
             TokenType::I128 |
             TokenType::U128 |
             TokenType::IDENTIFIER |
+            TokenType::AMPERSAND |
+            TokenType::PLUS |
+            TokenType::HYPHEN |
             TokenType::LPAREN => return true,
             _ => return false,
         }
@@ -283,6 +288,8 @@ impl<'life> Parser<'life> {
             TokenType::LPAREN => Some(self.generate_grouped()),
             TokenType::F32 => Some(self.generate_f32(self.current.data.clone())),
             TokenType::F64 => Some(self.generate_f64(self.current.data.clone())),
+            TokenType::PLUS |
+            TokenType::HYPHEN => Some(self.generate_unary()),
             TokenType::AMPERSAND => Some(self.generate_ref()),
             _ => None,
         }
@@ -373,7 +380,7 @@ impl<'life> Parser<'life> {
             call: None,
             ret: None,
             to: None,
-            refn: None,
+            unary: None,
         };
 
         let pos = Position {
@@ -400,7 +407,7 @@ impl<'life> Parser<'life> {
             TokenType::HYPHEN => nodes::BinaryOpType::SUB,
             TokenType::ASTERISK => nodes::BinaryOpType::MUL,
             TokenType::FWSLASH => nodes::BinaryOpType::DIV,
-            _ => nodes::BinaryOpType::DEFAULT,
+            _ => self.raise_error("Invalid token.", ErrorType::InvalidTok),
         };
 
         self.advance();
@@ -423,7 +430,7 @@ impl<'life> Parser<'life> {
             call: None,
             ret: None,
             to: None,
-            refn: None,
+            unary: None,
         };
     
         let n: Node = self.create_node(NodeType::BINARY, nodedat, pos);
@@ -446,7 +453,7 @@ impl<'life> Parser<'life> {
             call: None,
             ret: None,
             to: None,
-            refn: None,
+            unary: None,
         };
 
         let pos = Position {
@@ -490,7 +497,7 @@ impl<'life> Parser<'life> {
             call: None,
             ret: None,
             to: None,
-            refn: None,
+            unary: None,
         };
     
         let n: Node = self.create_node(NodeType::ASSIGN, nodedat, pos);
@@ -556,7 +563,7 @@ impl<'life> Parser<'life> {
             call: Some(call),
             ret: None,
             to: None,
-            refn: None,
+            unary: None,
         };
     
         let n: Node = self.create_node(NodeType::CALL, nodedat, pos);
@@ -578,7 +585,7 @@ impl<'life> Parser<'life> {
             call: None,
             ret: None,
             to: None,
-            refn: None,
+            unary: None,
         };
 
         let pos = Position {
@@ -607,7 +614,7 @@ impl<'life> Parser<'life> {
             call: None,
             ret: None,
             to: None,
-            refn: None,
+            unary: None,
         };
 
         let pos = Position {
@@ -636,7 +643,7 @@ impl<'life> Parser<'life> {
             call: None,
             ret: None,
             to: None,
-            refn: None,
+            unary: None,
         };
 
         let pos = Position {
@@ -665,7 +672,7 @@ impl<'life> Parser<'life> {
             call: None,
             ret: None,
             to: None,
-            refn: None,
+            unary: None,
         };
 
         let pos = Position {
@@ -694,7 +701,7 @@ impl<'life> Parser<'life> {
             call: None,
             ret: None,
             to: None,
-            refn: None,
+            unary: None,
         };
 
         let pos = Position {
@@ -723,7 +730,7 @@ impl<'life> Parser<'life> {
             call: None,
             ret: None,
             to: None,
-            refn: None,
+            unary: None,
         };
 
         let pos = Position {
@@ -752,7 +759,7 @@ impl<'life> Parser<'life> {
             call: None,
             ret: None,
             to: None,
-            refn: None,
+            unary: None,
         };
 
         let pos = Position {
@@ -781,7 +788,7 @@ impl<'life> Parser<'life> {
             call: None,
             ret: None,
             to: None,
-            refn: None,
+            unary: None,
         };
 
         let pos = Position {
@@ -810,7 +817,7 @@ impl<'life> Parser<'life> {
             call: None,
             ret: None,
             to: None,
-            refn: None,
+            unary: None,
         };
 
         let pos = Position {
@@ -852,7 +859,7 @@ impl<'life> Parser<'life> {
             call: None,
             ret: None,
             to: Some(to),
-            refn: None,
+            unary: None,
         };
     
         let n: Node = self.create_node(NodeType::TO, nodedat, pos);
@@ -888,7 +895,7 @@ impl<'life> Parser<'life> {
             call: None,
             ret: None,
             to: Some(to),
-            refn: None,
+            unary: None,
         };
     
         let n: Node = self.create_node(NodeType::AS, nodedat, pos);
@@ -911,7 +918,7 @@ impl<'life> Parser<'life> {
             call: None,
             ret: None,
             to: None,
-            refn: None,
+            unary: None,
         };
 
         let pos = Position {
@@ -940,7 +947,7 @@ impl<'life> Parser<'life> {
             call: None,
             ret: None,
             to: None,
-            refn: None,
+            unary: None,
         };
 
         let pos = Position {
@@ -963,8 +970,9 @@ impl<'life> Parser<'life> {
 
         self.advance();
 
-        let refn: nodes::RefNode = nodes::RefNode{
-            expr: self.expr(Precedence::Lowest),
+        let refn: nodes::UnaryNode = nodes::UnaryNode{
+            op: nodes::UnaryOpType::REF,
+            right: self.expr(Precedence::Lowest),
         };
     
         let nodedat: nodes::NodeData = nodes::NodeData {
@@ -977,14 +985,55 @@ impl<'life> Parser<'life> {
             call: None,
             ret: None,
             to: None,
-            refn: Some(refn),
+            unary: Some(refn),
         };
 
         self.backadvance();
 
-        pos.endcol = nodedat.refn.as_ref().unwrap().expr.pos.endcol;
+        pos.endcol = nodedat.unary.as_ref().unwrap().right.pos.endcol;
     
         let n: Node = self.create_node(NodeType::REF, nodedat, pos);
+    
+        return n;
+    }
+    
+    fn generate_unary(&mut self) -> Node{
+        let mut pos = Position {
+            line: self.current.line,
+            startcol: self.current.startcol,
+            endcol: 0,
+        };
+
+
+        let op: nodes::UnaryOpType = match self.current.tp {
+            TokenType::HYPHEN => nodes::UnaryOpType::NEG,
+            TokenType::PLUS => nodes::UnaryOpType::POS,
+            _ => self.raise_error("Invalid token.", ErrorType::InvalidTok),
+        };
+
+        self.advance();
+        
+        let un: nodes::UnaryNode = nodes::UnaryNode{
+            op,
+            right: self.expr(Precedence::Lowest),
+        };
+
+        pos.endcol = un.right.pos.endcol;
+
+        let nodedat: nodes::NodeData = nodes::NodeData {
+            binary: None,
+            num: None,
+            letn: None,
+            identifier: None,
+            func: None,
+            assign: None,
+            call: None,
+            ret: None,
+            to: None,
+            unary: None,
+        };
+    
+        let n: Node = self.create_node(NodeType::UNARY, nodedat, pos);
     
         return n;
     }
@@ -1047,7 +1096,7 @@ impl<'life> Parser<'life> {
             call: None,
             ret: None,
             to: None,
-            refn: None,
+            unary: None,
         };
 
         pos.endcol = nodedat.letn.as_ref().unwrap().expr.pos.endcol;
@@ -1264,7 +1313,7 @@ impl<'life> Parser<'life> {
             call: None,
             ret: None,
             to: None,
-            refn: None,
+            unary: None,
         };
 
     
@@ -1298,7 +1347,7 @@ impl<'life> Parser<'life> {
             call: None,
             ret: Some(retn),
             to: None,
-            refn: None,
+            unary: None,
         };
 
         pos.endcol = nodedat.ret.as_ref().unwrap().expr.pos.endcol;
