@@ -37,12 +37,14 @@ fn fn_call<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
         return Data {
             data: Some(res.try_as_basic_value().left().unwrap()),
             tp: selfv.tp.rettp.last().unwrap().clone(),
+            owned: true,
         };
     }
 
     return Data {
         data: None,
         tp: new_datatype(BasicDataType::Unit, BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None, false),
+        owned: true,
     };
 }
 

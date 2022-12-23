@@ -26,6 +26,7 @@ fn i64_add<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
         tp: new_datatype(BasicDataType::I64, BasicDataType::I64.to_string(), None, Vec::new(), Vec::new(), None, false),
+        owned: true,
     };
 }
 
@@ -43,6 +44,7 @@ fn i64_mul<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
         tp: new_datatype(BasicDataType::I64, BasicDataType::I64.to_string(), None, Vec::new(), Vec::new(), None, false),
+        owned: true,
     };
 }
 
@@ -60,6 +62,7 @@ fn i64_sub<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
         tp: new_datatype(BasicDataType::I64, BasicDataType::I64.to_string(), None, Vec::new(), Vec::new(), None, false),
+        owned: true,
     };
 }
 
@@ -77,6 +80,7 @@ fn i64_div<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
         tp: new_datatype(BasicDataType::I64, BasicDataType::I64.to_string(), None, Vec::new(), Vec::new(), None, false),
+        owned: true,
     };
 }
 
@@ -93,6 +97,7 @@ fn i64_neg<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parse
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
         tp: new_datatype(BasicDataType::I64, BasicDataType::I64.to_string(), None, Vec::new(), Vec::new(), None, false),
+        owned: true,
     };
 }
 

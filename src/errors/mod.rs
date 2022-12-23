@@ -14,6 +14,8 @@ pub enum ErrorType {
     TypeMismatch,
     ImmutableAssign,
     InvalidCast,
+    NameNotOwned,
+    ReturnValueNotOwned,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -32,6 +34,8 @@ impl std::fmt::Display for ErrorType {
             ErrorType::TypeMismatch => write!(f, "mismatch of types"),
             ErrorType::ImmutableAssign => write!(f, "cannot assign to immutable variable"),
             ErrorType::InvalidCast => write!(f, "invalid cast"),
+            ErrorType::NameNotOwned => write!(f, "name is not owned"),
+            ErrorType::ReturnValueNotOwned => write!(f, "return value is not owned"),
         }
     }
 }

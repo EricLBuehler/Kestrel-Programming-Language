@@ -26,6 +26,7 @@ fn i8_add<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
         tp: new_datatype(BasicDataType::I8, BasicDataType::I8.to_string(), None, Vec::new(), Vec::new(), None, false),
+        owned: true,
     };
 }
 
@@ -43,6 +44,7 @@ fn i8_mul<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
         tp: new_datatype(BasicDataType::I8, BasicDataType::I8.to_string(), None, Vec::new(), Vec::new(), None, false),
+        owned: true,
     };
 }
 
@@ -60,6 +62,7 @@ fn i8_sub<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
         tp: new_datatype(BasicDataType::I8, BasicDataType::I8.to_string(), None, Vec::new(), Vec::new(), None, false),
+        owned: true,
     };
 }
 
@@ -77,6 +80,7 @@ fn i8_div<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
         tp: new_datatype(BasicDataType::I8, BasicDataType::I8.to_string(), None, Vec::new(), Vec::new(), None, false),
+        owned: true,
     };
 }
 
@@ -93,6 +97,7 @@ fn i8_neg<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parser
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
         tp: new_datatype(BasicDataType::I8, BasicDataType::I8.to_string(), None, Vec::new(), Vec::new(), None, false),
+        owned: true,
     };
 }
 

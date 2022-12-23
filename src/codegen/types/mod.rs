@@ -43,6 +43,7 @@ pub enum TraitType {
 pub struct Data<'a> {
     pub data: Option<inkwell::values::BasicValueEnum<'a>>,
     pub tp: DataType,
+    pub owned: bool,
 }
 
 impl std::fmt::Display for BasicDataType {
@@ -127,6 +128,12 @@ pub struct Method {
 pub enum DataMutablility{
     Immutable,
     Mutable,
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub struct DataOwnership{
+    pub owned: bool,
+    pub transferred: Option<crate::parser::Position>,
 }
 
 pub fn new_datatype(tp: BasicDataType, name: String, names: Option<Vec<String>>, types: Vec<DataType>, mutability: Vec<DataMutablility>, rettp_opt: Option<DataType>, is_ref: bool) -> DataType {

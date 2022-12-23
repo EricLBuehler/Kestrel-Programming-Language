@@ -29,7 +29,7 @@ pub struct InkwellTypes<'ctx> {
 }
 
 pub struct Namespaces<'ctx> {
-    locals: std::collections::HashMap<String, (Option<inkwell::values::PointerValue<'ctx>>, types::DataType, types::DataMutablility)>,
+    locals: std::collections::HashMap<String, (Option<inkwell::values::PointerValue<'ctx>>, types::DataType, types::DataMutablility, types::DataOwnership)>,
     functions: std::collections::HashMap<String, (inkwell::values::FunctionValue<'ctx>, types::DataType)>,
 }
 
@@ -47,7 +47,7 @@ pub struct CodeGen<'ctx> {
 
 //Codegen functions
 impl<'ctx> CodeGen<'ctx> {
-    fn get_variable(&mut self, name: &String) -> Option<&(Option<inkwell::values::PointerValue<'ctx>>, types::DataType, types::DataMutablility)>{
+    fn get_variable(&self, name: &String) -> Option<&(Option<inkwell::values::PointerValue<'ctx>>, types::DataType, types::DataMutablility, types::DataOwnership)>{
         if self.namespaces.locals.iter().find(|x| *x.0 == *name) != None {
             return self.namespaces.locals.get(name);
         }
@@ -55,7 +55,7 @@ impl<'ctx> CodeGen<'ctx> {
         return None
     }
     
-    fn get_function(&mut self, name: &String) -> Option<(inkwell::values::PointerValue<'ctx>, types::DataType)>{
+    fn get_function(&self, name: &String) -> Option<(inkwell::values::PointerValue<'ctx>, types::DataType)>{
         if self.namespaces.functions.iter().find(|x| *x.0 == *name) != None {
             return Some((self.namespaces.functions.get(name).unwrap().0.as_global_value().as_pointer_value(), self.namespaces.functions.get(name).unwrap().1.clone()));
         }
@@ -231,8 +231,8 @@ impl<'ctx> CodeGen<'ctx> {
     fn build_binary(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         let binary: &parser::nodes::BinaryNode = node.data.binary.as_ref().unwrap();
 
-        let left: types::Data = self.compile_expr(&binary.left);
-        let right: types::Data = self.compile_expr(&binary.right);
+        let left: types::Data = self.compile_expr(&binary.left, false);
+        let right: types::Data = self.compile_expr(&binary.right, false);
 
         let mut args: Vec<types::Data> = Vec::new();
 
@@ -276,7 +276,7 @@ impl<'ctx> CodeGen<'ctx> {
     }
     
     fn build_let(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let right: types::Data = self.compile_expr(&node.data.letn.as_ref().unwrap().expr);
+        let right: types::Data = self.compile_expr(&node.data.letn.as_ref().unwrap().expr, true);
 
         let name: String = node.data.letn.as_ref().unwrap().name.clone();
         if self.get_variable(&name) != None {
@@ -303,16 +303,17 @@ impl<'ctx> CodeGen<'ctx> {
             }
         }
 
-        self.namespaces.locals.insert(name, (Some(ptr), tp, node.data.letn.as_ref().unwrap().mutability));
+        self.namespaces.locals.insert(name, (Some(ptr), tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}));
 
         let data: types::Data = types::Data {
             data: None,
             tp: types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None, false),
+            owned: true,
         };
         return data;
     }
     
-    fn build_loadname(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+    fn build_loadname(&mut self, node: &parser::Node, give_ownership: bool) -> types::Data<'ctx> {
         let name: String = node.data.identifier.as_ref().unwrap().name.clone();
 
         let (ptr, tp) = match self.get_variable(&name) {
@@ -325,24 +326,37 @@ impl<'ctx> CodeGen<'ctx> {
                 let data: types::Data = types::Data {
                     data: Some(inkwell::values::BasicValueEnum::PointerValue(res.as_ref().unwrap().0)),
                     tp: res.unwrap().1,
+                    owned: true,
                 };
                 return data;
             }
             Some(v) => {
+                if !self.get_variable(&name).unwrap().3.owned {
+                    let fmt: String = format!("Name '{}' is not owned.", name);
+                    errors::raise_error(&fmt, errors::ErrorType::NameNotOwned, &node.pos, self.info);
+                }
                 (v.0, v.1.clone())
             }
         };
+
+        let owner: types::DataOwnership = self.get_variable(&name).unwrap().3.clone();
+
+        if give_ownership {
+            self.namespaces.locals.insert(name.clone(), (self.get_variable(&name).unwrap().0, self.get_variable(&name).unwrap().1.clone(), self.get_variable(&name).unwrap().2, types::DataOwnership {owned: false, transferred: Some(node.pos.clone())}));
+        }
 
         if ptr.is_some() {
             let data: types::Data = types::Data {
                 data: Some(self.builder.build_load(ptr.unwrap(), name.as_str())),
                 tp,
+                owned: owner.owned,
             };
             return data;
         }
         let data: types::Data = types::Data {
             data: None,
             tp,
+            owned: true,
         };
         return data;
     }
@@ -495,7 +509,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         
         //Setup locals
-        let prev_locals: std::collections::HashMap<String, (Option<inkwell::values::PointerValue>, types::DataType, types::DataMutablility)> = self.namespaces.locals.to_owned();
+        let prev_locals: std::collections::HashMap<String, (Option<inkwell::values::PointerValue>, types::DataType, types::DataMutablility, types::DataOwnership)> = self.namespaces.locals.to_owned();
         self.namespaces.locals = std::collections::HashMap::new();
         
         //Setup arguments
@@ -514,10 +528,10 @@ impl<'ctx> CodeGen<'ctx> {
             
                 self.builder.build_store(ptr, argv.unwrap());
 
-                self.namespaces.locals.insert(name.to_string(), (Some(ptr), tp.clone(), mutability.get(idx_mut).unwrap().clone()));
+                self.namespaces.locals.insert(name.to_string(), (Some(ptr), tp.clone(), mutability.get(idx_mut).unwrap().clone(), types::DataOwnership {owned: true, transferred: None}));
             }
             else {
-                self.namespaces.locals.insert(name.to_string(), (None, tp.clone(), types::DataMutablility::Immutable));
+                self.namespaces.locals.insert(name.to_string(), (None, tp.clone(), types::DataMutablility::Immutable, types::DataOwnership {owned: true, transferred: None}));
             }
             idx_mut += 1;
         }
@@ -554,16 +568,22 @@ impl<'ctx> CodeGen<'ctx> {
         pass_manager_builder.populate_function_pass_manager(&manager);
 
         unsafe { func.run_in_pass_manager(&manager); }
+
+        if node.data.func.as_ref().unwrap().blocks.len() > 0 && !retv.owned {
+            let fmt: String = format!("Return value is not owned.");
+            errors::raise_error(&fmt, errors::ErrorType::ReturnValueNotOwned, &node.pos, self.info);
+        }
         
         let data: types::Data = types::Data {
             data: Some(inkwell::values::BasicValueEnum::PointerValue(func.as_global_value().as_pointer_value())),
             tp: self.namespaces.functions.get(&name.clone()).unwrap().1.clone(),
+            owned: true,
         };
         return data;
     }
     
     fn build_assign(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let right: types::Data = self.compile_expr(&node.data.assign.as_ref().unwrap().expr);
+        let right: types::Data = self.compile_expr(&node.data.assign.as_ref().unwrap().expr, true);
 
         let name: String = node.data.assign.as_ref().unwrap().name.clone();
 
@@ -587,21 +607,21 @@ impl<'ctx> CodeGen<'ctx> {
         if ptr.is_some() {
             self.builder.build_store(ptr.unwrap(), right.data.unwrap());
 
-            self.namespaces.locals.insert(name, (ptr, right.tp.clone(), types::DataMutablility::Mutable));
+            self.namespaces.locals.insert(name, (ptr, right.tp.clone(), types::DataMutablility::Mutable, types::DataOwnership {owned: true, transferred: None}));
         }
 
         return right;
     }
     
     fn build_call(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let callable: types::Data = self.compile_expr(&node.data.call.as_ref().unwrap().name);
+        let callable: types::Data = self.compile_expr(&node.data.call.as_ref().unwrap().name, false);
 
         let mut args: Vec<types::Data> = Vec::new();
         let tp_name: &String = &callable.tp.name.clone();
         args.push(callable);
 
         for arg in &node.data.call.as_ref().unwrap().args{
-            let v: types::Data = self.compile_expr(arg); 
+            let v: types::Data = self.compile_expr(arg, true); 
             args.push(v);
         }
 
@@ -625,7 +645,7 @@ impl<'ctx> CodeGen<'ctx> {
     }
 
     fn build_return(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let retv: types::Data = self.compile_expr(&node.data.ret.as_ref().unwrap().expr);        
+        let retv: types::Data = self.compile_expr(&node.data.ret.as_ref().unwrap().expr, true);        
 
 
         if retv.data.is_some() {
@@ -640,7 +660,7 @@ impl<'ctx> CodeGen<'ctx> {
     }
 
     fn build_to(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let left: types::Data = self.compile_expr(&node.data.to.as_ref().unwrap().left);     
+        let left: types::Data = self.compile_expr(&node.data.to.as_ref().unwrap().left, false);     
         let arg: &parser::Type = &node.data.to.as_ref().unwrap().tp;  
         if arg.isfn {
             let fmt: String = format!("Non primitive cast from '{}' to 'fn'.", left.tp.name);
@@ -699,6 +719,7 @@ impl<'ctx> CodeGen<'ctx> {
             return types::Data {
                 data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
                 tp: tp.clone(),
+                owned: true,
             };
         }
         else if !anytp.is_none() && anytp.unwrap().is_float_type() && left.data.unwrap().is_float_value() {
@@ -719,6 +740,7 @@ impl<'ctx> CodeGen<'ctx> {
             return types::Data {
                 data: Some(inkwell::values::BasicValueEnum::FloatValue(res)),
                 tp: tp.clone(),
+                owned: true,
             };
         }
         else if !anytp.is_none() && anytp.unwrap().is_float_type() && left.data.unwrap().is_int_value() {
@@ -739,6 +761,7 @@ impl<'ctx> CodeGen<'ctx> {
             return types::Data {
                 data: Some(inkwell::values::BasicValueEnum::FloatValue(res)),
                 tp: tp.clone(),
+                owned: true,
             };
         }
         else if !anytp.is_none() && anytp.unwrap().is_int_type() && left.data.unwrap().is_float_value() {
@@ -788,6 +811,7 @@ impl<'ctx> CodeGen<'ctx> {
             return types::Data {
                 data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
                 tp: tp.clone(),
+                owned: true,
             };
         }
         else {
@@ -797,7 +821,7 @@ impl<'ctx> CodeGen<'ctx> {
     }
 
     fn build_as(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let left: types::Data = self.compile_expr(&node.data.to.as_ref().unwrap().left);     
+        let left: types::Data = self.compile_expr(&node.data.to.as_ref().unwrap().left, false);     
         let arg: &parser::Type = &node.data.to.as_ref().unwrap().tp;  
         if arg.isfn {
             let fmt: String = format!("Non primitive cast from '{}' to 'fn'.", left.tp.name);
@@ -820,6 +844,7 @@ impl<'ctx> CodeGen<'ctx> {
             return types::Data {
                 data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
                 tp: tp.clone(),
+                owned: true,
             };
         }
         else if !anytp.is_none() && anytp.unwrap().is_float_type() && left.data.unwrap().is_float_value() {
@@ -828,6 +853,7 @@ impl<'ctx> CodeGen<'ctx> {
             return types::Data {
                 data: Some(inkwell::values::BasicValueEnum::FloatValue(res)),
                 tp: tp.clone(),
+                owned: true,
             };
         }
         else if !anytp.is_none() && anytp.unwrap().is_float_type() && left.data.unwrap().is_int_value() {
@@ -836,6 +862,7 @@ impl<'ctx> CodeGen<'ctx> {
             return types::Data {
                 data: Some(inkwell::values::BasicValueEnum::FloatValue(res)),
                 tp: tp.clone(),
+                owned: true,
             };
         }
         else if !anytp.is_none() && anytp.unwrap().is_int_type() && left.data.unwrap().is_float_value() {
@@ -849,6 +876,7 @@ impl<'ctx> CodeGen<'ctx> {
             return types::Data {
                 data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
                 tp: tp.clone(),
+                owned: true,
             };
         } 
         else {
@@ -858,13 +886,13 @@ impl<'ctx> CodeGen<'ctx> {
     }
 
     fn build_ref(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        return self.compile_expr(&node.data.unary.as_ref().unwrap().right);
+        return self.compile_expr(&node.data.unary.as_ref().unwrap().right, false);
     }
 
     fn build_unary(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         let unary: &parser::nodes::UnaryNode = node.data.unary.as_ref().unwrap();
 
-        let right: types::Data = self.compile_expr(&unary.right);
+        let right: types::Data = self.compile_expr(&unary.right, false);
 
         let mut args: Vec<types::Data> = Vec::new();
 
@@ -903,7 +931,7 @@ impl<'ctx> CodeGen<'ctx> {
         return data;
     }
 
-    fn compile_expr(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+    fn compile_expr(&mut self, node: &parser::Node, give_ownership: bool) -> types::Data<'ctx> {
         match node.tp {
             parser::NodeType::I32 => {
                 let self_data: &String = &node.data.num.as_ref().unwrap().left;
@@ -919,7 +947,7 @@ impl<'ctx> CodeGen<'ctx> {
                     }
             
                 };
-                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::I32, types::BasicDataType::I32.to_string(), None, Vec::new(), Vec::new(), None, false)}
+                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::I32, types::BasicDataType::I32.to_string(), None, Vec::new(), Vec::new(), None, false), owned: true}
             }
             parser::NodeType::BINARY => {
                 self.build_binary(node)
@@ -928,7 +956,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.build_let(node)
             }
             parser::NodeType::IDENTIFIER => {
-                self.build_loadname(node)
+                self.build_loadname(node, give_ownership)
             }
             parser::NodeType::FUNC => {
                 self.build_func(node)
@@ -956,7 +984,7 @@ impl<'ctx> CodeGen<'ctx> {
                     }
             
                 };
-                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::U32, types::BasicDataType::U32.to_string(), None, Vec::new(), Vec::new(), None, false)}
+                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::U32, types::BasicDataType::U32.to_string(), None, Vec::new(), Vec::new(), None, false), owned: true}
             }
             parser::NodeType::I8 => {
                 let self_data: &String = &node.data.num.as_ref().unwrap().left;
@@ -972,7 +1000,7 @@ impl<'ctx> CodeGen<'ctx> {
                     }
             
                 };
-                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::I8, types::BasicDataType::I8.to_string(), None, Vec::new(), Vec::new(), None, false)}
+                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::I8, types::BasicDataType::I8.to_string(), None, Vec::new(), Vec::new(), None, false), owned: true}
             }
             parser::NodeType::U8 => {
                 let self_data: &String = &node.data.num.as_ref().unwrap().left;
@@ -988,7 +1016,7 @@ impl<'ctx> CodeGen<'ctx> {
                     }
             
                 };
-                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::U8, types::BasicDataType::U8.to_string(), None, Vec::new(), Vec::new(), None, false)}
+                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::U8, types::BasicDataType::U8.to_string(), None, Vec::new(), Vec::new(), None, false), owned: true}
             }
             parser::NodeType::I16 => {
                 let self_data: &String = &node.data.num.as_ref().unwrap().left;
@@ -1004,7 +1032,7 @@ impl<'ctx> CodeGen<'ctx> {
                     }
             
                 };
-                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::I16, types::BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None, false)}
+                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::I16, types::BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None, false), owned: true}
             }
             parser::NodeType::U16 => {
                 let self_data: &String = &node.data.num.as_ref().unwrap().left;
@@ -1020,7 +1048,7 @@ impl<'ctx> CodeGen<'ctx> {
                     }
             
                 };
-                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::U16, types::BasicDataType::U16.to_string(), None, Vec::new(), Vec::new(), None, false)}
+                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::U16, types::BasicDataType::U16.to_string(), None, Vec::new(), Vec::new(), None, false), owned: true}
             }
             parser::NodeType::I64 => {
                 let self_data: &String = &node.data.num.as_ref().unwrap().left;
@@ -1036,7 +1064,7 @@ impl<'ctx> CodeGen<'ctx> {
                     }
             
                 };
-                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::I64, types::BasicDataType::I64.to_string(), None, Vec::new(), Vec::new(), None, false)}
+                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::I64, types::BasicDataType::I64.to_string(), None, Vec::new(), Vec::new(), None, false), owned: true}
             }
             parser::NodeType::U64 => {
                 let self_data: &String = &node.data.num.as_ref().unwrap().left;
@@ -1052,7 +1080,7 @@ impl<'ctx> CodeGen<'ctx> {
                     }
             
                 };
-                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::U64, types::BasicDataType::U64.to_string(), None, Vec::new(), Vec::new(), None, false)}
+                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::U64, types::BasicDataType::U64.to_string(), None, Vec::new(), Vec::new(), None, false), owned: true}
             }
             parser::NodeType::I128 => {
                 let self_data: &String = &node.data.num.as_ref().unwrap().left;
@@ -1068,7 +1096,7 @@ impl<'ctx> CodeGen<'ctx> {
                     }
             
                 };
-                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::I128, types::BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None, false)}
+                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::I128, types::BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None, false), owned: true}
             }
             parser::NodeType::U128 => {
                 let self_data: &String = &node.data.num.as_ref().unwrap().left;
@@ -1084,7 +1112,7 @@ impl<'ctx> CodeGen<'ctx> {
                     }
             
                 };
-                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::U128, types::BasicDataType::U128.to_string(), None, Vec::new(), Vec::new(), None, false)}
+                types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::U128, types::BasicDataType::U128.to_string(), None, Vec::new(), Vec::new(), None, false), owned: true}
             }
             parser::NodeType::TO => {
                 self.build_to(node)
@@ -1096,13 +1124,13 @@ impl<'ctx> CodeGen<'ctx> {
                 let self_data: &String = &node.data.num.as_ref().unwrap().left;
                 builtin_types::f32type::check_overflow_literal(self, self_data, &node.pos);
                 let selfv: inkwell::values::FloatValue = self.inkwell_types.f32tp.const_float_from_string(self_data.as_str());
-                types::Data {data: Some(inkwell::values::BasicValueEnum::FloatValue(selfv)), tp: types::new_datatype(types::BasicDataType::F32, types::BasicDataType::F32.to_string(), None, Vec::new(), Vec::new(), None, false)}
+                types::Data {data: Some(inkwell::values::BasicValueEnum::FloatValue(selfv)), tp: types::new_datatype(types::BasicDataType::F32, types::BasicDataType::F32.to_string(), None, Vec::new(), Vec::new(), None, false), owned: true}
             }
             parser::NodeType::F64 => {
                 let self_data: &String = &node.data.num.as_ref().unwrap().left;
                 builtin_types::f64type::check_overflow_literal(self, self_data, &node.pos);
                 let selfv: inkwell::values::FloatValue = self.inkwell_types.f64tp.const_float_from_string(self_data.as_str());
-                types::Data {data: Some(inkwell::values::BasicValueEnum::FloatValue(selfv)), tp: types::new_datatype(types::BasicDataType::F64, types::BasicDataType::F64.to_string(), None, Vec::new(), Vec::new(), None, false)}
+                types::Data {data: Some(inkwell::values::BasicValueEnum::FloatValue(selfv)), tp: types::new_datatype(types::BasicDataType::F64, types::BasicDataType::F64.to_string(), None, Vec::new(), Vec::new(), None, false), owned: true}
             }
             parser::NodeType::REF => {
                 self.build_ref(node)
@@ -1117,6 +1145,7 @@ impl<'ctx> CodeGen<'ctx> {
         let mut retv: types::Data = types::Data {
             data: None,
             tp: types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None, false),
+            owned: true
         };
 
         for node in nodes {
@@ -1124,7 +1153,7 @@ impl<'ctx> CodeGen<'ctx> {
                 let fmt: String = format!("Cannot define nested functions.");
                 errors::raise_error(&fmt, errors::ErrorType::NestedFunctions, &node.pos, self.info);
             }
-            retv = self.compile_expr(node);
+            retv = self.compile_expr(node, false);
         }
         return retv;
     }

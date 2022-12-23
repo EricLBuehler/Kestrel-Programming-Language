@@ -26,6 +26,7 @@ fn u128_add<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parse
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
         tp: new_datatype(BasicDataType::U128, BasicDataType::U128.to_string(), None, Vec::new(), Vec::new(), None, false),
+        owned: true,
     };
 }
 
@@ -43,6 +44,7 @@ fn u128_mul<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parse
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
         tp: new_datatype(BasicDataType::U128, BasicDataType::U128.to_string(), None, Vec::new(), Vec::new(), None, false),
+        owned: true,
     };
 }
 
@@ -61,6 +63,7 @@ fn u128_sub<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parse
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
         tp: new_datatype(BasicDataType::U128, BasicDataType::U128.to_string(), None, Vec::new(), Vec::new(), None, false),
+        owned: true,
     };
 }
 
@@ -78,6 +81,7 @@ fn u128_div<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parse
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
         tp: new_datatype(BasicDataType::U128, BasicDataType::U128.to_string(), None, Vec::new(), Vec::new(), None, false),
+        owned: true,
     };
 }
 

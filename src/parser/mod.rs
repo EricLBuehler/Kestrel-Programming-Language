@@ -51,7 +51,7 @@ pub struct Node{
     pub pos: Position,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Position{
     pub line: usize,
     pub startcol: usize,
