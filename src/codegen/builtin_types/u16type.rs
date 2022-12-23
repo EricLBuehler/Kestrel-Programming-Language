@@ -81,12 +81,17 @@ fn u16_div<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
     };
 }
 
+fn u16_pos<'a>(_codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {
+    return args.get(0).unwrap().clone();
+}
+
 pub fn init_u16(codegen: &mut codegen::CodeGen) {
     let mut traits: HashMap<String, Trait> = HashMap::new();
     traits.insert(TraitType::Add.to_string(), builtin_types::create_trait(u16_add, 2, TraitType::Add, new_datatype(BasicDataType::U16, BasicDataType::U16.to_string(), None, Vec::new(), Vec::new(), None, false)));
     traits.insert(TraitType::Mul.to_string(), builtin_types::create_trait(u16_mul, 2, TraitType::Mul, new_datatype(BasicDataType::U16, BasicDataType::U16.to_string(), None, Vec::new(), Vec::new(), None, false)));
     traits.insert(TraitType::Sub.to_string(), builtin_types::create_trait(u16_sub, 2, TraitType::Sub, new_datatype(BasicDataType::U16, BasicDataType::U16.to_string(), None, Vec::new(), Vec::new(), None, false)));
     traits.insert(TraitType::Div.to_string(), builtin_types::create_trait(u16_div, 2, TraitType::Div, new_datatype(BasicDataType::U16, BasicDataType::U16.to_string(), None, Vec::new(), Vec::new(), None, false)));
+    traits.insert(TraitType::Pos.to_string(), builtin_types::create_trait(u16_pos, 1, TraitType::Pos, new_datatype(BasicDataType::U16, BasicDataType::U16.to_string(), None, Vec::new(), Vec::new(), None, false)));
 
     builtin_types::add_simple_type(codegen, traits, BasicDataType::U16, BasicDataType::U16.to_string().as_str());
 }
