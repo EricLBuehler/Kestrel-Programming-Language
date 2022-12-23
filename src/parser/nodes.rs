@@ -145,6 +145,17 @@ impl std::fmt::Display for AsNode {
 }
 
 #[derive(Clone)]
+pub struct RefNode {
+    pub expr: crate::parser::Node,
+}
+
+impl std::fmt::Display for RefNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "&'{}'", self.expr)
+    }    
+}
+
+#[derive(Clone)]
 pub struct NodeData {
     pub binary: Option<BinaryNode>,
     pub num: Option<NumNode>,
@@ -155,4 +166,5 @@ pub struct NodeData {
     pub call: Option<CallNode>,
     pub ret: Option<ReturnNode>,
     pub to: Option<ToNode>,
+    pub refn: Option<RefNode>,
 }

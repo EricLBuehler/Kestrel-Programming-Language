@@ -1,4 +1,4 @@
-fn f(x: f32,){
+fn f(x: f32){
     let y = x+10f32
 }
 
