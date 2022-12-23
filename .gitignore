@@ -6,3 +6,4 @@
 *.out
 *.s
 .vscode
+!README.md
