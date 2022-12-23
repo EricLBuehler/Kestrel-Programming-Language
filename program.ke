@@ -5,6 +5,4 @@ fn f(x: f32){
 fn main() {
     let x = 1.23
     f(&x)
-    f(x)
-    f(x)
 }
