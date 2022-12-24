@@ -42,10 +42,10 @@ The ```f64``` type is a 64-bit floating point number. This is the equivalent of 
 
 ## Non-numeric
 
-## ```unit```
-The ```unit``` type represents data with no type information (```void``` in ```C``` or ```()``` in ```Rust```).
+## ```void```
+The ```void``` type represents data with no type information (```void``` in ```C``` or ```()``` in ```Rust```).
 ```
-unit
+void
 ```
 
 ## ```fn```

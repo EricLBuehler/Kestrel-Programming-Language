@@ -18,7 +18,7 @@ pub mod u128type;
 pub mod f32type;
 pub mod f64type;
 
-pub mod unittype;
+pub mod voidtype;
 pub mod functype;
 
 fn add_simple_type<'a>(codegen: &mut codegen::CodeGen<'a>, traits: HashMap<String, Trait<'a>>, basictype: BasicDataType, name: &str){
@@ -79,6 +79,6 @@ pub fn init(codegen: &mut codegen::CodeGen) {
     f32type::init_f32(codegen);
     f64type::init_f64(codegen);
 
-    unittype::init_unit(codegen);
+    voidtype::init_void(codegen);
     functype::init_func(codegen);
 }

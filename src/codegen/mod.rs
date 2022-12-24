@@ -434,7 +434,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
 
             if fn_type.get_return_type() != None {
-                let fmt: String = format!("Expected 'unit' return type, got '{}'.", &rettp_full.0.name);
+                let fmt: String = format!("Expected 'void' return type, got '{}'.", &rettp_full.0.name);
                 errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
             }
         }

@@ -1153,7 +1153,7 @@ impl<'life> Parser<'life> {
             else {
                 args_.rettp.push(Type {
                     isfn: false,
-                    data: Some(String::from("unit")),
+                    data: Some(String::from("void")),
                     args: None,
                     mutability: DataMutablility::Immutable,
                 });
@@ -1263,7 +1263,7 @@ impl<'life> Parser<'life> {
         else {
             args.rettp.push(Type {
                 isfn: false,
-                data: Some(String::from("unit")),
+                data: Some(String::from("void")),
                 args: None,
                 mutability: DataMutablility::Immutable,
             });
