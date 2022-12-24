@@ -11,7 +11,8 @@ entry:
   %f32sum = fadd float %x1, 1.000000e+01, !dbg !9
   %y = alloca float, !dbg !9
   store float %f32sum, float* %y, !dbg !9
-  ret void, !dbg !9
+  %x2 = load float, float* %x, !dbg !9
+  ret float %x2, !dbg !9
 }
 
 ; Function Attrs: noinline nounwind optnone
@@ -47,8 +48,8 @@ attributes #0 = { noinline nounwind optnone }
 !8 = !DIBasicType(name: "float", size: 16, flags: DIFlagPublic)
 !9 = !DILocation(line: 0, scope: !10)
 !10 = distinct !DILexicalBlock(scope: !4, file: !2)
-!11 = distinct !DISubprogram(name: "main", linkageName: "_main", scope: null, file: !2, line: 4, type: !12, scopeLine: 4, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
+!11 = distinct !DISubprogram(name: "main", linkageName: "_main", scope: null, file: !2, line: 5, type: !12, scopeLine: 5, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !12 = !DISubroutineType(flags: DIFlagPublic, types: !13)
 !13 = !{!7}
-!14 = !DILocation(line: 4, scope: !15)
-!15 = distinct !DILexicalBlock(scope: !11, file: !2, line: 4)
+!14 = !DILocation(line: 5, scope: !15)
+!15 = distinct !DILexicalBlock(scope: !11, file: !2, line: 5)

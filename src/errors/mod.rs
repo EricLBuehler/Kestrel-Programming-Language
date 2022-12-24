@@ -17,6 +17,7 @@ pub enum ErrorType {
     InvalidCast,
     NameNotOwned,
     ReturnValueNotOwned,
+    ReturnOutsideOfFunction,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -37,6 +38,7 @@ impl std::fmt::Display for ErrorType {
             ErrorType::InvalidCast => write!(f, "invalid cast"),
             ErrorType::NameNotOwned => write!(f, "name is not owned"),
             ErrorType::ReturnValueNotOwned => write!(f, "return value is not owned"),
+            ErrorType::ReturnOutsideOfFunction => write!(f, "cannot return outside of function"),
         }
     }
 }

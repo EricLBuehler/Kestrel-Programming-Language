@@ -43,6 +43,7 @@ pub struct CodeGen<'ctx> {
     namespaces: Namespaces<'ctx>,
     dibuilder: inkwell::debug_info::DebugInfoBuilder<'ctx>,
     dicompile_unit: inkwell::debug_info::DICompileUnit<'ctx>,
+    expected_rettp: Option<types::DataType>,
 }
 
 //Codegen functions
@@ -398,6 +399,8 @@ impl<'ctx> CodeGen<'ctx> {
         }
         
         let rettp_full: (types::DataType, inkwell::types::AnyTypeEnum) = Self::get_llvm_from_type(&self.inkwell_types, &self.info, &args.rettp.last().unwrap(), node);
+
+        self.expected_rettp = Some(rettp_full.0.clone());
         
         let tp: inkwell::types::AnyTypeEnum = rettp_full.1;
         let fn_type: inkwell::types::FunctionType;
@@ -646,6 +649,16 @@ impl<'ctx> CodeGen<'ctx> {
 
     fn build_return(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         let retv: types::Data = self.compile_expr(&node.data.ret.as_ref().unwrap().expr, true);
+
+        if self.expected_rettp==None {
+            let fmt: String = format!("Cannot return outside of function.");
+            errors::raise_error(&fmt, errors::ErrorType::ReturnOutsideOfFunction, &node.pos, self.info);            
+        }
+
+        if retv.tp != *self.expected_rettp.as_ref().unwrap() {
+            let fmt: String = format!("Expected '{}' return type, got '{}'.", &self.expected_rettp.as_ref().unwrap().name, retv.tp.name);
+            errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+        }
 
 
         if retv.data.is_some() {
@@ -1219,6 +1232,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
         namespaces: namespaces,
         dibuilder: dibuilder,
         dicompile_unit: compile_unit,
+        expected_rettp: None, 
     };
     
     //Pass manager (optimizer)
