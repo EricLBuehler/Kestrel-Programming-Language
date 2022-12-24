@@ -569,10 +569,9 @@ impl<'ctx> CodeGen<'ctx> {
         pass_manager_builder.populate_function_pass_manager(&manager);
 
         unsafe { func.run_in_pass_manager(&manager); }
-
         if node.data.func.as_ref().unwrap().blocks.len() > 0 && !retv.owned {
             let fmt: String = format!("Return value is not owned.");
-            errors::raise_error(&fmt, errors::ErrorType::ReturnValueNotOwned, &node.pos, self.info);
+            errors::raise_error(&fmt, errors::ErrorType::ReturnValueNotOwned, &node.data.func.as_ref().unwrap().blocks.last().unwrap().pos, self.info);
         }
         
         let data: types::Data = types::Data {
@@ -646,10 +645,14 @@ impl<'ctx> CodeGen<'ctx> {
     }
 
     fn build_return(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let retv: types::Data = self.compile_expr(&node.data.ret.as_ref().unwrap().expr, true);        
+        let retv: types::Data = self.compile_expr(&node.data.ret.as_ref().unwrap().expr, true);
 
 
         if retv.data.is_some() {
+            if !retv.owned {
+                let fmt: String = format!("Return value is not owned.");
+                errors::raise_error(&fmt, errors::ErrorType::ReturnValueNotOwned, &node.data.ret.as_ref().unwrap().expr.pos, self.info);
+            }
             self.builder.build_return(Some(&retv.data.unwrap())); 
         }
         else {
