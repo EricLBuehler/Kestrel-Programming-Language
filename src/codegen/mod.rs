@@ -1155,6 +1155,9 @@ impl<'ctx> CodeGen<'ctx> {
             parser::NodeType::UNARY => {
                 self.build_unary(node)
             }
+            parser::NodeType::STRUCT => {
+                unimplemented!()
+            }
         }
     }
 

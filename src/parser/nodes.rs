@@ -172,6 +172,18 @@ impl std::fmt::Display for UnaryNode {
 }
 
 #[derive(Clone)]
+pub struct StructNode{
+    pub name: String,
+    pub members: std::collections::HashMap<String, crate::parser::Type>,
+}
+
+impl std::fmt::Display for StructNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Struct '{}' of {} members", self.name, self.members.len())
+    }    
+}
+
+#[derive(Clone)]
 pub struct NodeData {
     pub binary: Option<BinaryNode>,
     pub num: Option<NumNode>,
@@ -183,4 +195,5 @@ pub struct NodeData {
     pub ret: Option<ReturnNode>,
     pub to: Option<ToNode>,
     pub unary: Option<UnaryNode>,
+    pub st: Option<StructNode>,
 }
