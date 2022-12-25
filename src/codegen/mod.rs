@@ -4,6 +4,7 @@ use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
 use inkwell::passes::PassManagerSubType;
+use inkwell::types::AnyTypeEnum;
 use inkwell::types::BasicType;
 use crate::fileinfo;
 use inkwell::debug_info::AsDIScope;
@@ -159,20 +160,10 @@ impl<'ctx> CodeGen<'ctx> {
                 let (data, tp) = Self::get_llvm_from_type(types, info, &arg, node);
                 datatypes.push(data);
                 mutability.push(arg.mutability);
-                if tp.is_int_type() {
-                    inktypes.push(inkwell::types::BasicMetadataTypeEnum::IntType(tp.into_int_type()));
-                }
-                else if tp.is_float_type() {
-                    inktypes.push(inkwell::types::BasicMetadataTypeEnum::FloatType(tp.into_float_type()));
-                }
-                else if tp.is_function_type() {
-                    inktypes.push(inkwell::types::BasicMetadataTypeEnum::PointerType(tp.into_function_type().ptr_type(inkwell::AddressSpace::Generic)));
-                }
-                else if tp.is_void_type() {
-                    //Placeholder
-                }
-                else {
-                    panic!("Unexpected type");
+                let res: Option<inkwell::types::BasicMetadataTypeEnum> = Self::get_basicmeta_from_any(tp);
+
+                if res.is_some() {
+                    inktypes.push(res.unwrap());
                 }
             }
             
@@ -227,6 +218,42 @@ impl<'ctx> CodeGen<'ctx> {
 
     fn get_type_from_data(&self, data: &types::Data) -> &types::Type<'ctx> {
         return self.types.get(&data.tp.to_string()).unwrap();
+    }
+
+    fn get_basicmeta_from_any(tp: inkwell::types::AnyTypeEnum<'ctx>) -> Option<inkwell::types::BasicMetadataTypeEnum> {
+        if tp.is_int_type() {
+            return Some(inkwell::types::BasicMetadataTypeEnum::IntType(tp.into_int_type()));
+        }
+        else if tp.is_float_type() {
+            return Some(inkwell::types::BasicMetadataTypeEnum::FloatType(tp.into_float_type()));
+        }
+        else if tp.is_function_type() {
+            return Some(inkwell::types::BasicMetadataTypeEnum::PointerType(tp.into_function_type().ptr_type(inkwell::AddressSpace::Generic)));
+        }
+        else if tp.is_void_type() {
+            return None;
+        }
+        else {
+            panic!("Unexpected type");
+        }
+    }
+
+    fn get_basic_from_any(tp: inkwell::types::AnyTypeEnum<'ctx>) -> Option<inkwell::types::BasicTypeEnum> {
+        if tp.is_int_type() {
+            return Some(inkwell::types::BasicTypeEnum::IntType(tp.into_int_type()));
+        }
+        else if tp.is_float_type() {
+            return Some(inkwell::types::BasicTypeEnum::FloatType(tp.into_float_type()));
+        }
+        else if tp.is_function_type() {
+            return Some(inkwell::types::BasicTypeEnum::PointerType(tp.into_function_type().ptr_type(inkwell::AddressSpace::Generic)));
+        }
+        else if tp.is_void_type() {
+            return None;
+        }
+        else {
+            panic!("Unexpected type");
+        }
     }
 
     fn build_binary(&mut self, node: &parser::Node) -> types::Data<'ctx> {
@@ -381,20 +408,12 @@ impl<'ctx> CodeGen<'ctx> {
             let (data, tp) = Self::get_llvm_from_type(&self.inkwell_types, &self.info, &arg, node);
             datatypes.push(data);
             mutability.push(arg.mutability);
-            if tp.is_int_type() {
-                inktypes.push(inkwell::types::BasicMetadataTypeEnum::IntType(tp.into_int_type()));
-            }
-            if tp.is_float_type() {
-                inktypes.push(inkwell::types::BasicMetadataTypeEnum::FloatType(tp.into_float_type()));
-            }
-            else if tp.is_function_type() {
-                inktypes.push(inkwell::types::BasicMetadataTypeEnum::PointerType(tp.into_function_type().ptr_type(inkwell::AddressSpace::Generic)));
-            }
-            else if !tp.is_void_type() {
-                //Placeholder
-            }
-            else {
-                panic!("Unexpected type");
+
+
+            let res: Option<inkwell::types::BasicMetadataTypeEnum> = Self::get_basicmeta_from_any(tp);
+
+            if res.is_some() {
+                inktypes.push(res.unwrap());
             }
         }
         
@@ -948,6 +967,33 @@ impl<'ctx> CodeGen<'ctx> {
         return data;
     }
 
+    fn build_struct(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        let mut names: Vec<String> = Vec::new();
+        let mut types: Vec<(types::DataType, AnyTypeEnum)> = Vec::new();
+        let mut basictypes: Vec<inkwell::types::BasicTypeEnum> = Vec::new();
+
+        for member in &node.data.st.as_ref().unwrap().members {
+            names.push(member.0.clone());
+            types.push(Self::get_llvm_from_type(&self.inkwell_types, self.info, member.1, node));
+        }
+
+        for tp in types {
+            let res: Option<AnyTypeEnum> = Self::get_anytp_from_tp(&self.inkwell_types, &Some(tp.0));
+            
+            if res.is_some() {
+                let res: Option<inkwell::types::BasicTypeEnum> = Self::get_basic_from_any(tp.1);
+
+                if res.is_some() {
+                    basictypes.push(res.unwrap());
+                }
+            }
+        }
+
+        println!("{}", self.context.struct_type(&basictypes, false));
+
+        unimplemented!();
+    }
+
     fn compile_expr(&mut self, node: &parser::Node, give_ownership: bool) -> types::Data<'ctx> {
         match node.tp {
             parser::NodeType::I32 => {
@@ -1156,7 +1202,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.build_unary(node)
             }
             parser::NodeType::STRUCT => {
-                unimplemented!()
+                self.build_struct(node)
             }
         }
     }
