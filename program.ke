@@ -2,7 +2,7 @@ struct s {
     a: i32
 }
 
-fn f(x: f32){
+fn f(x: f32) -> s{
     let y = x+10f32
 }
 

@@ -208,6 +208,9 @@ impl<'ctx> CodeGen<'ctx> {
             else if tp.is_void_type() {
                 fntp = tp.into_void_type().fn_type(&inktypes[..], false);
             }
+            else if tp.is_struct_type() {
+                fntp = tp.into_struct_type().fn_type(&inktypes[..], false);
+            }
             else {
                 panic!("Unexpected type");
             }
@@ -258,6 +261,9 @@ impl<'ctx> CodeGen<'ctx> {
         else if tp.is_void_type() {
             return None;
         }
+        else if tp.is_struct_type() {
+            return Some(inkwell::types::BasicMetadataTypeEnum::StructType(tp.into_struct_type()));
+        }
         else {
             panic!("Unexpected type");
         }
@@ -275,6 +281,9 @@ impl<'ctx> CodeGen<'ctx> {
         }
         else if tp.is_void_type() {
             return None;
+        }
+        else if tp.is_struct_type() {
+            return Some(inkwell::types::BasicTypeEnum::StructType(tp.into_struct_type()));
         }
         else {
             panic!("Unexpected type");
@@ -460,6 +469,9 @@ impl<'ctx> CodeGen<'ctx> {
         }
         else if tp.is_void_type() {
             fn_type = tp.into_void_type().fn_type(&inktypes[..], false);
+        }
+        else if tp.is_struct_type() {
+            fn_type = tp.into_struct_type().fn_type(&inktypes[..], false);
         }
         else {
             panic!("Unexpected type");

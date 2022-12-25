@@ -1285,6 +1285,12 @@ impl<'life> Parser<'life> {
             self.advance();
 
             args.rettp.push(self.parse_type(DataMutablility::Immutable).1);
+
+            self.backadvance();
+
+            pos.endcol = self.current.endcol;
+            
+            self.advance();
         }
         else {
             args.rettp.push(Type {
