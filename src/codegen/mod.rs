@@ -30,7 +30,7 @@ pub struct InkwellTypes<'ctx> {
 
 pub struct Namespaces<'ctx> {
     locals: std::collections::HashMap<String, (Option<inkwell::values::PointerValue<'ctx>>, types::DataType, types::DataMutablility, types::DataOwnership)>,
-    functions: std::collections::HashMap<String, (inkwell::values::FunctionValue<'ctx>, types::DataType)>,
+    globals: std::collections::HashMap<String, (inkwell::values::FunctionValue<'ctx>, types::DataType)>,
 }
 
 pub struct CodeGen<'ctx> {
@@ -57,8 +57,8 @@ impl<'ctx> CodeGen<'ctx> {
     }
     
     fn get_function(&self, name: &String) -> Option<(inkwell::values::PointerValue<'ctx>, types::DataType)>{
-        if self.namespaces.functions.iter().find(|x| *x.0 == *name) != None {
-            return Some((self.namespaces.functions.get(name).unwrap().0.as_global_value().as_pointer_value(), self.namespaces.functions.get(name).unwrap().1.clone()));
+        if self.namespaces.globals.iter().find(|x| *x.0 == *name) != None {
+            return Some((self.namespaces.globals.get(name).unwrap().0.as_global_value().as_pointer_value(), self.namespaces.globals.get(name).unwrap().1.clone()));
         }
 
         return None;
@@ -443,7 +443,7 @@ impl<'ctx> CodeGen<'ctx> {
         let func: inkwell::values::FunctionValue = self.module.add_function(mangled_name.as_str(), fn_type, None);
 
         
-        self.namespaces.functions.insert(name.clone(), (func, types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), Some(node.data.func.as_ref().unwrap().args.name.clone()), datatypes.clone(), mutability.clone(), Some(rettp_full.0.clone()), false)));
+        self.namespaces.globals.insert(name.clone(), (func, types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), Some(node.data.func.as_ref().unwrap().args.name.clone()), datatypes.clone(), mutability.clone(), Some(rettp_full.0.clone()), false)));
         
         // Add debug information
         let mut diparamtps: Vec<inkwell::debug_info::DIType> = Vec::new();
@@ -579,7 +579,7 @@ impl<'ctx> CodeGen<'ctx> {
         
         let data: types::Data = types::Data {
             data: Some(inkwell::values::BasicValueEnum::PointerValue(func.as_global_value().as_pointer_value())),
-            tp: self.namespaces.functions.get(&name.clone()).unwrap().1.clone(),
+            tp: self.namespaces.globals.get(&name.clone()).unwrap().1.clone(),
             owned: true,
         };
         return data;
@@ -1201,7 +1201,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
 
     let namespaces: Namespaces = Namespaces {
         locals: std::collections::HashMap::new(),
-        functions: std::collections::HashMap::new(),
+        globals: std::collections::HashMap::new(),
     };
 
     
@@ -1253,7 +1253,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
         errors::raise_error_no_pos(&fmt, errors::ErrorType::NameNotFound);
     }
 
-    let (main, _) = codegen.namespaces.functions.get(&String::from("main")).unwrap();
+    let (main, _) = codegen.namespaces.globals.get(&String::from("main")).unwrap();
 
     let main_tp: inkwell::types::FunctionType = codegen.inkwell_types.i32tp.fn_type(&[inkwell::types::BasicMetadataTypeEnum::IntType(*codegen.inkwell_types.i32tp), inkwell::types::BasicMetadataTypeEnum::PointerType(codegen.inkwell_types.i8tp.ptr_type(inkwell::AddressSpace::Generic).ptr_type(inkwell::AddressSpace::Generic))], false);
     let realmain: inkwell::values::FunctionValue = codegen.module.add_function("main", main_tp, None);
