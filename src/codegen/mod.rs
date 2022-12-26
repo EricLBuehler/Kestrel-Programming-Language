@@ -8,6 +8,7 @@ use inkwell::types::AnyTypeEnum;
 use inkwell::types::BasicType;
 use crate::fileinfo;
 use inkwell::debug_info::AsDIScope;
+use itertools::izip;
 
 use core::panic;
 use std::error::Error;
@@ -32,7 +33,7 @@ pub struct InkwellTypes<'ctx> {
 pub struct Namespaces<'ctx> {
     locals: std::collections::HashMap<String, (Option<inkwell::values::PointerValue<'ctx>>, types::DataType, types::DataMutablility, types::DataOwnership)>,
     functions: std::collections::HashMap<String, (inkwell::values::FunctionValue<'ctx>, types::DataType)>,
-    structs: std::collections::HashMap<String, (types::DataType, inkwell::types::AnyTypeEnum<'ctx>)>,
+    structs: std::collections::HashMap<String, (types::DataType, inkwell::types::AnyTypeEnum<'ctx>, std::collections::HashMap<String, i32>)>,
 }
 
 pub struct CodeGen<'ctx> {
@@ -84,7 +85,7 @@ impl<'ctx> CodeGen<'ctx> {
         return inkwell::types::AnyTypeEnum::StructType(ctx.struct_type(&basictypes[..], false));
     }
     
-    fn get_datatype_from_str(structs: &std::collections::HashMap<String, (types::DataType, inkwell::types::AnyTypeEnum<'ctx>)>, str_rep: &String) -> Option<types::DataType> {
+    fn get_datatype_from_str(structs: &std::collections::HashMap<String, (types::DataType, inkwell::types::AnyTypeEnum<'ctx>, std::collections::HashMap<String, i32>)>, str_rep: &String) -> Option<types::DataType> {
         if *str_rep == types::BasicDataType::I32.to_string() {
             return Some(types::new_datatype(types::BasicDataType::I32, types::BasicDataType::I32.to_string(), None, Vec::new(), Vec::new(), None, false));
         }
@@ -174,7 +175,7 @@ impl<'ctx> CodeGen<'ctx> {
         }
     }
 
-    pub fn get_llvm_from_type(ctx: &'ctx Context, structs: &std::collections::HashMap<String, (types::DataType, inkwell::types::AnyTypeEnum<'ctx>)>, types: &InkwellTypes<'ctx>, info: &fileinfo::FileInfo, arg: &parser::Type, node: &parser::Node) -> (types::DataType, inkwell::types::AnyTypeEnum<'ctx>) {
+    pub fn get_llvm_from_type(ctx: &'ctx Context, structs: &std::collections::HashMap<String, (types::DataType, inkwell::types::AnyTypeEnum<'ctx>, std::collections::HashMap<String, i32>)>, types: &InkwellTypes<'ctx>, info: &fileinfo::FileInfo, arg: &parser::Type, node: &parser::Node) -> (types::DataType, inkwell::types::AnyTypeEnum<'ctx>) {
         if arg.isfn {
             let args: &Vec<parser::Type> = &arg.args.as_ref().unwrap().args;
             let mut datatypes: Vec<types::DataType> = Vec::new();
@@ -1009,19 +1010,82 @@ impl<'ctx> CodeGen<'ctx> {
         let mut types: Vec<(types::DataType, AnyTypeEnum)> = Vec::new();
         let mut simpletypes: Vec<types::DataType> = Vec::new();
         let mut mutabilitites: Vec<types::DataMutablility> = Vec::new();
+        let mut idxmapping: std::collections::HashMap<String, i32> = std::collections::HashMap::new();
 
+        let mut idx = 0;
         for member in &node.data.st.as_ref().unwrap().members {
+            if names.contains(&member.0.clone()) {
+                let fmt: String = format!("Field '{}' is already declared.", member.0.clone());
+                errors::raise_error(&fmt, errors::ErrorType::FieldRedeclaration, &node.pos, self.info);
+            }
             names.push(member.0.clone());
             types.push(Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, self.info, member.1, node));
             simpletypes.push(Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, self.info, member.1, node).0);
             mutabilitites.push(types::DataMutablility::Mutable);
+            idxmapping.insert(member.0.clone(), idx);
+            idx+=1;
         }
 
-        self.namespaces.structs.insert(node.data.st.as_ref().unwrap().name.clone(), (types::new_datatype(types::BasicDataType::Struct, node.data.st.as_ref().unwrap().name.clone(), Some(names), simpletypes.clone(), mutabilitites, None, false), Self::build_struct_tp_from_types(self.context, &self.inkwell_types, &simpletypes)));
+        self.namespaces.structs.insert(node.data.st.as_ref().unwrap().name.clone(), (types::new_datatype(types::BasicDataType::Struct, node.data.st.as_ref().unwrap().name.clone(), Some(names), simpletypes.clone(), mutabilitites, None, false), Self::build_struct_tp_from_types(self.context, &self.inkwell_types, &simpletypes),idxmapping));
 
         let data: types::Data = types::Data {
             data: None,
             tp: types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None, false),
+            owned: true,
+        };
+        return data;
+    }
+
+    fn build_initstruct(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        let mut members: std::collections::HashMap<String, types::Data> = std::collections::HashMap::new();
+        let name: String = node.data.initst.as_ref().unwrap().name.clone();
+
+        if self.namespaces.structs.get(&name).is_none() {
+            let fmt: String = format!("Struct '{}' is not defined.", name);
+            errors::raise_error(&fmt, errors::ErrorType::StructNotDefined, &node.pos, self.info);
+        }
+
+        let s: (types::DataType, AnyTypeEnum, std::collections::HashMap<String, i32>) = self.namespaces.structs.get(&name).unwrap().clone();
+
+        for member in &node.data.initst.as_ref().unwrap().members {
+            if members.contains_key(member.0) {
+                let fmt: String = format!("Field '{}' is already declared.", member.0);
+                errors::raise_error(&fmt, errors::ErrorType::FieldReinitialization, &node.pos, self.info);
+            }
+            members.insert(member.0.clone(), self.compile_expr(member.1, true));
+        }
+        
+        if s.0.names.as_ref().unwrap().len() != members.len() {
+            let fmt: String = format!("Expected {} members, got {}.", s.0.names.as_ref().unwrap().len(), members.len());
+            errors::raise_error(&fmt, errors::ErrorType::InvalidMemberCount, &node.pos, self.info);
+        }
+
+        for member in &members {
+            if !s.0.names.as_ref().unwrap().contains(member.0) {
+                let fmt: String = format!("Member '{}' does not exist.", member.0);
+                errors::raise_error(&fmt, errors::ErrorType::MemberNameNotFound, &node.pos, self.info);
+            }
+        }
+
+        for (member, tp, name) in izip!(&members, &s.0.types, s.0.names.as_ref().unwrap()) {
+            if member.1.tp != *tp {
+                let fmt: String = format!("Expected '{}' type for member '{}', got '{}'.", tp, name, member.1.tp);
+                errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+            }
+        }
+        
+        let ptr: inkwell::values::PointerValue = self.builder.build_alloca(s.1.into_struct_type(), name.as_str());
+
+        for member in members {
+            if member.1.data.is_some() {
+                let itmptr: inkwell::values::PointerValue = self.builder.build_struct_gep(ptr, *s.2.get(&member.0).unwrap() as u32, member.0.as_str()).expect("GEP Error");
+                self.builder.build_store(itmptr, member.1.data.unwrap());
+            }
+        }
+        
+        let data: types::Data = types::Data {
+            data: Some(inkwell::values::BasicValueEnum::PointerValue(ptr)),
+            tp: s.0.clone(),
             owned: true,
         };
         return data;
@@ -1238,7 +1302,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.build_struct(node)
             }
             parser::NodeType::INITSTRUCT => {
-                unimplemented!();
+                self.build_initstruct(node)
             }
         }
     }

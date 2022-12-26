@@ -1,5 +1,5 @@
 struct s {
-    a: i32
+    a: f32
 }
 
 fn f(x: f32) -> s{

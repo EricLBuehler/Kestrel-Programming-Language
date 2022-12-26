@@ -18,6 +18,11 @@ pub enum ErrorType {
     NameNotOwned,
     ReturnValueNotOwned,
     ReturnOutsideOfFunction,
+    StructNotDefined,
+    InvalidMemberCount,
+    MemberNameNotFound,
+    FieldRedeclaration,
+    FieldReinitialization,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -39,6 +44,11 @@ impl std::fmt::Display for ErrorType {
             ErrorType::NameNotOwned => write!(f, "name is not owned"),
             ErrorType::ReturnValueNotOwned => write!(f, "return value is not owned"),
             ErrorType::ReturnOutsideOfFunction => write!(f, "cannot return outside of function"),
+            ErrorType::StructNotDefined => write!(f, "struct is not defined"),
+            ErrorType::InvalidMemberCount => write!(f, "invalid member count"),
+            ErrorType::MemberNameNotFound => write!(f, "member name not found"),
+            ErrorType::FieldRedeclaration => write!(f, "field is redefined"),
+            ErrorType::FieldReinitialization => write!(f, "field is reinitialized"),
         }
     }
 }

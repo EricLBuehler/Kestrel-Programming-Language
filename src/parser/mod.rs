@@ -481,7 +481,7 @@ impl<'life> Parser<'life> {
             endcol: self.current.endcol,
         };
     
-        let mut n: Node = self.create_node(NodeType::IDENTIFIER, nodedat, pos);
+        let mut n: Node = self.create_node(NodeType::IDENTIFIER, nodedat, pos.clone());
 
         if self.next_is_type(TokenType::LCURLY) {
             let name: String = self.current.data.clone();
@@ -537,12 +537,6 @@ impl<'life> Parser<'life> {
                 unary: None,
                 st: None,
                 initst: Some(initst),
-            };
-    
-            let pos = Position {
-                line: self.current.line,
-                startcol: self.current.startcol,
-                endcol: self.current.endcol,
             };
         
             n = self.create_node(NodeType::INITSTRUCT, nodedat, pos);
