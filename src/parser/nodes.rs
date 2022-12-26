@@ -1,4 +1,4 @@
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum BinaryOpType {
     ADD,
     SUB,
@@ -17,7 +17,7 @@ impl std::fmt::Display for BinaryOpType {
     }    
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum UnaryOpType {
     POS,
     NEG,
@@ -34,7 +34,7 @@ impl std::fmt::Display for UnaryOpType {
     }    
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct BinaryNode{
     pub left: crate::parser::Node,
     pub op: BinaryOpType,
@@ -47,7 +47,7 @@ impl std::fmt::Display for BinaryNode {
     }    
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct NumNode {
     pub left: String,
 }
@@ -58,7 +58,7 @@ impl std::fmt::Display for NumNode {
     }    
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct LetNode {
     pub name: String,
     pub expr: crate::parser::Node,
@@ -72,7 +72,7 @@ impl std::fmt::Display for LetNode {
     }    
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct IdentifierNode {
     pub name: String,
 }
@@ -83,7 +83,7 @@ impl std::fmt::Display for IdentifierNode {
     }    
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct FuncNode {
     pub name: String,
     pub blocks: Vec<crate::parser::Node>,
@@ -100,7 +100,7 @@ impl std::fmt::Display for FuncNode {
     }    
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct AssignNode {
     pub name: String,
     pub expr: crate::parser::Node,
@@ -112,7 +112,7 @@ impl std::fmt::Display for AssignNode {
     }    
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct CallNode {
     pub name: crate::parser::Node,
     pub args: Vec<crate::parser::Node>,
@@ -124,7 +124,7 @@ impl std::fmt::Display for CallNode {
     }    
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ReturnNode {
     pub expr: crate::parser::Node,
 }
@@ -135,7 +135,7 @@ impl std::fmt::Display for ReturnNode {
     }    
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ToNode {
     pub left: crate::parser::Node,
     pub tp: crate::parser::Type,
@@ -147,7 +147,7 @@ impl std::fmt::Display for ToNode {
     }    
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct AsNode {
     pub left: crate::parser::Node,
     pub tp: crate::parser::Type,
@@ -159,7 +159,7 @@ impl std::fmt::Display for AsNode {
     }    
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct UnaryNode{
     pub op: UnaryOpType,
     pub right: crate::parser::Node,
@@ -171,7 +171,7 @@ impl std::fmt::Display for UnaryNode {
     }    
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct StructNode{
     pub name: String,
     pub members: std::collections::HashMap<String, crate::parser::Type>,
@@ -183,7 +183,19 @@ impl std::fmt::Display for StructNode {
     }    
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
+pub struct StructInitNode{
+    pub name: String,
+    pub members: std::collections::HashMap<String, crate::parser::Node>,
+}
+
+impl std::fmt::Display for StructInitNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Initialize struct '{}' of {} members", self.name, self.members.len())
+    }    
+}
+
+#[derive(Clone, Debug)]
 pub struct NodeData {
     pub binary: Option<BinaryNode>,
     pub num: Option<NumNode>,
@@ -196,4 +208,5 @@ pub struct NodeData {
     pub to: Option<ToNode>,
     pub unary: Option<UnaryNode>,
     pub st: Option<StructNode>,
+    pub initst: Option<StructInitNode>,
 }

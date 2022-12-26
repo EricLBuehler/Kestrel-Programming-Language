@@ -17,7 +17,7 @@ pub struct Parser<'life> {
     pub info: &'life crate::fileinfo::FileInfo<'life>,
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum NodeType {
     BINARY,
     I32,
@@ -43,9 +43,10 @@ pub enum NodeType {
     UNARY,
     REF,
     STRUCT,
+    INITSTRUCT,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Node{
     pub tp: NodeType,
     pub data: Box<nodes::NodeData>,
@@ -100,6 +101,7 @@ impl std::fmt::Display for Node {
             NodeType::UNARY |
             NodeType::REF => write!(f, "{}", self.data.unary.as_ref().unwrap() ),
             NodeType::STRUCT => write!(f, "{}", self.data.st.as_ref().unwrap() ),
+            NodeType::INITSTRUCT => write!(f, "{}", self.data.initst.as_ref().unwrap() ),
         }
     }    
 }
@@ -179,6 +181,13 @@ impl<'life> Parser<'life> {
 
     fn current_is_type(&mut self, tp: TokenType) -> bool {
         self.current.tp == tp
+    }
+
+    fn next_is_type(&mut self, tp: TokenType) -> bool {
+        self.advance();
+        let res: bool = self.current.tp == tp;
+        self.backadvance();
+        return res;
     }
 
     fn get_precedence(&self) -> Precedence {
@@ -386,6 +395,7 @@ impl<'life> Parser<'life> {
             to: None,
             unary: None,
             st: None,
+            initst: None,
         };
 
         let pos = Position {
@@ -437,6 +447,7 @@ impl<'life> Parser<'life> {
             to: None,
             unary: None,
             st: None,
+            initst: None,
         };
     
         let n: Node = self.create_node(NodeType::BINARY, nodedat, pos);
@@ -461,6 +472,7 @@ impl<'life> Parser<'life> {
             to: None,
             unary: None,
             st: None,
+            initst: None,
         };
 
         let pos = Position {
@@ -469,7 +481,72 @@ impl<'life> Parser<'life> {
             endcol: self.current.endcol,
         };
     
-        let n: Node = self.create_node(NodeType::IDENTIFIER, nodedat, pos);
+        let mut n: Node = self.create_node(NodeType::IDENTIFIER, nodedat, pos);
+
+        if self.next_is_type(TokenType::LCURLY) {
+            let name: String = self.current.data.clone();
+            self.advance();
+            self.advance();
+
+            let mut members: std::collections::HashMap<String, Node> = std::collections::HashMap::new();
+    
+            while !self.current_is_type(TokenType::RCURLY) {
+                self.skip_newline();
+    
+                if self.current_is_type(TokenType::RCURLY) {
+                    break;
+                }
+    
+                if !self.current_is_type(TokenType::IDENTIFIER) {
+                    self.raise_error("Expected identifier.", ErrorType::InvalidTok);
+                }
+        
+                let name: String = self.current.data.clone();
+        
+                self.advance();
+    
+                if !self.current_is_type(TokenType::EQUALS) {
+                    self.raise_error("Expected equals.", ErrorType::InvalidTok);
+                }
+    
+                self.advance();
+                
+                members.insert(name, self.expr(Precedence::Lowest));
+            }
+            
+            if !self.current_is_type(TokenType::RCURLY) {
+                self.raise_error("Expected right curly bracket.", ErrorType::InvalidTok);
+            }
+
+
+            let initst: nodes::StructInitNode = nodes::StructInitNode{
+                name,
+                members,
+            };
+        
+            let nodedat: nodes::NodeData = nodes::NodeData {
+                binary: None,
+                num: None,
+                letn: None,
+                identifier: None,
+                func: None,
+                assign: None,
+                call: None,
+                ret: None,
+                to: None,
+                unary: None,
+                st: None,
+                initst: Some(initst),
+            };
+    
+            let pos = Position {
+                line: self.current.line,
+                startcol: self.current.startcol,
+                endcol: self.current.endcol,
+            };
+        
+            n = self.create_node(NodeType::INITSTRUCT, nodedat, pos);
+        }
     
         return n;
     }
@@ -506,6 +583,7 @@ impl<'life> Parser<'life> {
             to: None,
             unary: None,
             st: None,
+            initst: None,
         };
     
         let n: Node = self.create_node(NodeType::ASSIGN, nodedat, pos);
@@ -573,6 +651,7 @@ impl<'life> Parser<'life> {
             to: None,
             unary: None,
             st: None,
+            initst: None,
         };
     
         let n: Node = self.create_node(NodeType::CALL, nodedat, pos);
@@ -596,6 +675,7 @@ impl<'life> Parser<'life> {
             to: None,
             unary: None,
             st: None,
+            initst: None,
         };
 
         let pos = Position {
@@ -626,6 +706,7 @@ impl<'life> Parser<'life> {
             to: None,
             unary: None,
             st: None,
+            initst: None,
         };
 
         let pos = Position {
@@ -656,6 +737,7 @@ impl<'life> Parser<'life> {
             to: None,
             unary: None,
             st: None,
+            initst: None,
         };
 
         let pos = Position {
@@ -686,6 +768,7 @@ impl<'life> Parser<'life> {
             to: None,
             unary: None,
             st: None,
+            initst: None,
         };
 
         let pos = Position {
@@ -716,6 +799,7 @@ impl<'life> Parser<'life> {
             to: None,
             unary: None,
             st: None,
+            initst: None,
         };
 
         let pos = Position {
@@ -746,6 +830,7 @@ impl<'life> Parser<'life> {
             to: None,
             unary: None,
             st: None,
+            initst: None,
         };
 
         let pos = Position {
@@ -776,6 +861,7 @@ impl<'life> Parser<'life> {
             to: None,
             unary: None,
             st: None,
+            initst: None,
         };
 
         let pos = Position {
@@ -806,6 +892,7 @@ impl<'life> Parser<'life> {
             to: None,
             unary: None,
             st: None,
+            initst: None,
         };
 
         let pos = Position {
@@ -836,6 +923,7 @@ impl<'life> Parser<'life> {
             to: None,
             unary: None,
             st: None,
+            initst: None,
         };
 
         let pos = Position {
@@ -879,6 +967,7 @@ impl<'life> Parser<'life> {
             to: Some(to),
             unary: None,
             st: None,
+            initst: None,
         };
     
         let n: Node = self.create_node(NodeType::TO, nodedat, pos);
@@ -916,6 +1005,7 @@ impl<'life> Parser<'life> {
             to: Some(to),
             unary: None,
             st: None,
+            initst: None,
         };
     
         let n: Node = self.create_node(NodeType::AS, nodedat, pos);
@@ -940,6 +1030,7 @@ impl<'life> Parser<'life> {
             to: None,
             unary: None,
             st: None,
+            initst: None,
         };
 
         let pos = Position {
@@ -970,6 +1061,7 @@ impl<'life> Parser<'life> {
             to: None,
             unary: None,
             st: None,
+            initst: None,
         };
 
         let pos = Position {
@@ -1009,6 +1101,7 @@ impl<'life> Parser<'life> {
             to: None,
             unary: Some(refn),
             st: None,
+            initst: None,
         };
 
         self.backadvance();
@@ -1055,6 +1148,7 @@ impl<'life> Parser<'life> {
             to: None,
             unary: None,
             st: None,
+            initst: None,
         };
     
         let n: Node = self.create_node(NodeType::UNARY, nodedat, pos);
@@ -1122,6 +1216,7 @@ impl<'life> Parser<'life> {
             to: None,
             unary: None,
             st: None,
+            initst: None,
         };
 
         pos.endcol = nodedat.letn.as_ref().unwrap().expr.pos.endcol;
@@ -1335,6 +1430,7 @@ impl<'life> Parser<'life> {
             to: None,
             unary: None,
             st: None,
+            initst: None,
         };
 
     
@@ -1370,6 +1466,7 @@ impl<'life> Parser<'life> {
             to: None,
             unary: None,
             st: None,
+            initst: None,
         };
 
         pos.endcol = nodedat.ret.as_ref().unwrap().expr.pos.endcol;
@@ -1457,6 +1554,7 @@ impl<'life> Parser<'life> {
             to: None,
             unary: None,
             st: Some(st),
+            initst: None
         };
 
     

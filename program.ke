@@ -3,7 +3,10 @@ struct s {
 }
 
 fn f(x: f32) -> s{
-    let y = x+10f32
+    let y = s{
+        a=x
+    }
+    return y
 }
 
 fn main() {

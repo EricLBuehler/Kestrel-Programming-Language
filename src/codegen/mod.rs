@@ -8,7 +8,6 @@ use inkwell::types::AnyTypeEnum;
 use inkwell::types::BasicType;
 use crate::fileinfo;
 use inkwell::debug_info::AsDIScope;
-use inkwell::values::AggregateValue;
 
 use core::panic;
 use std::error::Error;
@@ -1237,6 +1236,9 @@ impl<'ctx> CodeGen<'ctx> {
             }
             parser::NodeType::STRUCT => {
                 self.build_struct(node)
+            }
+            parser::NodeType::INITSTRUCT => {
+                unimplemented!();
             }
         }
     }
