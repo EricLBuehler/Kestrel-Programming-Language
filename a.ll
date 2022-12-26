@@ -14,7 +14,10 @@ entry:
   %y = alloca { float }*, !dbg !9
   store { float }* %s, { float }** %y, !dbg !9
   %y2 = load { float }*, { float }** %y, !dbg !9
-  ret { float }* %y2, !dbg !9
+  %s3 = getelementptr inbounds { float }, { float }* %y2, i32 0, i32 0, !dbg !9
+  %a4 = load float, float* %s3, !dbg !9
+  %y5 = load { float }*, { float }** %y, !dbg !9
+  ret { float }* %y5, !dbg !9
 }
 
 ; Function Attrs: noinline nounwind optnone
@@ -50,9 +53,9 @@ attributes #0 = { noinline nounwind optnone }
 !8 = !DIBasicType(name: "float", size: 16, flags: DIFlagPublic)
 !9 = !DILocation(line: 4, scope: !10)
 !10 = distinct !DILexicalBlock(scope: !4, file: !2, line: 4)
-!11 = distinct !DISubprogram(name: "main", linkageName: "_main", scope: null, file: !2, line: 11, type: !12, scopeLine: 11, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
+!11 = distinct !DISubprogram(name: "main", linkageName: "_main", scope: null, file: !2, line: 12, type: !12, scopeLine: 12, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !12 = !DISubroutineType(flags: DIFlagPublic, types: !13)
 !13 = !{!14}
 !14 = !DIBasicType(name: "void", size: 16, flags: DIFlagPublic)
-!15 = !DILocation(line: 11, scope: !16)
-!16 = distinct !DILexicalBlock(scope: !11, file: !2, line: 11)
+!15 = !DILocation(line: 12, scope: !16)
+!16 = distinct !DILexicalBlock(scope: !11, file: !2, line: 12)

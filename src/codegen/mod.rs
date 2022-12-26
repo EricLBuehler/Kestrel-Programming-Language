@@ -1091,6 +1091,34 @@ impl<'ctx> CodeGen<'ctx> {
         return data;
     }
 
+    fn build_attr(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        let base: types::Data = self.compile_expr(&node.data.attr.as_ref().unwrap().name, false);
+
+        if base.tp.tp != types::BasicDataType::Struct {
+            let fmt: String = format!("Expected struct, got '{}'.", base.tp.tp);
+            errors::raise_error(&fmt, errors::ErrorType::GetAttrOfNonStruct, &node.pos, self.info);
+        }
+
+        let attr: String = node.data.attr.as_ref().unwrap().attr.clone();
+
+        if !base.tp.names.as_ref().unwrap().contains(&attr) {
+            let fmt: String = format!("Struct '{}' has no attribute '{}'.", base.tp.name, attr);
+            errors::raise_error(&fmt, errors::ErrorType::GetAttrOfNonStruct, &node.pos, self.info);
+        }
+
+        let idx: u32 = base.tp.names.as_ref().unwrap().iter().position(|x| *x == attr).unwrap() as u32;
+
+        let itmptr: inkwell::values::PointerValue = self.builder.build_struct_gep(base.data.unwrap().into_pointer_value(), idx, base.tp.name.as_str()).expect("GEP Error");
+        let val = self.builder.build_load(itmptr, attr.as_str());
+
+        let data: types::Data = types::Data {
+            data: Some(val),
+            tp: base.tp.types.get(idx as usize).unwrap().clone(),
+            owned: true,
+        };
+        return data;
+    }
+
     fn compile_expr(&mut self, node: &parser::Node, give_ownership: bool) -> types::Data<'ctx> {
         match node.tp {
             parser::NodeType::I32 => {
@@ -1303,6 +1331,9 @@ impl<'ctx> CodeGen<'ctx> {
             }
             parser::NodeType::INITSTRUCT => {
                 self.build_initstruct(node)
+            }
+            parser::NodeType::ATTR => {
+                self.build_attr(node)
             }
         }
     }

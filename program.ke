@@ -6,7 +6,7 @@ fn f(x: f32) -> s{
     let y = s{
         a=x
     }
-    y.a=10
+    y.a
     return y
 }
 

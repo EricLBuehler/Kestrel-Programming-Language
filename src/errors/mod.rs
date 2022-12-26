@@ -23,6 +23,7 @@ pub enum ErrorType {
     MemberNameNotFound,
     FieldRedeclaration,
     FieldReinitialization,
+    GetAttrOfNonStruct,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -49,6 +50,7 @@ impl std::fmt::Display for ErrorType {
             ErrorType::MemberNameNotFound => write!(f, "member name not found"),
             ErrorType::FieldRedeclaration => write!(f, "field is redefined"),
             ErrorType::FieldReinitialization => write!(f, "field is reinitialized"),
+            ErrorType::GetAttrOfNonStruct => write!(f, "cannot get attribute of non-struct"),
         }
     }
 }

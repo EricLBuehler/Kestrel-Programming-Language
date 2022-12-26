@@ -196,6 +196,18 @@ impl std::fmt::Display for StructInitNode {
 }
 
 #[derive(Clone, Debug)]
+pub struct AttrNode{
+    pub name: crate::parser::Node,
+    pub attr: String,
+}
+
+impl std::fmt::Display for AttrNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{} members", self.name, self.attr)
+    }    
+}
+
+#[derive(Clone, Debug)]
 pub struct NodeData {
     pub binary: Option<BinaryNode>,
     pub num: Option<NumNode>,
@@ -209,4 +221,5 @@ pub struct NodeData {
     pub unary: Option<UnaryNode>,
     pub st: Option<StructNode>,
     pub initst: Option<StructInitNode>,
+    pub attr: Option<AttrNode>,
 }
