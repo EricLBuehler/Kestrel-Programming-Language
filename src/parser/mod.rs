@@ -45,6 +45,7 @@ pub enum NodeType {
     STRUCT,
     INITSTRUCT,
     ATTR,
+    ATTRASSIGN,
 }
 
 #[derive(Clone, Debug)]
@@ -104,6 +105,7 @@ impl std::fmt::Display for Node {
             NodeType::STRUCT => write!(f, "{}", self.data.st.as_ref().unwrap() ),
             NodeType::INITSTRUCT => write!(f, "{}", self.data.initst.as_ref().unwrap() ),
             NodeType::ATTR => write!(f, "{}", self.data.attr.as_ref().unwrap() ),
+            NodeType::ATTRASSIGN => write!(f, "{}", self.data.attrassign.as_ref().unwrap() ),
         }
     }    
 }
@@ -399,6 +401,7 @@ impl<'life> Parser<'life> {
             st: None,
             initst: None,
             attr: None,
+            attrassign: None,
         };
 
         let pos = Position {
@@ -452,6 +455,7 @@ impl<'life> Parser<'life> {
             st: None,
             initst: None,
             attr: None,
+            attrassign: None,
         };
     
         let n: Node = self.create_node(NodeType::BINARY, nodedat, pos);
@@ -478,6 +482,7 @@ impl<'life> Parser<'life> {
             st: None,
             initst: None,
             attr: None,
+            attrassign: None,
         };
 
         let pos = Position {
@@ -543,6 +548,7 @@ impl<'life> Parser<'life> {
                 st: None,
                 initst: Some(initst),
                 attr: None,
+                attrassign: None,
             };
         
             n = self.create_node(NodeType::INITSTRUCT, nodedat, pos);
@@ -556,31 +562,67 @@ impl<'life> Parser<'life> {
             self.advance();
             self.advance();
             let attr: String = self.current.data.clone();
-            
-            pos.endcol = self.current.endcol;
 
-            let attr: nodes::AttrNode = nodes::AttrNode{
-                name: n,
-                attr,
-            };
-        
-            let nodedat: nodes::NodeData = nodes::NodeData {
-                binary: None,
-                num: None,
-                letn: None,
-                identifier: None,
-                func: None,
-                assign: None,
-                call: None,
-                ret: None,
-                to: None,
-                unary: None,
-                st: None,
-                initst: None,
-                attr: Some(attr),
-            };
-        
-            n = self.create_node(NodeType::ATTR, nodedat, pos.clone());
+            if self.next_is_type(TokenType::EQUALS) {
+                self.advance();
+                self.advance();
+                let expr: Node = self.expr(Precedence::Lowest);
+                self.backadvance();
+                pos.endcol = self.current.endcol;
+                self.advance();
+
+                let attr: nodes::AttrAssignNode = nodes::AttrAssignNode{
+                    name: n,
+                    attr,
+                    expr,
+                };
+            
+                let nodedat: nodes::NodeData = nodes::NodeData {
+                    binary: None,
+                    num: None,
+                    letn: None,
+                    identifier: None,
+                    func: None,
+                    assign: None,
+                    call: None,
+                    ret: None,
+                    to: None,
+                    unary: None,
+                    st: None,
+                    initst: None,
+                    attr: None,
+                    attrassign: Some(attr),
+                };
+            
+                n = self.create_node(NodeType::ATTRASSIGN, nodedat, pos.clone());
+            }
+            else {            
+                pos.endcol = self.current.endcol;
+
+                let attr: nodes::AttrNode = nodes::AttrNode{
+                    name: n,
+                    attr,
+                };
+            
+                let nodedat: nodes::NodeData = nodes::NodeData {
+                    binary: None,
+                    num: None,
+                    letn: None,
+                    identifier: None,
+                    func: None,
+                    assign: None,
+                    call: None,
+                    ret: None,
+                    to: None,
+                    unary: None,
+                    st: None,
+                    initst: None,
+                    attr: Some(attr),
+                    attrassign: None,
+                };
+            
+                n = self.create_node(NodeType::ATTR, nodedat, pos.clone());
+            }
         }
     
         return n;
@@ -620,6 +662,7 @@ impl<'life> Parser<'life> {
             st: None,
             initst: None,
             attr: None,
+            attrassign: None,
         };
     
         let n: Node = self.create_node(NodeType::ASSIGN, nodedat, pos);
@@ -689,6 +732,7 @@ impl<'life> Parser<'life> {
             st: None,
             initst: None,
             attr: None,
+            attrassign: None,
         };
     
         let n: Node = self.create_node(NodeType::CALL, nodedat, pos);
@@ -714,6 +758,7 @@ impl<'life> Parser<'life> {
             st: None,
             initst: None,
             attr: None,
+            attrassign: None,
         };
 
         let pos = Position {
@@ -746,6 +791,7 @@ impl<'life> Parser<'life> {
             st: None,
             initst: None,
             attr: None,
+            attrassign: None,
         };
 
         let pos = Position {
@@ -778,6 +824,7 @@ impl<'life> Parser<'life> {
             st: None,
             initst: None,
             attr: None,
+            attrassign: None,
         };
 
         let pos = Position {
@@ -810,6 +857,7 @@ impl<'life> Parser<'life> {
             st: None,
             initst: None,
             attr: None,
+            attrassign: None,
         };
 
         let pos = Position {
@@ -842,6 +890,7 @@ impl<'life> Parser<'life> {
             st: None,
             initst: None,
             attr: None,
+            attrassign: None,
         };
 
         let pos = Position {
@@ -874,6 +923,7 @@ impl<'life> Parser<'life> {
             st: None,
             initst: None,
             attr: None,
+            attrassign: None,
         };
 
         let pos = Position {
@@ -906,6 +956,7 @@ impl<'life> Parser<'life> {
             st: None,
             initst: None,
             attr: None,
+            attrassign: None,
         };
 
         let pos = Position {
@@ -938,6 +989,7 @@ impl<'life> Parser<'life> {
             st: None,
             initst: None,
             attr: None,
+            attrassign: None,
         };
 
         let pos = Position {
@@ -970,6 +1022,7 @@ impl<'life> Parser<'life> {
             st: None,
             initst: None,
             attr: None,
+            attrassign: None,
         };
 
         let pos = Position {
@@ -1015,6 +1068,7 @@ impl<'life> Parser<'life> {
             st: None,
             initst: None,
             attr: None,
+            attrassign: None,
         };
     
         let n: Node = self.create_node(NodeType::TO, nodedat, pos);
@@ -1054,6 +1108,7 @@ impl<'life> Parser<'life> {
             st: None,
             initst: None,
             attr: None,
+            attrassign: None,
         };
     
         let n: Node = self.create_node(NodeType::AS, nodedat, pos);
@@ -1080,6 +1135,7 @@ impl<'life> Parser<'life> {
             st: None,
             initst: None,
             attr: None,
+            attrassign: None,
         };
 
         let pos = Position {
@@ -1112,6 +1168,7 @@ impl<'life> Parser<'life> {
             st: None,
             initst: None,
             attr: None,
+            attrassign: None,
         };
 
         let pos = Position {
@@ -1153,6 +1210,7 @@ impl<'life> Parser<'life> {
             st: None,
             initst: None,
             attr: None,
+            attrassign: None,
         };
 
         self.backadvance();
@@ -1201,6 +1259,7 @@ impl<'life> Parser<'life> {
             st: None,
             initst: None,
             attr: None,
+            attrassign: None,
         };
     
         let n: Node = self.create_node(NodeType::UNARY, nodedat, pos);
@@ -1270,6 +1329,7 @@ impl<'life> Parser<'life> {
             st: None,
             initst: None,
             attr: None,
+            attrassign: None,
         };
 
         pos.endcol = nodedat.letn.as_ref().unwrap().expr.pos.endcol;
@@ -1485,6 +1545,7 @@ impl<'life> Parser<'life> {
             st: None,
             initst: None,
             attr: None,
+            attrassign: None,
         };
 
     
@@ -1522,6 +1583,7 @@ impl<'life> Parser<'life> {
             st: None,
             initst: None,
             attr: None,
+            attrassign: None,
         };
 
         pos.endcol = nodedat.ret.as_ref().unwrap().expr.pos.endcol;
@@ -1611,6 +1673,7 @@ impl<'life> Parser<'life> {
             st: Some(st),
             initst: None,
             attr: None,
+            attrassign: None,
         };
 
     

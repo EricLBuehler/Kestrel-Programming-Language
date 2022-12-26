@@ -1119,6 +1119,44 @@ impl<'ctx> CodeGen<'ctx> {
         return data;
     }
 
+    fn build_attrasssign(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        let base: types::Data = self.compile_expr(&node.data.attrassign.as_ref().unwrap().name, false);
+
+        if base.tp.tp != types::BasicDataType::Struct {
+            let fmt: String = format!("Expected struct, got '{}'.", base.tp.tp);
+            errors::raise_error(&fmt, errors::ErrorType::GetAttrOfNonStruct, &node.pos, self.info);
+        }
+
+        let attr: String = node.data.attrassign.as_ref().unwrap().attr.clone();
+
+        if !base.tp.names.as_ref().unwrap().contains(&attr) {
+            let fmt: String = format!("Struct '{}' has no attribute '{}'.", base.tp.name, attr);
+            errors::raise_error(&fmt, errors::ErrorType::GetAttrOfNonStruct, &node.pos, self.info);
+        }
+
+        let idx: u32 = base.tp.names.as_ref().unwrap().iter().position(|x| *x == attr).unwrap() as u32;
+
+        let itmptr: inkwell::values::PointerValue = self.builder.build_struct_gep(base.data.unwrap().into_pointer_value(), idx, base.tp.name.as_str()).expect("GEP Error");
+        
+        let expr: types::Data = self.compile_expr(&node.data.attrassign.as_ref().unwrap().expr, true);
+
+        if &expr.tp != base.tp.types.get(idx as usize).unwrap() {
+            let fmt: String = format!("Expected '{}' type, got '{}' type.", expr.tp, base.tp.types.get(idx as usize).unwrap());
+            errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+        }
+
+        if expr.data.is_some() {
+            self.builder.build_store(itmptr, expr.data.unwrap());
+        }
+
+        let data: types::Data = types::Data {
+            data: None,
+            tp: types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None, false),
+            owned: true,
+        };
+        return data;
+    }
+
     fn compile_expr(&mut self, node: &parser::Node, give_ownership: bool) -> types::Data<'ctx> {
         match node.tp {
             parser::NodeType::I32 => {
@@ -1334,6 +1372,9 @@ impl<'ctx> CodeGen<'ctx> {
             }
             parser::NodeType::ATTR => {
                 self.build_attr(node)
+            }
+            parser::NodeType::ATTRASSIGN => {
+                self.build_attrasssign(node)
             }
         }
     }

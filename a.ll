@@ -15,9 +15,9 @@ entry:
   store { float }* %s, { float }** %y, !dbg !9
   %y2 = load { float }*, { float }** %y, !dbg !9
   %s3 = getelementptr inbounds { float }, { float }* %y2, i32 0, i32 0, !dbg !9
-  %a4 = load float, float* %s3, !dbg !9
-  %y5 = load { float }*, { float }** %y, !dbg !9
-  ret { float }* %y5, !dbg !9
+  store float 1.200000e+01, float* %s3, !dbg !9
+  %y4 = load { float }*, { float }** %y, !dbg !9
+  ret { float }* %y4, !dbg !9
 }
 
 ; Function Attrs: noinline nounwind optnone

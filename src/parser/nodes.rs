@@ -203,7 +203,20 @@ pub struct AttrNode{
 
 impl std::fmt::Display for AttrNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}.{} members", self.name, self.attr)
+        write!(f, "{}.{}", self.name, self.attr)
+    }    
+}
+
+#[derive(Clone, Debug)]
+pub struct AttrAssignNode{
+    pub name: crate::parser::Node,
+    pub attr: String,
+    pub expr: crate::parser::Node,
+}
+
+impl std::fmt::Display for AttrAssignNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{} = {}", self.name, self.attr, self.expr)
     }    
 }
 
@@ -222,4 +235,5 @@ pub struct NodeData {
     pub st: Option<StructNode>,
     pub initst: Option<StructInitNode>,
     pub attr: Option<AttrNode>,
+    pub attrassign: Option<AttrAssignNode>,
 }
