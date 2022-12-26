@@ -32,6 +32,7 @@ pub enum TokenType {
     F32,
     F64,
     AMPERSAND,
+    DOT,
 }
 
 pub struct Lexer<'life> {
@@ -92,6 +93,7 @@ impl std::fmt::Display for TokenType {
            TokenType::F32 => write!(f, "f32"),
            TokenType::F64 => write!(f, "f64"),
            TokenType::AMPERSAND => write!(f, "AMPERSAND"),
+           TokenType::DOT => write!(f, "DOT"),
        }
     }
 }
@@ -275,6 +277,16 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
             vector.push(Token {
                 data: String::from("&"),
                 tp: TokenType::AMPERSAND,
+                line: lexer.line,
+                startcol: lexer.col,
+                endcol: lexer.col+1,
+            });
+            advance(lexer);
+        }
+        else if cur == '.' {
+            vector.push(Token {
+                data: String::from("."),
+                tp: TokenType::DOT,
                 line: lexer.line,
                 startcol: lexer.col,
                 endcol: lexer.col+1,
