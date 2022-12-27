@@ -2,10 +2,8 @@
 source_filename = "program.ke"
 target triple = "x86_64-unknown-linux-gnu"
 
-declare { float } @f(float) local_unnamed_addr
-
-; Function Attrs: noinline optnone
-define void @_main.1() local_unnamed_addr #0 !dbg !4 {
+; Function Attrs: noinline nounwind optnone
+define void @_main() local_unnamed_addr #0 !dbg !4 {
 entry:
   %x = alloca float, !dbg !8
   store float 0x3FF3AE1480000000, float* %x, !dbg !8
@@ -15,7 +13,7 @@ entry:
 }
 
 ; Function Attrs: noinline nounwind optnone
-define { float } @f.2(float %0) local_unnamed_addr #1 !dbg !10 {
+define { float } @f(float %0) local_unnamed_addr #0 !dbg !10 {
 entry:
   %x = alloca float, !dbg !15
   store float %0, float* %x, !dbg !15
@@ -32,15 +30,14 @@ entry:
   ret { float }* %y4, !dbg !15
 }
 
-; Function Attrs: noinline optnone
+; Function Attrs: noinline nounwind optnone
 define i32 @main(i32 %0, i8** %1) local_unnamed_addr #0 {
 entry:
-  call void @_main.1(), !dbg !15
+  call void @_main(), !dbg !15
   ret i32 0, !dbg !15
 }
 
-attributes #0 = { noinline optnone }
-attributes #1 = { noinline nounwind optnone }
+attributes #0 = { noinline nounwind optnone }
 
 !llvm.module.flags = !{!0}
 !llvm.dbg.cu = !{!1}

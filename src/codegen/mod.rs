@@ -503,9 +503,8 @@ impl<'ctx> CodeGen<'ctx> {
         }
         //
 
-        let func: inkwell::values::FunctionValue = self.module.add_function(mangled_name.as_str(), fn_type, None);
+        let func = self.module.get_function(mangled_name.as_str()).replace(self.module.add_function(mangled_name.as_str(), fn_type, None)).unwrap();
 
-        
         self.namespaces.functions.insert(name.clone(), (func, types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), Some(node.data.func.as_ref().unwrap().args.name.clone()), datatypes.clone(), mutability.clone(), Some(rettp_full.0.clone()), false), ForwardDeclarationType::Real));
         
         // Add debug information
