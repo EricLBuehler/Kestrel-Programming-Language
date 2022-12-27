@@ -30,10 +30,16 @@ pub struct InkwellTypes<'ctx> {
     voidtp: &'ctx inkwell::types::VoidType<'ctx>,
 }
 
+#[derive(PartialEq, Clone)]
+pub enum ForwardDeclarationType {
+    Forward,
+    Real,
+}
+
 pub struct Namespaces<'ctx> {
     locals: std::collections::HashMap<String, (Option<inkwell::values::PointerValue<'ctx>>, types::DataType, types::DataMutablility, types::DataOwnership)>,
-    functions: std::collections::HashMap<String, (inkwell::values::FunctionValue<'ctx>, types::DataType)>,
-    structs: std::collections::HashMap<String, (types::DataType, inkwell::types::AnyTypeEnum<'ctx>, std::collections::HashMap<String, i32>)>,
+    functions: std::collections::HashMap<String, (inkwell::values::FunctionValue<'ctx>, types::DataType, ForwardDeclarationType)>,
+    structs: std::collections::HashMap<String, (types::DataType, inkwell::types::AnyTypeEnum<'ctx>, std::collections::HashMap<String, i32>, ForwardDeclarationType)>,
 }
 
 pub struct CodeGen<'ctx> {
@@ -59,9 +65,9 @@ impl<'ctx> CodeGen<'ctx> {
         return None
     }
     
-    fn get_function(&self, name: &String) -> Option<(inkwell::values::PointerValue<'ctx>, types::DataType)>{
+    fn get_function(&self, name: &String) -> Option<(inkwell::values::PointerValue<'ctx>, types::DataType, ForwardDeclarationType)>{
         if self.namespaces.functions.iter().find(|x| *x.0 == *name) != None {
-            return Some((self.namespaces.functions.get(name).unwrap().0.as_global_value().as_pointer_value(), self.namespaces.functions.get(name).unwrap().1.clone()));
+            return Some((self.namespaces.functions.get(name).unwrap().0.as_global_value().as_pointer_value(), self.namespaces.functions.get(name).unwrap().1.clone(), self.namespaces.functions.get(name).unwrap().2.clone()));
         }
 
         return None;
@@ -85,7 +91,7 @@ impl<'ctx> CodeGen<'ctx> {
         return inkwell::types::AnyTypeEnum::StructType(ctx.struct_type(&basictypes[..], false));
     }
     
-    fn get_datatype_from_str(structs: &std::collections::HashMap<String, (types::DataType, inkwell::types::AnyTypeEnum<'ctx>, std::collections::HashMap<String, i32>)>, str_rep: &String) -> Option<types::DataType> {
+    fn get_datatype_from_str(structs: &std::collections::HashMap<String, (types::DataType, inkwell::types::AnyTypeEnum<'ctx>, std::collections::HashMap<String, i32>, ForwardDeclarationType)>, str_rep: &String) -> Option<types::DataType> {
         if *str_rep == types::BasicDataType::I32.to_string() {
             return Some(types::new_datatype(types::BasicDataType::I32, types::BasicDataType::I32.to_string(), None, Vec::new(), Vec::new(), None, false));
         }
@@ -175,7 +181,7 @@ impl<'ctx> CodeGen<'ctx> {
         }
     }
 
-    pub fn get_llvm_from_type(ctx: &'ctx Context, structs: &std::collections::HashMap<String, (types::DataType, inkwell::types::AnyTypeEnum<'ctx>, std::collections::HashMap<String, i32>)>, types: &InkwellTypes<'ctx>, info: &fileinfo::FileInfo, arg: &parser::Type, node: &parser::Node) -> (types::DataType, inkwell::types::AnyTypeEnum<'ctx>) {
+    pub fn get_llvm_from_type(ctx: &'ctx Context, structs: &std::collections::HashMap<String, (types::DataType, inkwell::types::AnyTypeEnum<'ctx>, std::collections::HashMap<String, i32>, ForwardDeclarationType)>, types: &InkwellTypes<'ctx>, info: &fileinfo::FileInfo, arg: &parser::Type, node: &parser::Node) -> (types::DataType, inkwell::types::AnyTypeEnum<'ctx>) {
         if arg.isfn {
             let args: &Vec<parser::Type> = &arg.args.as_ref().unwrap().args;
             let mut datatypes: Vec<types::DataType> = Vec::new();
@@ -381,7 +387,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         let (ptr, tp) = match self.get_variable(&name) {
             None => {
-                let res: Option<(inkwell::values::PointerValue, types::DataType)> = self.get_function(&name);
+                let res: Option<(inkwell::values::PointerValue, types::DataType, ForwardDeclarationType)> = self.get_function(&name);
                 if res==None {
                     let fmt: String = format!("Name '{}' is not defined.", name);
                     errors::raise_error(&fmt, errors::ErrorType::NameNotFound, &node.pos, self.info);
@@ -427,7 +433,7 @@ impl<'ctx> CodeGen<'ctx> {
     
     fn build_func(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         let name: &String = &node.data.func.as_ref().unwrap().name;
-        if self.get_function(&name) != None {
+        if self.get_function(&name) != None && self.get_function(&name).unwrap().2 != ForwardDeclarationType::Forward {
             let fmt: String = format!("Function '{}' is already defined.", name);
             errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
         }
@@ -480,7 +486,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         //Main function specifics
         let mangled_name = self.mangle_name_main(&name);
-        if self.get_function(&mangled_name) != None {
+        if self.get_function(&mangled_name) != None && self.get_function(&mangled_name).unwrap().2 != ForwardDeclarationType::Forward {
             let fmt: String = format!("Mangled function 'main' name '{}' is already defined.", mangled_name);
             errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
         }
@@ -500,7 +506,7 @@ impl<'ctx> CodeGen<'ctx> {
         let func: inkwell::values::FunctionValue = self.module.add_function(mangled_name.as_str(), fn_type, None);
 
         
-        self.namespaces.functions.insert(name.clone(), (func, types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), Some(node.data.func.as_ref().unwrap().args.name.clone()), datatypes.clone(), mutability.clone(), Some(rettp_full.0.clone()), false)));
+        self.namespaces.functions.insert(name.clone(), (func, types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), Some(node.data.func.as_ref().unwrap().args.name.clone()), datatypes.clone(), mutability.clone(), Some(rettp_full.0.clone()), false), ForwardDeclarationType::Real));
         
         // Add debug information
         let mut diparamtps: Vec<inkwell::debug_info::DIType> = Vec::new();
@@ -1006,6 +1012,11 @@ impl<'ctx> CodeGen<'ctx> {
     }
 
     fn build_struct(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        if self.namespaces.structs.get(&node.data.st.as_ref().unwrap().name.clone()).is_some() && self.namespaces.structs.get(&node.data.st.as_ref().unwrap().name.clone()).unwrap().3 != ForwardDeclarationType::Forward {
+            let fmt: String = format!("Struct '{}' is already defined.", node.data.st.as_ref().unwrap().name.clone());
+            errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
+        }
+
         let mut names: Vec<String> = Vec::new();
         let mut types: Vec<(types::DataType, AnyTypeEnum)> = Vec::new();
         let mut simpletypes: Vec<types::DataType> = Vec::new();
@@ -1026,7 +1037,7 @@ impl<'ctx> CodeGen<'ctx> {
             idx+=1;
         }
 
-        self.namespaces.structs.insert(node.data.st.as_ref().unwrap().name.clone(), (types::new_datatype(types::BasicDataType::Struct, node.data.st.as_ref().unwrap().name.clone(), Some(names), simpletypes.clone(), mutabilitites, None, false), Self::build_struct_tp_from_types(self.context, &self.inkwell_types, &simpletypes),idxmapping));
+        self.namespaces.structs.insert(node.data.st.as_ref().unwrap().name.clone(), (types::new_datatype(types::BasicDataType::Struct, node.data.st.as_ref().unwrap().name.clone(), Some(names), simpletypes.clone(), mutabilitites, None, false), Self::build_struct_tp_from_types(self.context, &self.inkwell_types, &simpletypes),idxmapping, ForwardDeclarationType::Real));
 
         let data: types::Data = types::Data {
             data: None,
@@ -1045,7 +1056,7 @@ impl<'ctx> CodeGen<'ctx> {
             errors::raise_error(&fmt, errors::ErrorType::StructNotDefined, &node.pos, self.info);
         }
 
-        let s: (types::DataType, AnyTypeEnum, std::collections::HashMap<String, i32>) = self.namespaces.structs.get(&name).unwrap().clone();
+        let s: (types::DataType, AnyTypeEnum, std::collections::HashMap<String, i32>, ForwardDeclarationType) = self.namespaces.structs.get(&name).unwrap().clone();
 
         for member in &node.data.initst.as_ref().unwrap().members {
             if members.contains_key(member.0) {
@@ -1395,6 +1406,111 @@ impl<'ctx> CodeGen<'ctx> {
         }
         return retv;
     }
+
+    fn forward_declare(&mut self, nodes: &Vec<parser::Node>){
+        for node in nodes {
+            if node.tp == parser::NodeType::FUNC {
+                let name: &String = &node.data.func.as_ref().unwrap().name;
+                if self.get_function(&name) != None {
+                    let fmt: String = format!("Function '{}' is already defined.", name);
+                    errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
+                }
+
+                // Argument and return types
+                let args = &node.data.func.as_ref().unwrap().args;
+
+                let mut datatypes: Vec<types::DataType> = Vec::new();
+                let mut mutability: Vec<types::DataMutablility> = Vec::new();
+                let mut inktypes: Vec<inkwell::types::BasicMetadataTypeEnum> = Vec::new();
+
+                for arg in &args.args {
+                    let (data, tp) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.info, &arg, node);
+                    datatypes.push(data);
+                    mutability.push(arg.mutability);
+
+
+                    let res: Option<inkwell::types::BasicMetadataTypeEnum> = Self::get_basicmeta_from_any(tp);
+
+                    if res.is_some() {
+                        inktypes.push(res.unwrap());
+                    }
+                }
+                
+                let rettp_full: (types::DataType, inkwell::types::AnyTypeEnum) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.info, &args.rettp.last().unwrap(), node);
+
+                self.expected_rettp = Some(rettp_full.0.clone());
+                
+                let tp: inkwell::types::AnyTypeEnum = rettp_full.1;
+                let fn_type: inkwell::types::FunctionType;
+                
+                if tp.is_int_type() {
+                    fn_type = tp.into_int_type().fn_type(&inktypes[..], false);
+                }
+                else if tp.is_float_type() {
+                    fn_type = tp.into_float_type().fn_type(&inktypes[..], false);
+                }
+                else if tp.is_function_type() {
+                    fn_type = tp.into_function_type().ptr_type(inkwell::AddressSpace::Generic).fn_type(&inktypes[..], false);
+                }
+                else if tp.is_void_type() {
+                    fn_type = tp.into_void_type().fn_type(&inktypes[..], false);
+                }
+                else if tp.is_struct_type() {
+                    fn_type = tp.into_struct_type().fn_type(&inktypes[..], false);
+                }
+                else {
+                    panic!("Unexpected type");
+                }
+
+                //Main function specifics
+                let mangled_name = self.mangle_name_main(&name);
+                if self.get_function(&mangled_name) != None {
+                    let fmt: String = format!("Mangled function 'main' name '{}' is already defined.", mangled_name);
+                    errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
+                }
+                if name == "main" {
+                    if datatypes.len() != 0 {
+                        let fmt: String = format!("Expected 0 arguments, got {}.", datatypes.len());
+                        errors::raise_error(&fmt, errors::ErrorType::ArgumentCountMismatch, &node.pos, self.info);
+                    }
+
+                    if fn_type.get_return_type() != None {
+                        let fmt: String = format!("Expected 'void' return type, got '{}'.", &rettp_full.0.name);
+                        errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+                    }
+                }
+                //
+
+                let func: inkwell::values::FunctionValue = self.module.add_function(mangled_name.as_str(), fn_type, None);
+
+                
+                self.namespaces.functions.insert(name.clone(), (func, types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), Some(node.data.func.as_ref().unwrap().args.name.clone()), datatypes.clone(), mutability.clone(), Some(rettp_full.0.clone()), false), ForwardDeclarationType::Forward));
+            }
+            else if node.tp == parser::NodeType::STRUCT {
+                let mut names: Vec<String> = Vec::new();
+                let mut types: Vec<(types::DataType, AnyTypeEnum)> = Vec::new();
+                let mut simpletypes: Vec<types::DataType> = Vec::new();
+                let mut mutabilitites: Vec<types::DataMutablility> = Vec::new();
+                let mut idxmapping: std::collections::HashMap<String, i32> = std::collections::HashMap::new();
+
+                let mut idx = 0;
+                for member in &node.data.st.as_ref().unwrap().members {
+                    if names.contains(&member.0.clone()) {
+                        let fmt: String = format!("Field '{}' is already declared.", member.0.clone());
+                        errors::raise_error(&fmt, errors::ErrorType::FieldRedeclaration, &node.pos, self.info);
+                    }
+                    names.push(member.0.clone());
+                    types.push(Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, self.info, member.1, node));
+                    simpletypes.push(Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, self.info, member.1, node).0);
+                    mutabilitites.push(types::DataMutablility::Mutable);
+                    idxmapping.insert(member.0.clone(), idx);
+                    idx+=1;
+                }
+
+                self.namespaces.structs.insert(node.data.st.as_ref().unwrap().name.clone(), (types::new_datatype(types::BasicDataType::Struct, node.data.st.as_ref().unwrap().name.clone(), Some(names), simpletypes.clone(), mutabilitites, None, false), Self::build_struct_tp_from_types(self.context, &self.inkwell_types, &simpletypes),idxmapping, ForwardDeclarationType::Forward));
+            }
+        }
+    }
 }
 
 pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::Node>, info: &crate::fileinfo::FileInfo) -> Result<(), Box<dyn Error>> {
@@ -1466,6 +1582,9 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
     //Setup builtin types
     builtin_types::init(&mut codegen);
 
+    //Generate forward-declaration functions
+    codegen.forward_declare(&nodes);
+
     //Compile code
     codegen.compile(&nodes, false);
 
@@ -1475,7 +1594,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
         errors::raise_error_no_pos(&fmt, errors::ErrorType::NameNotFound);
     }
 
-    let (main, _) = codegen.namespaces.functions.get(&String::from("main")).unwrap();
+    let (main, _, _) = codegen.namespaces.functions.get(&String::from("main")).unwrap();
 
     let main_tp: inkwell::types::FunctionType = codegen.inkwell_types.i32tp.fn_type(&[inkwell::types::BasicMetadataTypeEnum::IntType(*codegen.inkwell_types.i32tp), inkwell::types::BasicMetadataTypeEnum::PointerType(codegen.inkwell_types.i8tp.ptr_type(inkwell::AddressSpace::Generic).ptr_type(inkwell::AddressSpace::Generic))], false);
     let realmain: inkwell::values::FunctionValue = codegen.module.add_function("main", main_tp, None);
@@ -1489,7 +1608,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
 
     realmain.add_attribute(inkwell::attributes::AttributeLoc::Function, attr);
     
-    codegen.builder.position_at_end(basic_block); 
+    codegen.builder.position_at_end(basic_block);
 
     codegen.builder.build_call(*main, &[], "res");
 
