@@ -2,15 +2,15 @@ struct s {
     a: f32
 }
 
+fn main() {
+    let x = 1.23
+    f(&x)
+}
+
 fn f(x: f32) -> s{
     let y = s{
         a=x
     }
     y.a=12f32
     return y
-}
-
-fn main() {
-    let x = 1.23
-    f(&x)
 }
