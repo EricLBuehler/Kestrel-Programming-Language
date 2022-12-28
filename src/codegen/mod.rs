@@ -353,27 +353,27 @@ impl<'ctx> CodeGen<'ctx> {
             errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
         }
 
-        if right.data == None{
-            let fmt: String = format!("Cannot assign to '{}'.", right.tp.to_string());
-            errors::raise_error(&fmt, errors::ErrorType::CannotAssign, &node.pos, self.info);
-        }
-
-        let ptr: inkwell::values::PointerValue = self.builder.build_alloca(right.data.unwrap().get_type(), name.as_str());
-
-        self.builder.build_store(ptr, right.data.unwrap());
-
         let mut tp: types::DataType = right.tp;
-        let rt_tp: types::DataType = tp.clone();
-        if node.data.letn.as_ref().unwrap().tp != None {
-            (tp, _) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
-            if tp != rt_tp {
-                let fmt: String = format!("Expected '{}' type, got '{}' type.", tp.to_string(), rt_tp.to_string());
-                errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+
+        if right.data.is_some(){
+            let ptr: inkwell::values::PointerValue = self.builder.build_alloca(right.data.unwrap().get_type(), name.as_str());
+            
+            self.builder.build_store(ptr, right.data.unwrap());
+            
+            let rt_tp: types::DataType = tp.clone();
+            if node.data.letn.as_ref().unwrap().tp != None {
+                (tp, _) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
+                if tp != rt_tp {
+                    let fmt: String = format!("Expected '{}' type, got '{}' type.", tp.to_string(), rt_tp.to_string());
+                    errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+                }
             }
+
+            self.namespaces.locals.insert(name, (Some(ptr), tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}));
         }
-
-        self.namespaces.locals.insert(name, (Some(ptr), tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}));
-
+        else {
+            self.namespaces.locals.insert(name, (None, tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}));            
+        }
         let data: types::Data = types::Data {
             data: None,
             tp: types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None, false),
@@ -728,7 +728,12 @@ impl<'ctx> CodeGen<'ctx> {
                 let fmt: String = format!("Return value is not owned.");
                 errors::raise_error(&fmt, errors::ErrorType::ReturnValueNotOwned, &node.data.ret.as_ref().unwrap().expr.pos, self.info);
             }
-            self.builder.build_return(Some(&retv.data.unwrap())); 
+            if retv.tp.tp != types::BasicDataType::Struct {
+                self.builder.build_return(Some(&retv.data.unwrap())); 
+            }
+            else {
+                self.builder.build_return(Some(&self.builder.build_load(retv.data.unwrap().into_pointer_value(), "retv")));
+            }
         }
         else {
             self.builder.build_return(None);
@@ -1116,7 +1121,24 @@ impl<'ctx> CodeGen<'ctx> {
             errors::raise_error(&fmt, errors::ErrorType::GetAttrOfNonStruct, &node.pos, self.info);
         }
 
-        let idx: u32 = base.tp.names.as_ref().unwrap().iter().position(|x| *x == attr).unwrap() as u32;
+        let mut idx: u32 = 0;
+        for (attrn, tp) in izip![base.tp.names.as_ref().unwrap(), &base.tp.types] {
+            if tp.tp == types::BasicDataType::Unit {
+                if attrn == &attr {
+                    let data: types::Data = types::Data {
+                        data: None,
+                        tp: types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None, false),
+                        owned: true,
+                    };
+                    return data;
+                }
+                continue;
+            }
+            if attrn == &attr {
+                break;
+            }
+            idx+=1;
+        }
 
         let itmptr: inkwell::values::PointerValue = self.builder.build_struct_gep(base.data.unwrap().into_pointer_value(), idx, base.tp.name.as_str()).expect("GEP Error");
         let val = self.builder.build_load(itmptr, attr.as_str());
@@ -1144,7 +1166,24 @@ impl<'ctx> CodeGen<'ctx> {
             errors::raise_error(&fmt, errors::ErrorType::GetAttrOfNonStruct, &node.pos, self.info);
         }
 
-        let idx: u32 = base.tp.names.as_ref().unwrap().iter().position(|x| *x == attr).unwrap() as u32;
+        let mut idx: u32 = 0;
+        for (attrn, tp) in izip![base.tp.names.as_ref().unwrap(), &base.tp.types] {
+            if tp.tp == types::BasicDataType::Unit {
+                if attrn == &attr {
+                    let data: types::Data = types::Data {
+                        data: None,
+                        tp: types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None, false),
+                        owned: true,
+                    };
+                    return data;
+                }
+                continue;
+            }
+            if attrn == &attr {
+                break;
+            }
+            idx+=1;
+        }
 
         let itmptr: inkwell::values::PointerValue = self.builder.build_struct_gep(base.data.unwrap().into_pointer_value(), idx, base.tp.name.as_str()).expect("GEP Error");
         

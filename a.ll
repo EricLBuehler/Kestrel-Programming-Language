@@ -27,7 +27,8 @@ entry:
   %s3 = getelementptr inbounds { float }, { float }* %y2, i32 0, i32 0, !dbg !15
   store float 1.200000e+01, float* %s3, !dbg !15
   %y4 = load { float }*, { float }** %y, !dbg !15
-  ret { float }* %y4, !dbg !15
+  %retv = load { float }, { float }* %y4, !dbg !15
+  ret { float } %retv, !dbg !15
 }
 
 ; Function Attrs: noinline nounwind optnone
