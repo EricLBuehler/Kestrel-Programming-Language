@@ -569,7 +569,6 @@ impl<'life> Parser<'life> {
                 let expr: Node = self.expr(Precedence::Lowest);
                 self.backadvance();
                 pos.endcol = self.current.endcol;
-                self.advance();
 
                 let attr: nodes::AttrAssignNode = nodes::AttrAssignNode{
                     name: n,
