@@ -25,15 +25,13 @@ _main:                                  # @_main
 	.type	f,@function
 f:                                      # @f
 # %bb.0:                                # %entry
-	movss	%xmm0, -12(%rsp)
-	movss	-12(%rsp), %xmm0        # xmm0 = mem[0],zero,zero,zero
+	movss	%xmm0, -4(%rsp)
+	movss	-4(%rsp), %xmm0         # xmm0 = mem[0],zero,zero,zero
+	movss	%xmm0, -8(%rsp)
+	movss	-8(%rsp), %xmm0         # xmm0 = mem[0],zero,zero,zero
 	movss	%xmm0, -16(%rsp)
-	leaq	-16(%rsp), %rax
-	movq	%rax, -8(%rsp)
-	movq	-8(%rsp), %rax
-	movl	$1094713344, (%rax)     # imm = 0x41400000
-	movq	-8(%rsp), %rax
-	movss	(%rax), %xmm0           # xmm0 = mem[0],zero,zero,zero
+	movl	$1094713344, -16(%rsp)  # imm = 0x41400000
+	movss	-16(%rsp), %xmm0        # xmm0 = mem[0],zero,zero,zero
 	retq
 .Lfunc_end1:
 	.size	f, .Lfunc_end1-f

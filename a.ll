@@ -21,14 +21,13 @@ entry:
   %s = alloca { float }, !dbg !15
   %a = getelementptr inbounds { float }, { float }* %s, i32 0, i32 0, !dbg !15
   store float %x1, float* %a, !dbg !15
-  %y = alloca { float }*, !dbg !15
-  store { float }* %s, { float }** %y, !dbg !15
-  %y2 = load { float }*, { float }** %y, !dbg !15
-  %s3 = getelementptr inbounds { float }, { float }* %y2, i32 0, i32 0, !dbg !15
+  %s2 = load { float }, { float }* %s, !dbg !15
+  %y = alloca { float }, !dbg !15
+  store { float } %s2, { float }* %y, !dbg !15
+  %s3 = getelementptr inbounds { float }, { float }* %y, i32 0, i32 0, !dbg !15
   store float 1.200000e+01, float* %s3, !dbg !15
-  %y4 = load { float }*, { float }** %y, !dbg !15
-  %retv = load { float }, { float }* %y4, !dbg !15
-  ret { float } %retv, !dbg !15
+  %y4 = load { float }, { float }* %y, !dbg !15
+  ret { float } %y4, !dbg !15
 }
 
 ; Function Attrs: noinline nounwind optnone

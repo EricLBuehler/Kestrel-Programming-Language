@@ -300,8 +300,8 @@ impl<'ctx> CodeGen<'ctx> {
     fn build_binary(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         let binary: &parser::nodes::BinaryNode = node.data.binary.as_ref().unwrap();
 
-        let left: types::Data = self.compile_expr(&binary.left, false);
-        let right: types::Data = self.compile_expr(&binary.right, false);
+        let left: types::Data = self.compile_expr(&binary.left, false, false);
+        let right: types::Data = self.compile_expr(&binary.right, false, false);
 
         let mut args: Vec<types::Data> = Vec::new();
 
@@ -345,7 +345,7 @@ impl<'ctx> CodeGen<'ctx> {
     }
     
     fn build_let(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let right: types::Data = self.compile_expr(&node.data.letn.as_ref().unwrap().expr, true);
+        let right: types::Data = self.compile_expr(&node.data.letn.as_ref().unwrap().expr, true, false);
 
         let name: String = node.data.letn.as_ref().unwrap().name.clone();
         if self.get_variable(&name) != None {
@@ -357,9 +357,9 @@ impl<'ctx> CodeGen<'ctx> {
 
         if right.data.is_some(){
             let ptr: inkwell::values::PointerValue = self.builder.build_alloca(right.data.unwrap().get_type(), name.as_str());
-            
+                
             self.builder.build_store(ptr, right.data.unwrap());
-            
+
             let rt_tp: types::DataType = tp.clone();
             if node.data.letn.as_ref().unwrap().tp != None {
                 (tp, _) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
@@ -382,7 +382,7 @@ impl<'ctx> CodeGen<'ctx> {
         return data;
     }
     
-    fn build_loadname(&mut self, node: &parser::Node, give_ownership: bool) -> types::Data<'ctx> {
+    fn build_loadname(&mut self, node: &parser::Node, give_ownership: bool, get_ptr: bool) -> types::Data<'ctx> {
         let name: String = node.data.identifier.as_ref().unwrap().name.clone();
 
         let (ptr, tp) = match self.get_variable(&name) {
@@ -416,6 +416,15 @@ impl<'ctx> CodeGen<'ctx> {
         }
 
         if ptr.is_some() {
+            if get_ptr {
+                let data: types::Data = types::Data {
+                    data: Some(inkwell::values::BasicValueEnum::PointerValue(ptr.unwrap())),
+                    tp,
+                    owned: owner.owned,
+                };
+                return data;
+            }
+            
             let data: types::Data = types::Data {
                 data: Some(self.builder.build_load(ptr.unwrap(), name.as_str())),
                 tp,
@@ -648,7 +657,7 @@ impl<'ctx> CodeGen<'ctx> {
     }
     
     fn build_assign(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let right: types::Data = self.compile_expr(&node.data.assign.as_ref().unwrap().expr, true);
+        let right: types::Data = self.compile_expr(&node.data.assign.as_ref().unwrap().expr, true, false);
 
         let name: String = node.data.assign.as_ref().unwrap().name.clone();
 
@@ -679,14 +688,14 @@ impl<'ctx> CodeGen<'ctx> {
     }
     
     fn build_call(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let callable: types::Data = self.compile_expr(&node.data.call.as_ref().unwrap().name, false);
+        let callable: types::Data = self.compile_expr(&node.data.call.as_ref().unwrap().name, false, false);
 
         let mut args: Vec<types::Data> = Vec::new();
         let tp_name: &String = &callable.tp.name.clone();
         args.push(callable);
 
         for arg in &node.data.call.as_ref().unwrap().args{
-            let v: types::Data = self.compile_expr(arg, true); 
+            let v: types::Data = self.compile_expr(arg, true, false); 
             args.push(v);
         }
 
@@ -710,7 +719,7 @@ impl<'ctx> CodeGen<'ctx> {
     }
 
     fn build_return(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let retv: types::Data = self.compile_expr(&node.data.ret.as_ref().unwrap().expr, true);
+        let retv: types::Data = self.compile_expr(&node.data.ret.as_ref().unwrap().expr, true, false);
 
         if self.expected_rettp==None {
             let fmt: String = format!("Cannot return outside of function.");
@@ -728,12 +737,7 @@ impl<'ctx> CodeGen<'ctx> {
                 let fmt: String = format!("Return value is not owned.");
                 errors::raise_error(&fmt, errors::ErrorType::ReturnValueNotOwned, &node.data.ret.as_ref().unwrap().expr.pos, self.info);
             }
-            if retv.tp.tp != types::BasicDataType::Struct {
-                self.builder.build_return(Some(&retv.data.unwrap())); 
-            }
-            else {
-                self.builder.build_return(Some(&self.builder.build_load(retv.data.unwrap().into_pointer_value(), "retv")));
-            }
+            self.builder.build_return(Some(&retv.data.unwrap())); 
         }
         else {
             self.builder.build_return(None);
@@ -744,7 +748,7 @@ impl<'ctx> CodeGen<'ctx> {
     }
 
     fn build_to(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let left: types::Data = self.compile_expr(&node.data.to.as_ref().unwrap().left, false);     
+        let left: types::Data = self.compile_expr(&node.data.to.as_ref().unwrap().left, false, false);     
         let arg: &parser::Type = &node.data.to.as_ref().unwrap().tp;  
         if arg.isfn {
             let fmt: String = format!("Non primitive cast from '{}' to 'fn'.", left.tp.name);
@@ -905,7 +909,7 @@ impl<'ctx> CodeGen<'ctx> {
     }
 
     fn build_as(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let left: types::Data = self.compile_expr(&node.data.to.as_ref().unwrap().left, false);     
+        let left: types::Data = self.compile_expr(&node.data.to.as_ref().unwrap().left, false, false);     
         let arg: &parser::Type = &node.data.to.as_ref().unwrap().tp;  
         if arg.isfn {
             let fmt: String = format!("Non primitive cast from '{}' to 'fn'.", left.tp.name);
@@ -970,13 +974,13 @@ impl<'ctx> CodeGen<'ctx> {
     }
 
     fn build_ref(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        return self.compile_expr(&node.data.unary.as_ref().unwrap().right, false);
+        return self.compile_expr(&node.data.unary.as_ref().unwrap().right, false, false);
     }
 
     fn build_unary(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         let unary: &parser::nodes::UnaryNode = node.data.unary.as_ref().unwrap();
 
-        let right: types::Data = self.compile_expr(&unary.right, false);
+        let right: types::Data = self.compile_expr(&unary.right, false, false);
 
         let mut args: Vec<types::Data> = Vec::new();
 
@@ -1067,7 +1071,7 @@ impl<'ctx> CodeGen<'ctx> {
                 let fmt: String = format!("Field '{}' is already declared.", member.0);
                 errors::raise_error(&fmt, errors::ErrorType::FieldReinitialization, &node.pos, self.info);
             }
-            members.insert(member.0.clone(), self.compile_expr(member.1, true));
+            members.insert(member.0.clone(), self.compile_expr(member.1, true, false));
         }
         
         if s.0.names.as_ref().unwrap().len() != members.len() {
@@ -1099,15 +1103,15 @@ impl<'ctx> CodeGen<'ctx> {
         }
         
         let data: types::Data = types::Data {
-            data: Some(inkwell::values::BasicValueEnum::PointerValue(ptr)),
+            data: Some(self.builder.build_load(ptr, name.as_str())),
             tp: s.0.clone(),
             owned: true,
         };
         return data;
     }
 
-    fn build_attr(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let base: types::Data = self.compile_expr(&node.data.attr.as_ref().unwrap().name, false);
+    fn build_attr(&mut self, node: &parser::Node, get_ptr: bool) -> types::Data<'ctx> {
+        let base: types::Data = self.compile_expr(&node.data.attr.as_ref().unwrap().name, false, true);
 
         if base.tp.tp != types::BasicDataType::Struct {
             let fmt: String = format!("Expected struct, got '{}'.", base.tp.tp);
@@ -1141,6 +1145,15 @@ impl<'ctx> CodeGen<'ctx> {
         }
 
         let itmptr: inkwell::values::PointerValue = self.builder.build_struct_gep(base.data.unwrap().into_pointer_value(), idx, base.tp.name.as_str()).expect("GEP Error");
+        if get_ptr {
+            let data: types::Data = types::Data {
+                data: Some(inkwell::values::BasicValueEnum::PointerValue(itmptr)),
+                tp: base.tp.types.get(idx as usize).unwrap().clone(),
+                owned: true,
+            };
+            return data;
+        }
+        
         let val = self.builder.build_load(itmptr, attr.as_str());
 
         let data: types::Data = types::Data {
@@ -1152,7 +1165,7 @@ impl<'ctx> CodeGen<'ctx> {
     }
 
     fn build_attrasssign(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let base: types::Data = self.compile_expr(&node.data.attrassign.as_ref().unwrap().name, false);
+        let base: types::Data = self.compile_expr(&node.data.attrassign.as_ref().unwrap().name, false, true);
 
         if base.tp.tp != types::BasicDataType::Struct {
             let fmt: String = format!("Expected struct, got '{}'.", base.tp.tp);
@@ -1187,7 +1200,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         let itmptr: inkwell::values::PointerValue = self.builder.build_struct_gep(base.data.unwrap().into_pointer_value(), idx, base.tp.name.as_str()).expect("GEP Error");
         
-        let expr: types::Data = self.compile_expr(&node.data.attrassign.as_ref().unwrap().expr, true);
+        let expr: types::Data = self.compile_expr(&node.data.attrassign.as_ref().unwrap().expr, true, false);
 
         if &expr.tp != base.tp.types.get(idx as usize).unwrap() {
             let fmt: String = format!("Expected '{}' type, got '{}' type.", expr.tp, base.tp.types.get(idx as usize).unwrap());
@@ -1206,7 +1219,7 @@ impl<'ctx> CodeGen<'ctx> {
         return data;
     }
 
-    fn compile_expr(&mut self, node: &parser::Node, give_ownership: bool) -> types::Data<'ctx> {
+    fn compile_expr(&mut self, node: &parser::Node, give_ownership: bool, get_ptr: bool) -> types::Data<'ctx> {
         match node.tp {
             parser::NodeType::I32 => {
                 let self_data: &String = &node.data.num.as_ref().unwrap().left;
@@ -1231,7 +1244,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.build_let(node)
             }
             parser::NodeType::IDENTIFIER => {
-                self.build_loadname(node, give_ownership)
+                self.build_loadname(node, give_ownership, get_ptr)
             }
             parser::NodeType::FUNC => {
                 self.build_func(node)
@@ -1420,7 +1433,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.build_initstruct(node)
             }
             parser::NodeType::ATTR => {
-                self.build_attr(node)
+                self.build_attr(node, get_ptr)
             }
             parser::NodeType::ATTRASSIGN => {
                 self.build_attrasssign(node)
@@ -1440,7 +1453,7 @@ impl<'ctx> CodeGen<'ctx> {
                 let fmt: String = format!("Cannot define nested functions.");
                 errors::raise_error(&fmt, errors::ErrorType::NestedFunctions, &node.pos, self.info);
             }
-            retv = self.compile_expr(node, false);
+            retv = self.compile_expr(node, false, false);
         }
         return retv;
     }
