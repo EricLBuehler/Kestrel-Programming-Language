@@ -1675,9 +1675,17 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
 
     codegen.module.print_to_file(std::path::Path::new("a.ll"))?;
 
-    std::process::Command::new("llc").arg("a.ll").output().expect("Failed to execute llc");
+    let mut res: std::process::Output = std::process::Command::new("llc").arg("a.ll").output().expect("Failed to execute llc");
+    if !res.status.success() {
+        println!("Stderr:\n{}\n\nStdout:{}", std::str::from_utf8(&res.stderr[..]).expect("Unable to convert for stderr (llc)"), std::str::from_utf8(&res.stdout[..]).expect("Unable to convert for stdout (llc)"));
+        panic!("Failed to run llc (exit code {})", res.status.to_string());
+    }
 
-    std::process::Command::new("gcc").arg("a.s").arg("-oa.out").output().expect("Failed to execute gcc");
+    res = std::process::Command::new("gcc").arg("a.s").arg("-oa.out").output().expect("Failed to execute gcc");
+    if !res.status.success() {
+        println!("Stderr:\n{}\n\nStdout:{}", std::str::from_utf8(&res.stderr[..]).expect("Unable to convert for stderr (gcc)"), std::str::from_utf8(&res.stdout[..]).expect("Unable to convert for stdout (gcc)"));
+        panic!("Failed to run gcc (exit code {})", res.status.to_string());
+    }
 
     Ok(())
 }
