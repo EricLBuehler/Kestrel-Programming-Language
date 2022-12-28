@@ -1110,7 +1110,7 @@ impl<'ctx> CodeGen<'ctx> {
         return data;
     }
 
-    fn build_attr(&mut self, node: &parser::Node, get_ptr: bool) -> types::Data<'ctx> {
+    fn build_attrload(&mut self, node: &parser::Node, get_ptr: bool) -> types::Data<'ctx> {
         let base: types::Data = self.compile_expr(&node.data.attr.as_ref().unwrap().name, false, true);
 
         if base.tp.tp != types::BasicDataType::Struct {
@@ -1433,7 +1433,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.build_initstruct(node)
             }
             parser::NodeType::ATTR => {
-                self.build_attr(node, get_ptr)
+                self.build_attrload(node, get_ptr)
             }
             parser::NodeType::ATTRASSIGN => {
                 self.build_attrasssign(node)
