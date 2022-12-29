@@ -1219,6 +1219,10 @@ impl<'ctx> CodeGen<'ctx> {
         return data;
     }
 
+    fn build_string(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        unimplemented!();
+    }
+
     fn compile_expr(&mut self, node: &parser::Node, give_ownership: bool, get_ptr: bool) -> types::Data<'ctx> {
         match node.tp {
             parser::NodeType::I32 => {
@@ -1437,6 +1441,9 @@ impl<'ctx> CodeGen<'ctx> {
             }
             parser::NodeType::ATTRASSIGN => {
                 self.build_attrasssign(node)
+            }
+            parser::NodeType::STRING => {
+                self.build_string(node)
             }
         }
     }

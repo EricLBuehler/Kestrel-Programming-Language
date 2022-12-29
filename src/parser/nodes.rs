@@ -221,6 +221,17 @@ impl std::fmt::Display for AttrAssignNode {
 }
 
 #[derive(Clone, Debug)]
+pub struct StringNode{
+    pub data: String,
+}
+
+impl std::fmt::Display for StringNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "String \"{}\"", self.data)
+    }    
+}
+
+#[derive(Clone, Debug)]
 pub struct NodeData {
     pub binary: Option<BinaryNode>,
     pub num: Option<NumNode>,
@@ -236,4 +247,5 @@ pub struct NodeData {
     pub initst: Option<StructInitNode>,
     pub attr: Option<AttrNode>,
     pub attrassign: Option<AttrAssignNode>,
+    pub str: Option<StringNode>,
 }
