@@ -468,12 +468,16 @@ fn make_identifier(lexer: &mut Lexer, kwds: &Vec<String>) -> Token {
     }
 
     if String::from_utf8(data.clone()).is_err() {
+        for _ in 0..3 {
+            data.push(lexer.current);
+            advance(lexer);
+        }
         let tok = Token {
-            data: String::from(""),
+            data: String::from_utf8(data.clone()).unwrap(),
             tp: TokenType::EMOJIERR,
             line,
             startcol: start,
-            endcol: end+1,
+            endcol: start+1+unicode_width::UnicodeWidthChar::width(String::from_utf8(data.clone()).unwrap().chars().nth(0).unwrap()).unwrap(),
         };
         return tok;
     }
@@ -496,25 +500,29 @@ fn make_string(lexer: &mut Lexer) -> Token {
     let mut data: Vec<u8> = Vec::new();
     let start: usize = lexer.col;
 
-    let mut line: usize = lexer.line;
+    let line: usize = lexer.line;
 
     advance(lexer);
 
     while lexer.current!=b'"'{
         data.push(lexer.current);
-        line=lexer.line;
         advance(lexer);
     }
 
-    let end: usize = lexer.col;
+    let mut end: usize = start+1;
+
+    for itm in String::from_utf8(data.clone()).unwrap().chars() {
+        end += unicode_width::UnicodeWidthChar::width(itm).unwrap();
+    }
     
     let tok = Token {
-        data: if data.len() > 0 {String::from_utf8(data).unwrap()} else {String::from("")},
+        data: if data.len() > 0 {String::from_utf8(data.clone()).unwrap()} else {String::from("")},
         tp: TokenType::STRING,
         line,
         startcol: start,
         endcol: end+1,
     };
+
     
     advance(lexer);
     

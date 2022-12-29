@@ -343,6 +343,7 @@ impl<'life> Parser<'life> {
     }
     
     fn expr(&mut self, prec: Precedence) -> Node {
+        
         if self.current_is_type(TokenType::EMOJIERR) {
             self.raise_error("Identifiers cannot contain emojis.", ErrorType::InvalidTok);
         }
