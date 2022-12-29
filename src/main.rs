@@ -48,7 +48,7 @@ fn main() {
     let mut lexer: lexer::Lexer = lexer::Lexer {
         idx: 0,
         data: file_data_bytes,
-        current: file_data_bytes[0] as char,
+        current: file_data_bytes[0],
         len: file_data_bytes.len(),
         line: 0,
         col: 0,

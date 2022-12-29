@@ -42,7 +42,7 @@ pub enum TokenType {
 pub struct Lexer<'life> {
     pub idx: usize,
     pub data: &'life [u8],
-    pub current: char,
+    pub current: u8,
     pub len: usize,
     pub line: usize,
     pub col: usize,
@@ -112,13 +112,13 @@ fn advance(lexer: &mut Lexer) {
     lexer.col+=1;
 
     if lexer.idx >= lexer.len {
-        lexer.current = '\0';
+        lexer.current = b'\0';
         return;
     }
     
-    lexer.current = lexer.data[lexer.idx] as char;
+    lexer.current = lexer.data[lexer.idx];
 
-    if lexer.current == '\n' || lexer.current == '\r' {
+    if lexer.current == b'\n' || lexer.current == b'\r' {
         lexer.line+=1;
         lexer.col=0;
     }
@@ -140,8 +140,8 @@ pub fn print_tokens(len: usize, tokens: &Vec<Token>) {
 pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Token>) {  
     let mut vector: Vec<Token> = Vec::new();
 
-    while lexer.current!='\0' {
-        let cur: char = lexer.current;
+    while lexer.current!=b'\0' {
+        let cur: char = lexer.current.into();
         
         if cur.is_digit(10) {
             vector.push(make_number(lexer));
@@ -174,7 +174,7 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
                 endcol: lexer.col+1,
             });
             advance(lexer);
-            if lexer.current == '>' {     
+            if lexer.current == b'>' {     
                 let popped: Token = vector.pop().unwrap();           
                 vector.push(Token {
                     data: String::from("->"),
@@ -363,21 +363,21 @@ fn make_number(lexer: &mut Lexer) -> Token {
 
     let mut tp: TokenType = TokenType::I32;
 
-    while lexer.current.is_numeric() || lexer.current=='_' {
-        data.push(lexer.current);
+    while (lexer.current as char).is_numeric() || lexer.current==b'_' {
+        data.push(lexer.current as char);
         end=lexer.col;
         line=lexer.line;
         advance(lexer);
-        if lexer.current == '.' {
+        if lexer.current == b'.' {
             tp=TokenType::F32;
-            data.push(lexer.current);
+            data.push(lexer.current as char);
             advance(lexer);
         }
-        if lexer.current == 'f' {            
-            let mut specified_tp: String = String::from(lexer.current);
+        if lexer.current == b'f' {            
+            let mut specified_tp: String = String::from(lexer.current as char);
             advance(lexer);
-            while lexer.current.is_numeric() {
-                specified_tp.push(lexer.current.to_ascii_lowercase());
+            while (lexer.current as char).is_numeric() {
+                specified_tp.push((lexer.current as char).to_ascii_lowercase());
                 end=lexer.col;
                 line=lexer.line;
                 advance(lexer);
@@ -393,11 +393,11 @@ fn make_number(lexer: &mut Lexer) -> Token {
                 crate::errors::raise_error(format!("Invalid specified type {}.", specified_tp).as_str(), crate::errors::ErrorType::UnknownType, &crate::parser::Position { line, startcol: start, endcol: end+1 }, lexer.info);
             }
         }
-        else if lexer.current == 'u' || lexer.current == 'i' {
-            let mut specified_tp: String = String::from(lexer.current);
+        else if lexer.current == b'u' || lexer.current == b'i' {
+            let mut specified_tp: String = String::from(lexer.current as char);
             advance(lexer);
-            while lexer.current.is_numeric() {
-                specified_tp.push(lexer.current.to_ascii_lowercase());
+            while (lexer.current as char).is_numeric() {
+                specified_tp.push((lexer.current as char).to_ascii_lowercase());
                 end=lexer.col;
                 line=lexer.line;
                 advance(lexer);
@@ -452,13 +452,13 @@ fn make_number(lexer: &mut Lexer) -> Token {
 }
 
 fn make_identifier(lexer: &mut Lexer, kwds: &Vec<String>) -> Token {
-    let mut data: String = String::from("");
+    let mut data: Vec<u8> = Vec::new();
     let start: usize = lexer.col;
 
     let mut end: usize = lexer.col;
     let mut line: usize = lexer.line;
 
-    while lexer.current.is_alphabetic() || lexer.current=='_' || lexer.current.is_numeric(){
+    while (lexer.current as char).is_alphabetic() || lexer.current==b'_' || (lexer.current as char).is_numeric(){
         data.push(lexer.current);
         end=lexer.col;
         line=lexer.line;
@@ -466,7 +466,7 @@ fn make_identifier(lexer: &mut Lexer, kwds: &Vec<String>) -> Token {
     }
     
     let mut tok = Token {
-        data: data,
+        data: String::from_utf8(data).unwrap(),
         tp: TokenType::IDENTIFIER,
         line,
         startcol: start,
@@ -480,14 +480,14 @@ fn make_identifier(lexer: &mut Lexer, kwds: &Vec<String>) -> Token {
 }
 
 fn make_string(lexer: &mut Lexer) -> Token {
-    let mut data: String = String::from("");
+    let mut data: Vec<u8> = Vec::new();
     let start: usize = lexer.col;
 
     let mut line: usize = lexer.line;
 
     advance(lexer);
 
-    while lexer.current!='"'{
+    while lexer.current!=b'"'{
         data.push(lexer.current);
         line=lexer.line;
         advance(lexer);
@@ -496,7 +496,7 @@ fn make_string(lexer: &mut Lexer) -> Token {
     let end: usize = lexer.col;
     
     let tok = Token {
-        data: data,
+        data: String::from_utf8(data).unwrap(),
         tp: TokenType::STRING,
         line,
         startcol: start,
@@ -509,14 +509,14 @@ fn make_string(lexer: &mut Lexer) -> Token {
 }
 
 fn make_char(lexer: &mut Lexer) -> Token {
-    let mut data: String = String::from("");
+    let mut data: Vec<u8> = Vec::new();
     let start: usize = lexer.col;
 
     let mut line: usize = lexer.line;
 
     advance(lexer);
 
-    while lexer.current!='\''{
+    while lexer.current!=b'\''{
         data.push(lexer.current);
         line=lexer.line;
         advance(lexer);
@@ -525,7 +525,7 @@ fn make_char(lexer: &mut Lexer) -> Token {
     let end: usize = lexer.col;
     
     let tok = Token {
-        data: data,
+        data: String::from_utf8(data).unwrap(),
         tp: TokenType::CHAR,
         line,
         startcol: start,

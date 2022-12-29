@@ -16,7 +16,7 @@ _main:                                  # @_main
 	movb	$115, 11(%rsp)
 	movb	$101, 10(%rsp)
 	movb	$75, 9(%rsp)
-	movl	$206, 20(%rsp)
+	movl	$129413, 20(%rsp)       # imm = 0x1F985
 	addq	$24, %rsp
 	retq
 .Lfunc_end0:
