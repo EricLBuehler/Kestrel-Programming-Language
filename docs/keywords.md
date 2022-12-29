@@ -54,3 +54,12 @@ The ```as``` keyword converts one primitive data type to another, with **no** ov
 ```
 1000u32 as i8
 ```
+
+## ```struct```
+The ```struct``` keyword allows the definition of a typed struct.
+
+```
+struct name {
+    member: type
+}
+```
