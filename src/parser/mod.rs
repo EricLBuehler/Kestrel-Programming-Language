@@ -66,6 +66,9 @@ pub struct Position{
 #[derive(Clone, Debug, PartialEq)]
 pub struct Type {
     pub isfn: bool,
+    pub isarr: bool,
+    pub arrtp: Option<Box<Type>>,
+    pub arrlen: Option<Vec<String>>,
     pub data: Option<String>,
     pub args: Option<Args>,
     pub mutability: types::DataMutablility,
@@ -1297,7 +1300,7 @@ impl<'life> Parser<'life> {
         let pos = Position {
             line: self.current.line,
             startcol: self.current.startcol,
-            endcol: 0,
+            endcol: self.current.endcol,
         };
 
         let str: nodes::StringNode = nodes::StringNode{
@@ -1448,6 +1451,9 @@ impl<'life> Parser<'life> {
             else {
                 args_.rettp.push(Type {
                     isfn: false,
+                    isarr: false,
+                    arrtp: None,
+                    arrlen: None,
                     data: Some(String::from("void")),
                     args: None,
                     mutability: DataMutablility::Immutable,
@@ -1456,8 +1462,57 @@ impl<'life> Parser<'life> {
 
             return (end, Type {
                 isfn: true,
+                isarr: false,
+                arrtp: None,
+                arrlen: None,
                 data: None,
                 args: Some(args_),
+                mutability,
+            });
+        }
+        else if self.next_is_type(TokenType::LSQUARE) {
+            let basetp: Type = Type {
+                isfn: false,
+                isarr: false,
+                arrtp: None,
+                arrlen: None,
+                data: Some(tp),
+                args: None,
+                mutability,
+            };
+            
+            self.advance();
+
+            let mut len: Vec<String> = Vec::new();
+
+            while self.current_is_type(TokenType::LSQUARE) {
+                self.advance();
+                if  !((!self.current_is_type(TokenType::U8) ||
+                    !self.current_is_type(TokenType::U16) ||
+                    !self.current_is_type(TokenType::U32)) ||
+                    ( (self.current_is_type(TokenType::I8) ||
+                    self.current_is_type(TokenType::I16) ||
+                    self.current_is_type(TokenType::I32)) &&
+                    self.current.data.chars().nth(0).unwrap() != '-')) {
+                    self.raise_error("Expected u8, u16, u32, or positive integer counterparts.", ErrorType::InvalidTok);
+                }
+                len.push(self.current.data.clone());
+                self.advance();
+                if !self.current_is_type(TokenType::RSQUARE) {
+                    self.raise_error("Expected right square bracket.", ErrorType::InvalidTok);
+                }
+                self.advance();
+            }
+
+            let end: usize = self.current.endcol;
+
+            return (end, Type {
+                isfn: false,
+                isarr: true,
+                arrtp: Some(Box::new(basetp)),
+                arrlen: Some(len),
+                data: None,
+                args: None,
                 mutability,
             });
         }
@@ -1466,6 +1521,9 @@ impl<'life> Parser<'life> {
             self.advance();
             return (end, Type {
                 isfn: false,
+                isarr: false,
+                arrtp: None,
+                arrlen: None,
                 data: Some(tp),
                 args: None,
                 mutability,
@@ -1564,6 +1622,9 @@ impl<'life> Parser<'life> {
         else {
             args.rettp.push(Type {
                 isfn: false,
+                isarr: false,
+                arrtp: None,
+                arrlen: None,
                 data: Some(String::from("void")),
                 args: None,
                 mutability: DataMutablility::Immutable,

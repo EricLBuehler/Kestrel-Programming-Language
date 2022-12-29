@@ -221,6 +221,9 @@ impl<'ctx> CodeGen<'ctx> {
             else if tp.is_struct_type() {
                 fntp = tp.into_struct_type().fn_type(&inktypes[..], false);
             }
+            else if tp.is_array_type() {
+                fntp = tp.into_array_type().fn_type(&inktypes[..], false);
+            }
             else {
                 panic!("Unexpected type");
             }
@@ -231,6 +234,47 @@ impl<'ctx> CodeGen<'ctx> {
             }
 
             return (types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), names, datatypes, mutability, Some(rettp_full.0.clone()), false, None), inkwell::types::AnyTypeEnum::FunctionType(fntp));
+        }
+        else if arg.isarr {
+            let (datatp, tp) = Self::get_llvm_from_type(ctx, structs, types, info, &arg.arrtp.as_ref().unwrap(), node);
+            let len: u32 = u32::from_str_radix(arg.arrlen.as_ref().unwrap().first().unwrap().as_str(), 10).unwrap();
+
+            if len == 0 {
+                return (datatp, tp);
+            }
+
+            let mut arrtp: inkwell::types::ArrayType;
+
+            if tp.is_int_type() {
+                arrtp = tp.into_int_type().array_type(len);
+            }
+            else if tp.is_float_type() {
+                arrtp = tp.into_float_type().array_type(len);
+            }
+            else if tp.is_function_type() {
+                arrtp = tp.into_function_type().ptr_type(inkwell::AddressSpace::Generic).array_type(len)
+            }
+            else if tp.is_void_type() {
+                let fmt: String = format!("Cannot define array of 'void'.");
+                errors::raise_error(&fmt, errors::ErrorType::CannotDefineVoidArray, &node.pos, info);
+            }
+            else if tp.is_struct_type() {
+                arrtp = tp.into_struct_type().array_type(len);
+            }
+            else if tp.is_array_type() {
+                arrtp = tp.into_array_type().array_type(len);
+            }
+            else {
+                panic!("Unexpected type");
+            }
+            
+            for item in arg.arrlen.as_ref().unwrap().split_at(1).1.to_vec() {
+                let len: u32 = u32::from_str_radix(item.as_str(), 10).unwrap();
+                arrtp = arrtp.array_type(len);
+            }
+
+            let arrdatatp: types::DataType = types::new_datatype(types::BasicDataType::Array, types::BasicDataType::Array.to_string(), None, Vec::new(), Vec::new(), None, false, Some(arrtp));
+            return (arrdatatp, inkwell::types::AnyTypeEnum::ArrayType(arrtp));
         }
         else {
             let tp: Option<types::DataType> = Self::get_datatype_from_str(structs ,&arg.data.as_ref().unwrap());
@@ -274,6 +318,9 @@ impl<'ctx> CodeGen<'ctx> {
         else if tp.is_struct_type() {
             return Some(inkwell::types::BasicMetadataTypeEnum::StructType(tp.into_struct_type()));
         }
+        else if tp.is_array_type() {
+            return Some(inkwell::types::BasicMetadataTypeEnum::ArrayType(tp.into_array_type()));
+        }
         else {
             panic!("Unexpected type");
         }
@@ -294,6 +341,9 @@ impl<'ctx> CodeGen<'ctx> {
         }
         else if tp.is_struct_type() {
             return Some(inkwell::types::BasicTypeEnum::StructType(tp.into_struct_type()));
+        }
+        else if tp.is_array_type() {
+            return Some(inkwell::types::BasicTypeEnum::ArrayType(tp.into_array_type()));
         }
         else {
             panic!("Unexpected type");
@@ -491,6 +541,9 @@ impl<'ctx> CodeGen<'ctx> {
         }
         else if tp.is_struct_type() {
             fn_type = tp.into_struct_type().fn_type(&inktypes[..], false);
+        }
+        else if tp.is_array_type() {
+            fn_type = tp.into_array_type().fn_type(&inktypes[..], false);
         }
         else {
             panic!("Unexpected type");
@@ -1534,6 +1587,9 @@ impl<'ctx> CodeGen<'ctx> {
                 }
                 else if tp.is_struct_type() {
                     fn_type = tp.into_struct_type().fn_type(&inktypes[..], false);
+                }
+                else if tp.is_array_type() {
+                    fn_type = tp.into_array_type().fn_type(&inktypes[..], false);
                 }
                 else {
                     panic!("Unexpected type");
