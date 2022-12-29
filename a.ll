@@ -11,8 +11,8 @@ entry:
   %res = call { float } @f(float %x1), !dbg !8
   %name = alloca [7 x i8], !dbg !8
   store [7 x i8] c"Kestrel", [7 x i8]* %name, !dbg !8
-  %char = alloca i8, !dbg !8
-  store i8 65, i8* %char, !dbg !8
+  %char = alloca i32, !dbg !8
+  store i32 206, i32* %char, !dbg !8
   ret void, !dbg !8
 }
 

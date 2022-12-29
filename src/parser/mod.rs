@@ -47,6 +47,7 @@ pub enum NodeType {
     ATTR,
     ATTRASSIGN,
     STRING,
+    CHAR,
 }
 
 #[derive(Clone, Debug)]
@@ -111,6 +112,7 @@ impl std::fmt::Display for Node {
             NodeType::ATTR => write!(f, "{}", self.data.attr.as_ref().unwrap() ),
             NodeType::ATTRASSIGN => write!(f, "{}", self.data.attrassign.as_ref().unwrap() ),
             NodeType::STRING => write!(f, "{}", self.data.str.as_ref().unwrap() ),
+            NodeType::CHAR => write!(f, "{}", self.data.num.as_ref().unwrap() ),
         }
     }    
 }
@@ -1332,12 +1334,12 @@ impl<'life> Parser<'life> {
     }
     
     fn generate_char(&mut self, data: String) -> Node{
-        if data.len() > 1 {
-            self.raise_error("Unexpected multibyte sequence.", ErrorType::UnexpectedMultibyte);
+        if data.len() > 4 {
+            self.raise_error("Invalid multibyte sequence (>4 bytes).", ErrorType::UnexpectedMultibyte);
         }
 
         let int: nodes::NumNode = nodes::NumNode{
-            left: data.as_bytes().get(0).unwrap().to_string(),
+            left: data.clone(),
         };
     
         let nodedat: nodes::NodeData = nodes::NodeData {
@@ -1364,7 +1366,7 @@ impl<'life> Parser<'life> {
             endcol: self.current.endcol,
         };
     
-        let n: Node = self.create_node(NodeType::I8, nodedat, pos);
+        let n: Node = self.create_node(NodeType::CHAR, nodedat, pos);
     
         return n;
     }

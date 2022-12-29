@@ -6,7 +6,7 @@ fn main() {
     let x = 1.23
     f(&x)
     let name: i8[7] = "Kestrel"
-    let char = 'A'
+    let char = 'Δ'
 }
 
 fn f(x: f32) -> s{

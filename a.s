@@ -6,17 +6,17 @@
 _main:                                  # @_main
 # %bb.0:                                # %entry
 	subq	$24, %rsp
-	movl	$1067282596, 20(%rsp)   # imm = 0x3F9D70A4
-	movss	20(%rsp), %xmm0         # xmm0 = mem[0],zero,zero,zero
+	movl	$1067282596, 16(%rsp)   # imm = 0x3F9D70A4
+	movss	16(%rsp), %xmm0         # xmm0 = mem[0],zero,zero,zero
 	callq	f
-	movb	$108, 19(%rsp)
-	movb	$101, 18(%rsp)
-	movb	$114, 17(%rsp)
-	movb	$116, 16(%rsp)
-	movb	$115, 15(%rsp)
+	movb	$108, 15(%rsp)
 	movb	$101, 14(%rsp)
-	movb	$75, 13(%rsp)
-	movb	$65, 12(%rsp)
+	movb	$114, 13(%rsp)
+	movb	$116, 12(%rsp)
+	movb	$115, 11(%rsp)
+	movb	$101, 10(%rsp)
+	movb	$75, 9(%rsp)
+	movl	$206, 20(%rsp)
 	addq	$24, %rsp
 	retq
 .Lfunc_end0:

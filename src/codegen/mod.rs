@@ -1304,6 +1304,13 @@ impl<'ctx> CodeGen<'ctx> {
         return data;
     }
 
+    fn build_char(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        let mut data: std::str::Chars = node.data.num.as_ref().unwrap().left.chars();
+        
+        let selfv: inkwell::values::IntValue = self.inkwell_types.i32tp.const_int((data.next().unwrap()).into(), false);
+        return types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::U32, types::BasicDataType::U32.to_string(), None, Vec::new(), Vec::new(), None, false, None), owned: true}
+    }
+
     fn compile_expr(&mut self, node: &parser::Node, give_ownership: bool, get_ptr: bool) -> types::Data<'ctx> {
         match node.tp {
             parser::NodeType::I32 => {
@@ -1525,6 +1532,9 @@ impl<'ctx> CodeGen<'ctx> {
             }
             parser::NodeType::STRING => {
                 self.build_string(node)
+            }
+            parser::NodeType::CHAR => {
+                self.build_char(node)
             }
         }
     }
