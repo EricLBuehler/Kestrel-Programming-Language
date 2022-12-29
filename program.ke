@@ -7,6 +7,7 @@ fn main() {
     f(&x)
     let name: i8[7] = "Kestrel"
     let char = '🦅'
+    🦅
 }
 
 fn f(x: f32) -> s{

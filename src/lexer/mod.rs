@@ -37,6 +37,7 @@ pub enum TokenType {
     LSQUARE,
     RSQUARE,
     CHAR,
+    EMOJIERR,
 }
 
 pub struct Lexer<'life> {
@@ -102,6 +103,7 @@ impl std::fmt::Display for TokenType {
            TokenType::LSQUARE => write!(f, "LSQUARE"),
            TokenType::RSQUARE => write!(f, "RSQUARE"),
            TokenType::CHAR => write!(f, "CHAR"),
+           TokenType::EMOJIERR => write!(f, "EMOJIERR"),
        }
     }
 }
@@ -464,9 +466,20 @@ fn make_identifier(lexer: &mut Lexer, kwds: &Vec<String>) -> Token {
         line=lexer.line;
         advance(lexer);
     }
+
+    if String::from_utf8(data.clone()).is_err() {
+        let tok = Token {
+            data: String::from(""),
+            tp: TokenType::EMOJIERR,
+            line,
+            startcol: start,
+            endcol: end+1,
+        };
+        return tok;
+    }
     
     let mut tok = Token {
-        data: String::from_utf8(data).unwrap(),
+        data: if data.len() > 0 {String::from_utf8(data).unwrap()} else {String::from("")},
         tp: TokenType::IDENTIFIER,
         line,
         startcol: start,
@@ -496,7 +509,7 @@ fn make_string(lexer: &mut Lexer) -> Token {
     let end: usize = lexer.col;
     
     let tok = Token {
-        data: String::from_utf8(data).unwrap(),
+        data: if data.len() > 0 {String::from_utf8(data).unwrap()} else {String::from("")},
         tp: TokenType::STRING,
         line,
         startcol: start,
@@ -525,7 +538,7 @@ fn make_char(lexer: &mut Lexer) -> Token {
     let end: usize = lexer.col;
     
     let tok = Token {
-        data: String::from_utf8(data).unwrap(),
+        data: if data.len() > 0 {String::from_utf8(data).unwrap()} else {String::from("")},
         tp: TokenType::CHAR,
         line,
         startcol: start,
