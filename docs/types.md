@@ -40,6 +40,9 @@ The ```f32``` type is a 32-bit floating point number. This is the default type f
 ## ```f64```
 The ```f64``` type is a 64-bit floating point number. This is the equivalent of ```double``` in ```C```.
 
+## ```char```
+The ```char``` type is an unsigned 32-bit integer, and an alias for the ```u32``` type. It represents a UTF-32 codepoint.
+
 ## Non-numeric
 
 ## ```void```
@@ -53,4 +56,11 @@ The ```fn``` type represents a function pointer. Return type specification is op
 ```
 fn(type) -> tp
 fn(type)
+```
+
+## Arrays
+
+Arrays are designated using the ```C```-style syntax ```type[len]```
+```
+i8[3]
 ```

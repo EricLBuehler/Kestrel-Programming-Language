@@ -140,6 +140,9 @@ impl<'ctx> CodeGen<'ctx> {
         else if *str_rep == types::BasicDataType::Unit.to_string() {
             return Some(types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None, false, None));
         }
+        else if *str_rep == String::from("char") {
+            return Some(types::new_datatype(types::BasicDataType::U32, types::BasicDataType::U32.to_string(), None, Vec::new(), Vec::new(), None, false, None));
+        }
         else if structs.get(str_rep).is_some() {
             return Some(structs.get(str_rep).unwrap().0.clone());
         }
