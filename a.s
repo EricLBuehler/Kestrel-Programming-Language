@@ -1,20 +1,17 @@
 	.text
 	.file	"program.ke"
-	.section	.rodata.cst4,"aM",@progbits,4
-	.p2align	2               # -- Begin function _main
-.LCPI0_0:
-	.long	1067282596              # float 1.23000002
-	.text
-	.globl	_main
+	.globl	_main                   # -- Begin function _main
 	.p2align	4, 0x90
 	.type	_main,@function
 _main:                                  # @_main
 # %bb.0:                                # %entry
 	pushq	%rax
-	movss	.LCPI0_0(%rip), %xmm0   # xmm0 = mem[0],zero,zero,zero
-	movss	%xmm0, 4(%rsp)
+	movl	$1067282596, 4(%rsp)    # imm = 0x3F9D70A4
 	movss	4(%rsp), %xmm0          # xmm0 = mem[0],zero,zero,zero
 	callq	f
+	movb	$67, 3(%rsp)
+	movb	$66, 2(%rsp)
+	movb	$65, 1(%rsp)
 	popq	%rax
 	retq
 .Lfunc_end0:

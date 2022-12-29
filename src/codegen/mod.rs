@@ -1223,7 +1223,25 @@ impl<'ctx> CodeGen<'ctx> {
     }
 
     fn build_string(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        unimplemented!();
+        let data: Vec<u8> = node.data.str.as_ref().unwrap().data.as_str().as_bytes().to_vec();
+        
+        let arraytp: inkwell::types::ArrayType = self.inkwell_types.i8tp.array_type(data.len() as u32);
+
+        let mut arrdata: Vec<inkwell::values::IntValue> = Vec::new();
+        for c in data {
+            arrdata.push(self.inkwell_types.i8tp.const_int(c as u64, false));
+        }
+
+        let array: inkwell::values::ArrayValue = self.inkwell_types.i8tp.const_array(&arrdata[..]);
+
+        
+
+        let data: types::Data = types::Data {
+            data: Some(inkwell::values::BasicValueEnum::ArrayValue(array)),
+            tp: types::new_datatype(types::BasicDataType::Array, types::BasicDataType::Array.to_string(), None, Vec::new(), Vec::new(), None, false, Some(arraytp)),
+            owned: true,
+        };
+        return data;
     }
 
     fn compile_expr(&mut self, node: &parser::Node, give_ownership: bool, get_ptr: bool) -> types::Data<'ctx> {
