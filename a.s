@@ -5,14 +5,19 @@
 	.type	_main,@function
 _main:                                  # @_main
 # %bb.0:                                # %entry
-	pushq	%rax
-	movl	$1067282596, 4(%rsp)    # imm = 0x3F9D70A4
-	movss	4(%rsp), %xmm0          # xmm0 = mem[0],zero,zero,zero
+	subq	$24, %rsp
+	movl	$1067282596, 20(%rsp)   # imm = 0x3F9D70A4
+	movss	20(%rsp), %xmm0         # xmm0 = mem[0],zero,zero,zero
 	callq	f
-	movb	$67, 3(%rsp)
-	movb	$66, 2(%rsp)
-	movb	$65, 1(%rsp)
-	popq	%rax
+	movb	$108, 19(%rsp)
+	movb	$101, 18(%rsp)
+	movb	$114, 17(%rsp)
+	movb	$116, 16(%rsp)
+	movb	$115, 15(%rsp)
+	movb	$101, 14(%rsp)
+	movb	$75, 13(%rsp)
+	movb	$65, 12(%rsp)
+	addq	$24, %rsp
 	retq
 .Lfunc_end0:
 	.size	_main, .Lfunc_end0-_main

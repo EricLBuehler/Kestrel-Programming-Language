@@ -26,6 +26,7 @@ pub enum ErrorType {
     GetAttrOfNonStruct,
     StructAttrNotFound,
     CannotDefineVoidArray,
+    UnexpectedMultibyte,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -55,6 +56,7 @@ impl std::fmt::Display for ErrorType {
             ErrorType::GetAttrOfNonStruct => write!(f, "cannot get attribute of non-struct"),
             ErrorType::StructAttrNotFound => write!(f, "attribute not found"),
             ErrorType::CannotDefineVoidArray => write!(f, "cannot define void array"),
+            ErrorType::UnexpectedMultibyte => write!(f, "unexpected multibyte character"),
         }
     }
 }

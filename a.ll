@@ -9,8 +9,10 @@ entry:
   store float 0x3FF3AE1480000000, float* %x, !dbg !8
   %x1 = load float, float* %x, !dbg !8
   %res = call { float } @f(float %x1), !dbg !8
-  %a = alloca [3 x i8], !dbg !8
-  store [3 x i8] c"ABC", [3 x i8]* %a, !dbg !8
+  %name = alloca [7 x i8], !dbg !8
+  store [7 x i8] c"Kestrel", [7 x i8]* %name, !dbg !8
+  %char = alloca i8, !dbg !8
+  store i8 65, i8* %char, !dbg !8
   ret void, !dbg !8
 }
 
@@ -54,10 +56,10 @@ attributes #0 = { noinline nounwind optnone }
 !7 = !DIBasicType(name: "void", size: 16, flags: DIFlagPublic)
 !8 = !DILocation(line: 4, scope: !9)
 !9 = distinct !DILexicalBlock(scope: !4, file: !2, line: 4)
-!10 = distinct !DISubprogram(name: "f", linkageName: "f", scope: null, file: !2, line: 10, type: !11, scopeLine: 10, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
+!10 = distinct !DISubprogram(name: "f", linkageName: "f", scope: null, file: !2, line: 11, type: !11, scopeLine: 11, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !11 = !DISubroutineType(flags: DIFlagPublic, types: !12)
 !12 = !{!13, !14}
 !13 = !DIBasicType(name: "{ float }", size: 16, flags: DIFlagPublic)
 !14 = !DIBasicType(name: "float", size: 16, flags: DIFlagPublic)
-!15 = !DILocation(line: 10, scope: !16)
-!16 = distinct !DILexicalBlock(scope: !10, file: !2, line: 10)
+!15 = !DILocation(line: 11, scope: !16)
+!16 = distinct !DILexicalBlock(scope: !10, file: !2, line: 11)

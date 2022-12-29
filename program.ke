@@ -5,8 +5,8 @@ struct s {
 fn main() {
     let x = 1.23
     f(&x)
-    let a: i8[3] = 1
-    let b = 'A'
+    let name: i8[7] = "Kestrel"
+    let char = 'A'
 }
 
 fn f(x: f32) -> s{

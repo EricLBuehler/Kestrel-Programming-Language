@@ -312,6 +312,7 @@ impl<'life> Parser<'life> {
             TokenType::HYPHEN => Some(self.generate_unary()),
             TokenType::AMPERSAND => Some(self.generate_ref()),
             TokenType::STRING => Some(self.generate_str()),
+            TokenType::CHAR => Some(self.generate_char(self.current.data.clone())),
             _ => None,
         }
     }
@@ -1326,6 +1327,44 @@ impl<'life> Parser<'life> {
         };
     
         let n: Node = self.create_node(NodeType::STRING, nodedat, pos);
+    
+        return n;
+    }
+    
+    fn generate_char(&mut self, data: String) -> Node{
+        if data.len() > 1 {
+            self.raise_error("Unexpected multibyte sequence.", ErrorType::UnexpectedMultibyte);
+        }
+
+        let int: nodes::NumNode = nodes::NumNode{
+            left: data.as_bytes().get(0).unwrap().to_string(),
+        };
+    
+        let nodedat: nodes::NodeData = nodes::NodeData {
+            binary: None,
+            num: Some(int),
+            letn: None,
+            identifier: None,
+            func: None,
+            assign: None,
+            call: None,
+            ret: None,
+            to: None,
+            unary: None,
+            st: None,
+            initst: None,
+            attr: None,
+            attrassign: None,
+            str: None,
+        };
+
+        let pos = Position {
+            line: self.current.line,
+            startcol: self.current.startcol,
+            endcol: self.current.endcol,
+        };
+    
+        let n: Node = self.create_node(NodeType::I8, nodedat, pos);
     
         return n;
     }
