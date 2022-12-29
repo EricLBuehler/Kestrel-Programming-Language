@@ -36,6 +36,7 @@ pub enum TokenType {
     STRING,
     LSQUARE,
     RSQUARE,
+    CHAR,
 }
 
 pub struct Lexer<'life> {
@@ -100,6 +101,7 @@ impl std::fmt::Display for TokenType {
            TokenType::STRING => write!(f, "STRING"),
            TokenType::LSQUARE => write!(f, "LSQUARE"),
            TokenType::RSQUARE => write!(f, "RSQUARE"),
+           TokenType::CHAR => write!(f, "CHAR"),
        }
     }
 }
@@ -149,6 +151,9 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
         }
         else if cur=='"'{
             vector.push(make_string(lexer));
+        }
+        else if cur=='\''{
+            vector.push(make_char(lexer));
         }
         else if cur == '+' {
             vector.push(Token {
@@ -493,6 +498,35 @@ fn make_string(lexer: &mut Lexer) -> Token {
     let tok = Token {
         data: data,
         tp: TokenType::STRING,
+        line,
+        startcol: start,
+        endcol: end+1,
+    };
+    
+    advance(lexer);
+    
+    return tok;
+}
+
+fn make_char(lexer: &mut Lexer) -> Token {
+    let mut data: String = String::from("");
+    let start: usize = lexer.col;
+
+    let mut line: usize = lexer.line;
+
+    advance(lexer);
+
+    while lexer.current!='\''{
+        data.push(lexer.current);
+        line=lexer.line;
+        advance(lexer);
+    }
+
+    let end: usize = lexer.col;
+    
+    let tok = Token {
+        data: data,
+        tp: TokenType::CHAR,
         line,
         startcol: start,
         endcol: end+1,
