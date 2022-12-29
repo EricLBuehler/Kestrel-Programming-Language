@@ -33,6 +33,7 @@ pub enum TokenType {
     F64,
     AMPERSAND,
     DOT,
+    STRING,
 }
 
 pub struct Lexer<'life> {
@@ -94,6 +95,7 @@ impl std::fmt::Display for TokenType {
            TokenType::F64 => write!(f, "f64"),
            TokenType::AMPERSAND => write!(f, "AMPERSAND"),
            TokenType::DOT => write!(f, "DOT"),
+           TokenType::STRING => write!(f, "STRING"),
        }
     }
 }
@@ -140,6 +142,9 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
         }
         else if cur.is_alphabetic() || cur=='_'{
             vector.push(make_identifier(lexer, kwds));
+        }
+        else if cur=='"'{
+            vector.push(make_string(lexer));
         }
         else if cur == '+' {
             vector.push(Token {
@@ -442,5 +447,34 @@ fn make_identifier(lexer: &mut Lexer, kwds: &Vec<String>) -> Token {
     if kwds.iter().find(|x| **x==tok.data)!=None {
         tok.tp = TokenType::KEYWORD;
     }
+    return tok;
+}
+
+fn make_string(lexer: &mut Lexer) -> Token {
+    let mut data: String = String::from("");
+    let start: usize = lexer.col;
+
+    let mut line: usize = lexer.line;
+
+    advance(lexer);
+
+    while lexer.current!='"'{
+        data.push(lexer.current);
+        line=lexer.line;
+        advance(lexer);
+    }
+
+    let end: usize = lexer.col;
+    
+    let tok = Token {
+        data: data,
+        tp: TokenType::STRING,
+        line,
+        startcol: start,
+        endcol: end+1,
+    };
+    
+    advance(lexer);
+    
     return tok;
 }
