@@ -11,6 +11,6 @@ fn f(x: f32) -> s{
     let y = s{
         a=x
     }
-    y.a=12f32
+    y.b=12f32
     return y
 }

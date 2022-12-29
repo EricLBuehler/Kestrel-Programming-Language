@@ -1122,7 +1122,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         if !base.tp.names.as_ref().unwrap().contains(&attr) {
             let fmt: String = format!("Struct '{}' has no attribute '{}'.", base.tp.name, attr);
-            errors::raise_error(&fmt, errors::ErrorType::GetAttrOfNonStruct, &node.pos, self.info);
+            errors::raise_error(&fmt, errors::ErrorType::StructAttrNotFound, &node.pos, self.info);
         }
 
         let mut idx: u32 = 0;
@@ -1176,7 +1176,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         if !base.tp.names.as_ref().unwrap().contains(&attr) {
             let fmt: String = format!("Struct '{}' has no attribute '{}'.", base.tp.name, attr);
-            errors::raise_error(&fmt, errors::ErrorType::GetAttrOfNonStruct, &node.pos, self.info);
+            errors::raise_error(&fmt, errors::ErrorType::StructAttrNotFound, &node.pos, self.info);
         }
 
         let mut idx: u32 = 0;

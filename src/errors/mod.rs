@@ -24,6 +24,7 @@ pub enum ErrorType {
     FieldRedeclaration,
     FieldReinitialization,
     GetAttrOfNonStruct,
+    StructAttrNotFound,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -51,6 +52,7 @@ impl std::fmt::Display for ErrorType {
             ErrorType::FieldRedeclaration => write!(f, "field is redefined"),
             ErrorType::FieldReinitialization => write!(f, "field is reinitialized"),
             ErrorType::GetAttrOfNonStruct => write!(f, "cannot get attribute of non-struct"),
+            ErrorType::StructAttrNotFound => write!(f, "attribute not found"),
         }
     }
 }
