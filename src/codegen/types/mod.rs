@@ -81,9 +81,15 @@ impl<'a> std::fmt::Display for DataType<'a> {
 
 impl<'a> PartialEq for DataType<'a> {
     fn eq(&self, other: &DataType) -> bool {
+        if self.arrtp.is_some() && other.arrtp.is_some() {
+            return self.arrtp.unwrap() == other.arrtp.unwrap();
+        }
         return self.name == other.name;
     }
     fn ne(&self, other: &DataType) -> bool {
+        if self.arrtp.is_some() && other.arrtp.is_some() {
+            return self.arrtp.unwrap() != other.arrtp.unwrap();
+        }
         return self.name != other.name;
     }
 }
