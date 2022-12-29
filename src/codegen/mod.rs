@@ -90,6 +90,15 @@ impl<'ctx> CodeGen<'ctx> {
 
         return inkwell::types::AnyTypeEnum::StructType(ctx.struct_type(&basictypes[..], false));
     }
+
+    fn array_repr(arrtp: inkwell::types::ArrayType) -> String {
+        let mut res: String = String::from("");
+        res+=arrtp.get_element_type().print_to_string().to_str().unwrap();
+        res+="[";
+        res+=arrtp.len().to_string().as_str();
+        res+="]";
+        return res;
+    }
     
     fn get_datatype_from_str(structs: &std::collections::HashMap<String, (types::DataType<'ctx>, inkwell::types::AnyTypeEnum<'ctx>, std::collections::HashMap<String, i32>, ForwardDeclarationType)>, str_rep: &String) -> Option<types::DataType<'ctx>> {
         if *str_rep == types::BasicDataType::I32.to_string() {
@@ -273,7 +282,7 @@ impl<'ctx> CodeGen<'ctx> {
                 arrtp = arrtp.array_type(len);
             }
 
-            let arrdatatp: types::DataType = types::new_datatype(types::BasicDataType::Array, types::BasicDataType::Array.to_string(), None, Vec::new(), Vec::new(), None, false, Some(arrtp));
+            let arrdatatp: types::DataType = types::new_datatype(types::BasicDataType::Array, Self::array_repr(arrtp), None, Vec::new(), Vec::new(), None, false, Some(arrtp));
             return (arrdatatp, inkwell::types::AnyTypeEnum::ArrayType(arrtp));
         }
         else {
@@ -1289,7 +1298,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         let data: types::Data = types::Data {
             data: Some(inkwell::values::BasicValueEnum::ArrayValue(array)),
-            tp: types::new_datatype(types::BasicDataType::Array, types::BasicDataType::Array.to_string(), None, Vec::new(), Vec::new(), None, false, Some(arraytp)),
+            tp: types::new_datatype(types::BasicDataType::Array, Self::array_repr(arraytp), None, Vec::new(), Vec::new(), None, false, Some(arraytp)),
             owned: true,
         };
         return data;

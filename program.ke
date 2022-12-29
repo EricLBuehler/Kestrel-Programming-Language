@@ -5,7 +5,7 @@ struct s {
 fn main() {
     let x = 1.23
     f(&x)
-    let a: i8[3] = "ABC"
+    let a: i8[3] = 1
 }
 
 fn f(x: f32) -> s{
