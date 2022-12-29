@@ -19,16 +19,18 @@ pub enum BasicDataType {
     F32,
     F64,
     Struct,
+    Array,
 }
 #[derive(Clone, Debug)]
-pub struct DataType {
+pub struct DataType<'a> {
     pub tp: BasicDataType,
     pub names: Option<Vec<String>>,
-    pub types: Vec<DataType>,
+    pub types: Vec<DataType<'a>>,
     pub name: String,
     pub mutability: Vec<DataMutablility>,
-    pub rettp: Vec<DataType>, //Just for indirection
+    pub rettp: Vec<DataType<'a>>, //Just for indirection
     pub is_ref: bool,
+    pub arrtp: Option<inkwell::types::ArrayType<'a>>,
 }
 pub enum TraitType {
     Add,
@@ -43,7 +45,7 @@ pub enum TraitType {
 #[derive(Clone, PartialEq, Debug)]
 pub struct Data<'a> {
     pub data: Option<inkwell::values::BasicValueEnum<'a>>,
-    pub tp: DataType,
+    pub tp: DataType<'a>,
     pub owned: bool,
 }
 
@@ -66,17 +68,18 @@ impl std::fmt::Display for BasicDataType {
             BasicDataType::F32 => write!(f, "f32"),
             BasicDataType::F64 => write!(f, "f64"),
             BasicDataType::Struct => write!(f, "Struct"),
+            BasicDataType::Array => write!(f, "Array"),
         }
     }    
 }
 
-impl std::fmt::Display for DataType {
+impl<'a> std::fmt::Display for DataType<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.name)
     }    
 }
 
-impl PartialEq for DataType {
+impl<'a> PartialEq for DataType<'a> {
     fn eq(&self, other: &DataType) -> bool {
         return self.name == other.name;
     }
@@ -85,7 +88,7 @@ impl PartialEq for DataType {
     }
 }
 
-impl PartialEq<BasicDataType> for DataType {
+impl<'a> PartialEq<BasicDataType> for DataType<'a> {
     fn eq(&self, other: &BasicDataType) -> bool {
         return self.name == other.to_string();
     }
@@ -119,7 +122,7 @@ pub struct Trait<'a> {
     pub nargs: usize,
     pub function: fn(&codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>,
     pub traittype: TraitType,
-    pub rettp: DataType
+    pub rettp: DataType<'a>
 }
 
 pub struct Method {
@@ -138,7 +141,7 @@ pub struct DataOwnership{
     pub transferred: Option<crate::parser::Position>,
 }
 
-pub fn new_datatype(tp: BasicDataType, name: String, names: Option<Vec<String>>, types: Vec<DataType>, mutability: Vec<DataMutablility>, rettp_opt: Option<DataType>, is_ref: bool) -> DataType {
+pub fn new_datatype<'a>(tp: BasicDataType, name: String, names: Option<Vec<String>>, types: Vec<DataType<'a>>, mutability: Vec<DataMutablility>, rettp_opt: Option<DataType<'a>>, is_ref: bool, arrtp: Option<inkwell::types::ArrayType<'a>>) -> DataType<'a> {
     return DataType {
         tp,
         names,
@@ -147,6 +150,7 @@ pub fn new_datatype(tp: BasicDataType, name: String, names: Option<Vec<String>>,
         mutability,
         rettp: if rettp_opt.is_some() {vec![rettp_opt.unwrap()]} else {Vec::new()},
         is_ref,
+        arrtp,
     };
 }
 

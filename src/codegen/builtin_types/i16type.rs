@@ -25,7 +25,7 @@ fn i16_add<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: new_datatype(BasicDataType::I16, BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None, false),
+        tp: new_datatype(BasicDataType::I16, BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None, false, None),
         owned: true,
     };
 }
@@ -43,7 +43,7 @@ fn i16_mul<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: new_datatype(BasicDataType::I16, BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None, false),
+        tp: new_datatype(BasicDataType::I16, BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None, false, None),
         owned: true,
     };
 }
@@ -61,7 +61,7 @@ fn i16_sub<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: new_datatype(BasicDataType::I16, BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None, false),
+        tp: new_datatype(BasicDataType::I16, BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None, false, None),
         owned: true,
     };
 }
@@ -79,7 +79,7 @@ fn i16_div<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: new_datatype(BasicDataType::I16, BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None, false),
+        tp: new_datatype(BasicDataType::I16, BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None, false, None),
         owned: true,
     };
 }
@@ -96,19 +96,19 @@ fn i16_neg<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parse
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: new_datatype(BasicDataType::I16, BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None, false),
+        tp: new_datatype(BasicDataType::I16, BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None, false, None),
         owned: true,
     };
 }
 
 pub fn init_i16(codegen: &mut codegen::CodeGen) {
     let mut traits: HashMap<String, Trait> = HashMap::new();
-    traits.insert(TraitType::Add.to_string(), builtin_types::create_trait(i16_add, 2, TraitType::Add, new_datatype(BasicDataType::I16, BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None, false)));
-    traits.insert(TraitType::Mul.to_string(), builtin_types::create_trait(i16_mul, 2, TraitType::Mul, new_datatype(BasicDataType::I16, BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None, false)));
-    traits.insert(TraitType::Sub.to_string(), builtin_types::create_trait(i16_sub, 2, TraitType::Sub, new_datatype(BasicDataType::I16, BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None, false)));
-    traits.insert(TraitType::Div.to_string(), builtin_types::create_trait(i16_div, 2, TraitType::Div, new_datatype(BasicDataType::I16, BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None, false)));
-    traits.insert(TraitType::Pos.to_string(), builtin_types::create_trait(i16_pos, 1, TraitType::Pos, new_datatype(BasicDataType::I16, BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None, false)));
-    traits.insert(TraitType::Neg.to_string(), builtin_types::create_trait(i16_neg, 1, TraitType::Neg, new_datatype(BasicDataType::I16, BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None, false)));
+    traits.insert(TraitType::Add.to_string(), builtin_types::create_trait(i16_add, 2, TraitType::Add, new_datatype(BasicDataType::I16, BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None, false, None)));
+    traits.insert(TraitType::Mul.to_string(), builtin_types::create_trait(i16_mul, 2, TraitType::Mul, new_datatype(BasicDataType::I16, BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None, false, None)));
+    traits.insert(TraitType::Sub.to_string(), builtin_types::create_trait(i16_sub, 2, TraitType::Sub, new_datatype(BasicDataType::I16, BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None, false, None)));
+    traits.insert(TraitType::Div.to_string(), builtin_types::create_trait(i16_div, 2, TraitType::Div, new_datatype(BasicDataType::I16, BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None, false, None)));
+    traits.insert(TraitType::Pos.to_string(), builtin_types::create_trait(i16_pos, 1, TraitType::Pos, new_datatype(BasicDataType::I16, BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None, false, None)));
+    traits.insert(TraitType::Neg.to_string(), builtin_types::create_trait(i16_neg, 1, TraitType::Neg, new_datatype(BasicDataType::I16, BasicDataType::I16.to_string(), None, Vec::new(), Vec::new(), None, false, None)));
     
     builtin_types::add_simple_type(codegen, traits, BasicDataType::I16, BasicDataType::I16.to_string().as_str());
 }

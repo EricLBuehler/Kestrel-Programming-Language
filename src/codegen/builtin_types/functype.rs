@@ -43,14 +43,14 @@ fn fn_call<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
 
     return Data {
         data: None,
-        tp: new_datatype(BasicDataType::Unit, BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None, false),
+        tp: new_datatype(BasicDataType::Unit, BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None, false, None),
         owned: true,
     };
 }
 
 pub fn init_func(codegen: &mut codegen::CodeGen) {
     let mut traits: HashMap<String, Trait> = HashMap::new();
-    traits.insert(TraitType::Call.to_string(), builtin_types::create_trait(fn_call, 0, TraitType::Call, new_datatype(BasicDataType::Unknown, BasicDataType::Unknown.to_string(), None, Vec::new(), Vec::new(), None, false)));
+    traits.insert(TraitType::Call.to_string(), builtin_types::create_trait(fn_call, 0, TraitType::Call, new_datatype(BasicDataType::Unknown, BasicDataType::Unknown.to_string(), None, Vec::new(), Vec::new(), None, false, None)));
 
     builtin_types::add_simple_type(codegen, traits, BasicDataType::Func, BasicDataType::Func.to_string().as_str());
 }

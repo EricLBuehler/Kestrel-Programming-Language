@@ -25,7 +25,7 @@ fn i128_add<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parse
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: new_datatype(BasicDataType::I128, BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None, false),
+        tp: new_datatype(BasicDataType::I128, BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None, false, None),
         owned: true,
     };
 }
@@ -43,7 +43,7 @@ fn i128_mul<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parse
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: new_datatype(BasicDataType::I128, BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None, false),
+        tp: new_datatype(BasicDataType::I128, BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None, false, None),
         owned: true,
     };
 }
@@ -61,7 +61,7 @@ fn i128_sub<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parse
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: new_datatype(BasicDataType::I128, BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None, false),
+        tp: new_datatype(BasicDataType::I128, BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None, false, None),
         owned: true,
     };
 }
@@ -79,7 +79,7 @@ fn i128_div<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parse
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: new_datatype(BasicDataType::I128, BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None, false),
+        tp: new_datatype(BasicDataType::I128, BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None, false, None),
         owned: true,
     };
 }
@@ -96,19 +96,19 @@ fn i128_neg<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &pars
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: new_datatype(BasicDataType::I128, BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None, false),
+        tp: new_datatype(BasicDataType::I128, BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None, false, None),
         owned: true,
     };
 }
 
 pub fn init_i128(codegen: &mut codegen::CodeGen) {
     let mut traits: HashMap<String, Trait> = HashMap::new();
-    traits.insert(TraitType::Add.to_string(), builtin_types::create_trait(i128_add, 2, TraitType::Add, new_datatype(BasicDataType::I128, BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None, false)));
-    traits.insert(TraitType::Mul.to_string(), builtin_types::create_trait(i128_mul, 2, TraitType::Mul, new_datatype(BasicDataType::I128, BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None, false)));
-    traits.insert(TraitType::Sub.to_string(), builtin_types::create_trait(i128_sub, 2, TraitType::Sub, new_datatype(BasicDataType::I128, BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None, false)));
-    traits.insert(TraitType::Div.to_string(), builtin_types::create_trait(i128_div, 2, TraitType::Div, new_datatype(BasicDataType::I128, BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None, false)));
-    traits.insert(TraitType::Pos.to_string(), builtin_types::create_trait(i128_pos, 1, TraitType::Pos, new_datatype(BasicDataType::I128, BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None, false)));
-    traits.insert(TraitType::Neg.to_string(), builtin_types::create_trait(i128_neg, 1, TraitType::Neg, new_datatype(BasicDataType::I128, BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None, false)));
+    traits.insert(TraitType::Add.to_string(), builtin_types::create_trait(i128_add, 2, TraitType::Add, new_datatype(BasicDataType::I128, BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None, false, None)));
+    traits.insert(TraitType::Mul.to_string(), builtin_types::create_trait(i128_mul, 2, TraitType::Mul, new_datatype(BasicDataType::I128, BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None, false, None)));
+    traits.insert(TraitType::Sub.to_string(), builtin_types::create_trait(i128_sub, 2, TraitType::Sub, new_datatype(BasicDataType::I128, BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None, false, None)));
+    traits.insert(TraitType::Div.to_string(), builtin_types::create_trait(i128_div, 2, TraitType::Div, new_datatype(BasicDataType::I128, BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None, false, None)));
+    traits.insert(TraitType::Pos.to_string(), builtin_types::create_trait(i128_pos, 1, TraitType::Pos, new_datatype(BasicDataType::I128, BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None, false, None)));
+    traits.insert(TraitType::Neg.to_string(), builtin_types::create_trait(i128_neg, 1, TraitType::Neg, new_datatype(BasicDataType::I128, BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None, false, None)));
     
     builtin_types::add_simple_type(codegen, traits, BasicDataType::I128, BasicDataType::I128.to_string().as_str());
 }
