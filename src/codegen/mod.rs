@@ -1234,8 +1234,6 @@ impl<'ctx> CodeGen<'ctx> {
 
         let array: inkwell::values::ArrayValue = self.inkwell_types.i8tp.const_array(&arrdata[..]);
 
-        
-
         let data: types::Data = types::Data {
             data: Some(inkwell::values::BasicValueEnum::ArrayValue(array)),
             tp: types::new_datatype(types::BasicDataType::Array, types::BasicDataType::Array.to_string(), None, Vec::new(), Vec::new(), None, false, Some(arraytp)),
