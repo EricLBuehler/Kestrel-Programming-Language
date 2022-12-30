@@ -41,13 +41,6 @@ fn name(parameter: <mutability> type, ...) -> tp {
 }
 ```
 
-## ```to```
-The ```to``` keyword converts one primitive data type to another, with overflow checking. This is similar to the ```as``` keyword in ```Rust```.
-
-```
-100u32 to i8
-```
-
 ## ```as```
 The ```as``` keyword converts one primitive data type to another, with **no** overflow checking. This is similar to casting in ```C```.
 

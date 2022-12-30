@@ -36,7 +36,6 @@ pub enum NodeType {
     U64,
     I128,
     U128,
-    TO,
     AS,
     F32,
     F64,
@@ -105,7 +104,6 @@ impl std::fmt::Display for Node {
             NodeType::F64 |
             NodeType::U128 |
             NodeType::CHAR => write!(f, "{}", self.data.num.as_ref().unwrap() ),
-            NodeType::TO |
             NodeType::AS => write!(f, "{}", self.data.to.as_ref().unwrap() ),
             NodeType::UNARY |
             NodeType::REF => write!(f, "{}", self.data.unary.as_ref().unwrap() ),
@@ -374,10 +372,7 @@ impl<'life> Parser<'life> {
                 }
 
                 TokenType::KEYWORD => {
-                    if self.current.data=="to" {
-                        left = self.generate_to(left);
-                    }
-                    else if self.current.data=="as" {
+                    if self.current.data=="as" {
                         left = self.generate_as(left);
                     }
                     else {
@@ -1081,48 +1076,6 @@ impl<'life> Parser<'life> {
         };
     
         let n: Node = self.create_node(NodeType::U128, nodedat, pos);
-    
-        return n;
-    }
-    
-    fn generate_to(&mut self, left: Node) -> Node{
-        let mut pos = Position {
-            line: left.pos.line,
-            startcol: left.pos.startcol,
-            endcol: 0,
-        };
-
-        self.advance();
-        
-        let res: (usize, Type) = self.parse_type(DataMutablility::Immutable);
-
-        let to: nodes::ToNode = nodes::ToNode{
-            left,
-            tp: res.1,
-        };
-
-        pos.endcol = res.0;
-
-        let nodedat: nodes::NodeData = nodes::NodeData {
-            binary: None,
-            num: None,
-            letn: None,
-            identifier: None,
-            func: None,
-            assign: None,
-            call: None,
-            ret: None,
-            to: Some(to),
-            unary: None,
-            st: None,
-            initst: None,
-            attr: None,
-            attrassign: None,
-            str: None,
-            arr: None,
-        };
-    
-        let n: Node = self.create_node(NodeType::TO, nodedat, pos);
     
         return n;
     }

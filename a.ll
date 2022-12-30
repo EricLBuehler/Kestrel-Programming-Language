@@ -16,8 +16,14 @@ entry:
   %x2 = load float, float* %x, !dbg !8
   %x3 = load float, float* %x, !dbg !8
   %f32mul = fmul float %x2, %x3, !dbg !8
+  %ftoi = fptosi float %f32mul to i32, !dbg !8
   %arr = alloca [2 x i32], !dbg !8
-  store [2 x i32] [i32 fptoui (float %f32mul to i32), i32 2], [2 x i32]* %arr, !dbg !8
+  %i32 = getelementptr [2 x i32], [2 x i32]* %arr, i8 0, i8 0, !dbg !8
+  store i32 %ftoi, i32* %i32, !dbg !8
+  %i324 = getelementptr [2 x i32], [2 x i32]* %arr, i8 0, i8 0, !dbg !8
+  store i32 2, i32* %i324, !dbg !8
+  %arr5 = alloca [2 x i32]*, !dbg !8
+  store [2 x i32]* %arr, [2 x i32]** %arr5, !dbg !8
   ret void, !dbg !8
 }
 

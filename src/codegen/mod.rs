@@ -9,7 +9,6 @@ use inkwell::types::BasicType;
 use crate::fileinfo;
 use inkwell::debug_info::AsDIScope;
 use itertools::izip;
-use inkwell::values::AggregateValue;
 
 use core::panic;
 use std::error::Error;
@@ -367,40 +366,6 @@ impl<'ctx> CodeGen<'ctx> {
         }
         else if tp.is_array_type() {
             return Some(inkwell::types::BasicTypeEnum::ArrayType(tp.into_array_type()));
-        }
-        else {
-            panic!("Unexpected type");
-        }
-    }
-
-    fn create_array(arr: Vec<inkwell::values::BasicValueEnum> ) -> inkwell::values::ArrayValue {
-        if arr.first().unwrap().is_int_value() {
-            let mut elem: Vec<inkwell::values::IntValue> = Vec::new();
-            for item in &arr {
-                elem.push(item.into_int_value())
-            }
-            return arr.first().unwrap().into_int_value().get_type().const_array(&elem[..])
-        }
-        else if arr.first().unwrap().is_float_value() {
-            let mut elem: Vec<inkwell::values::FloatValue> = Vec::new();
-            for item in &arr {
-                elem.push(item.into_float_value())
-            }
-            return arr.first().unwrap().into_float_value().get_type().const_array(&elem[..])
-        }
-        else if arr.first().unwrap().is_struct_value() {
-            let mut elem: Vec<inkwell::values::StructValue> = Vec::new();
-            for item in &arr {
-                elem.push(item.into_struct_value())
-            }
-            return arr.first().unwrap().into_struct_value().get_type().const_array(&elem[..])
-        }
-        else if arr.first().unwrap().is_array_value() {
-            let mut elem: Vec<inkwell::values::ArrayValue> = Vec::new();
-            for item in &arr {
-                elem.push(item.into_array_value())
-            }
-            return arr.first().unwrap().into_array_value().get_type().const_array(&elem[..])
         }
         else {
             panic!("Unexpected type");
@@ -860,167 +825,6 @@ impl<'ctx> CodeGen<'ctx> {
         return retv;
     }
 
-    fn build_to(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let left: types::Data = self.compile_expr(&node.data.to.as_ref().unwrap().left, false, false);     
-        let arg: &parser::Type = &node.data.to.as_ref().unwrap().tp;  
-        if arg.isfn {
-            let fmt: String = format!("Non primitive cast from '{}' to 'fn'.", left.tp.name);
-            errors::raise_error(&fmt, errors::ErrorType::InvalidCast, &node.pos, self.info);
-        }
-        let tp_name: &String = &arg.data.as_ref().unwrap();
-
-        let tp: types::DataType = if Self::get_datatype_from_str(&self.namespaces.structs, tp_name).is_none() {
-            let fmt: String = format!("Unknown type '{}'.", tp_name);
-            errors::raise_error(&fmt, errors::ErrorType::UnknownType, &node.pos, self.info);
-        } else {
-            Self::get_datatype_from_str(&self.namespaces.structs, tp_name).unwrap()
-        };
-
-        let anytp: Option<inkwell::types::AnyTypeEnum> = Self::get_anytp_from_tp(self.context, &self.inkwell_types, tp.clone());
-
-        if !anytp.is_none() && anytp.unwrap().is_int_type() && left.data.unwrap().is_int_value() {
-            let res: inkwell::values::IntValue = self.builder.build_int_cast(left.data.unwrap().into_int_value(), anytp.unwrap().into_int_type(), "icast");
-
-            match tp.tp {
-                types::BasicDataType::I8 => {
-                    builtin_types::i8type::check_overflow_literal(self, &res.to_string(), &node.pos);
-                }
-                types::BasicDataType::I16 => {
-                    builtin_types::i16type::check_overflow_literal(self, &res.to_string(), &node.pos);
-                }
-                types::BasicDataType::I32 => {
-                    builtin_types::i32type::check_overflow_literal(self, &res.to_string(), &node.pos);
-                }
-                types::BasicDataType::I64 => {
-                    builtin_types::i64type::check_overflow_literal(self, &res.to_string(), &node.pos);
-                }
-                types::BasicDataType::I128 => {
-                    builtin_types::i128type::check_overflow_literal(self, &res.to_string(), &node.pos);
-                }
-                types::BasicDataType::U8 => {
-                    builtin_types::u8type::check_overflow_literal(self, &res.to_string(), &node.pos);
-                }
-                types::BasicDataType::U16 => {
-                    builtin_types::u16type::check_overflow_literal(self, &res.to_string(), &node.pos);
-                }
-                types::BasicDataType::U32 => {
-                    builtin_types::u32type::check_overflow_literal(self, &res.to_string(), &node.pos);
-                }
-                types::BasicDataType::U64 => {
-                    builtin_types::u64type::check_overflow_literal(self, &res.to_string(), &node.pos);
-                }
-                types::BasicDataType::U128 => {
-                    builtin_types::u128type::check_overflow_literal(self, &res.to_string(), &node.pos);
-                }
-                _ => {
-                    unreachable!();
-                }
-            }
-
-            return types::Data {
-                data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-                tp: tp.clone(),
-                owned: true,
-            };
-        }
-        else if !anytp.is_none() && anytp.unwrap().is_float_type() && left.data.unwrap().is_float_value() {
-            let res: inkwell::values::FloatValue = self.builder.build_float_cast(left.data.unwrap().into_float_value(), anytp.unwrap().into_float_type(), "fcast");
-
-            match tp.tp {
-                types::BasicDataType::F32 => {
-                    builtin_types::f32type::check_overflow_literal(self, &res.to_string(), &node.pos);
-                }
-                types::BasicDataType::F64 => {
-                    builtin_types::f64type::check_overflow_literal(self, &res.to_string(), &node.pos);
-                }
-                _ => {
-                    unreachable!();
-                }
-            }
-
-            return types::Data {
-                data: Some(inkwell::values::BasicValueEnum::FloatValue(res)),
-                tp: tp.clone(),
-                owned: true,
-            };
-        }
-        else if !anytp.is_none() && anytp.unwrap().is_float_type() && left.data.unwrap().is_int_value() {
-            let res: inkwell::values::FloatValue = left.data.unwrap().into_int_value().const_signed_to_float(anytp.unwrap().into_float_type());
-            
-            match tp.tp {
-                types::BasicDataType::F32 => {
-                    builtin_types::f32type::check_overflow_literal(self, &builtin_types::float_repr(res), &node.pos);
-                }
-                types::BasicDataType::F64 => {
-                    builtin_types::f64type::check_overflow_literal(self, &builtin_types::float_repr(res), &node.pos);
-                }
-                _ => {
-                    unreachable!();
-                }
-            }
-
-            return types::Data {
-                data: Some(inkwell::values::BasicValueEnum::FloatValue(res)),
-                tp: tp.clone(),
-                owned: true,
-            };
-        }
-        else if !anytp.is_none() && anytp.unwrap().is_int_type() && left.data.unwrap().is_float_value() {
-            let res: inkwell::values::IntValue = if builtin_types::int_issigned(tp.clone()) {
-                left.data.unwrap().into_float_value().const_to_signed_int(anytp.unwrap().into_int_type())
-            }
-            else {
-                left.data.unwrap().into_float_value().const_to_unsigned_int(anytp.unwrap().into_int_type())
-            };
-            
-            match tp.tp {
-                types::BasicDataType::I8 => {
-                    builtin_types::i8type::check_overflow_literal(self, &builtin_types::int_repr(res), &node.pos);
-                }
-                types::BasicDataType::I16 => {
-                    builtin_types::i16type::check_overflow_literal(self, &builtin_types::int_repr(res), &node.pos);
-                }
-                types::BasicDataType::I32 => {
-                    builtin_types::i32type::check_overflow_literal(self, &builtin_types::int_repr(res), &node.pos);
-                }
-                types::BasicDataType::I64 => {
-                    builtin_types::i64type::check_overflow_literal(self, &builtin_types::int_repr(res), &node.pos);
-                }
-                types::BasicDataType::I128 => {
-                    builtin_types::i128type::check_overflow_literal(self, &builtin_types::int_repr(res), &node.pos);
-                }
-                types::BasicDataType::U8 => {
-                    builtin_types::u8type::check_overflow_literal(self, &builtin_types::int_repr(res), &node.pos);
-                }
-                types::BasicDataType::U16 => {
-                    builtin_types::u16type::check_overflow_literal(self, &builtin_types::int_repr(res), &node.pos);
-                }
-                types::BasicDataType::U32 => {
-                    builtin_types::u32type::check_overflow_literal(self, &builtin_types::int_repr(res), &node.pos);
-                }
-                types::BasicDataType::U64 => {
-                    builtin_types::u64type::check_overflow_literal(self, &builtin_types::int_repr(res), &node.pos);
-                }
-                types::BasicDataType::U128 => {
-                    builtin_types::u128type::check_overflow_literal(self, &builtin_types::int_repr(res), &node.pos);
-                }
-                _ => {
-                    unreachable!();
-                }
-            }
-
-            return types::Data {
-                data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-                tp: tp.clone(),
-                owned: true,
-            };
-        }
-        else {
-            let fmt: String = format!("Non primitive cast from '{}' to '{}'.", left.tp.name, tp_name);
-            errors::raise_error(&fmt, errors::ErrorType::InvalidCast, &node.pos, self.info);
-        }
-    }
-
     fn build_as(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         let left: types::Data = self.compile_expr(&node.data.to.as_ref().unwrap().left, false, false);     
         let arg: &parser::Type = &node.data.to.as_ref().unwrap().tp;  
@@ -1067,11 +871,11 @@ impl<'ctx> CodeGen<'ctx> {
             };
         }
         else if !anytp.is_none() && anytp.unwrap().is_int_type() && left.data.unwrap().is_float_value() {
-            let res: inkwell::values::IntValue = if builtin_types::int_issigned(left.tp) {
-                left.data.unwrap().into_float_value().const_to_signed_int(anytp.unwrap().into_int_type())
+            let res: inkwell::values::IntValue = if builtin_types::int_issigned(tp.clone()) {
+                self.builder.build_float_to_signed_int(left.data.unwrap().into_float_value(), anytp.unwrap().into_int_type(), "ftoi")
             }
             else {
-                left.data.unwrap().into_float_value().const_to_unsigned_int(anytp.unwrap().into_int_type())
+                self.builder.build_float_to_unsigned_int(left.data.unwrap().into_float_value(), anytp.unwrap().into_int_type(), "ftoui")
             };
 
             return types::Data {
@@ -1395,18 +1199,16 @@ impl<'ctx> CodeGen<'ctx> {
             }
         }
 
-        let mut arr_elem: Vec<inkwell::values::BasicValueEnum> = Vec::new();
-        for element in data_elem {
-            arr_elem.push(element.data.unwrap());
-        }
-
         let arraytp: inkwell::types::ArrayType = firsttp.array_type(elements.len() as u32);
-        let array: inkwell::values::ArrayValue = Self::create_array(arr_elem);
+        let array: inkwell::values::PointerValue = self.builder.build_alloca(arraytp, "arr");
 
-        println!("{}",array.const_extract_value(&mut [0]));
+        for element in data_elem {
+            let ptr: inkwell::values::PointerValue = unsafe { self.builder.build_gep(array, &[self.inkwell_types.i8tp.const_int(0, false), self.inkwell_types.i8tp.const_int(0, false)], &element.tp.name) };
+            self.builder.build_store(ptr, element.data.unwrap());
+        }        
 
         let data: types::Data = types::Data {
-            data: Some(inkwell::values::BasicValueEnum::ArrayValue(array)),
+            data: Some(inkwell::values::BasicValueEnum::PointerValue(array)),
             tp: types::new_datatype(types::BasicDataType::Array, Self::array_repr(arraytp), None, Vec::new(), Vec::new(), None, false, Some(arraytp)),
             owned: true,
         };
@@ -1595,9 +1397,6 @@ impl<'ctx> CodeGen<'ctx> {
             
                 };
                 types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::U128, types::BasicDataType::U128.to_string(), None, Vec::new(), Vec::new(), None, false, None), owned: true}
-            }
-            parser::NodeType::TO => {
-                self.build_to(node)
             }
             parser::NodeType::AS => {
                 self.build_as(node)

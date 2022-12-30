@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use crate::codegen;
 use crate::codegen::types::{Type, BasicDataType, Trait, TraitType, Data};
-use inkwell::values::AnyValue;
 use super::types::DataType;
 
 pub mod i32type;
@@ -39,14 +38,6 @@ fn create_trait<'a>(function: fn(&codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::p
         traittype,
         rettp,
     }
-}
-
-pub fn float_repr<'a>(val: inkwell::values::FloatValue<'a>) -> String {
-    return val.print_to_string().to_string().split_at_mut(6).1.to_string(); //Account for "float "
-}
-
-pub fn int_repr<'a>(val: inkwell::values::IntValue<'a>) -> String {
-    return val.print_to_string().to_string().split_at_mut(4).1.to_string(); //Account for "int "
 }
 
 pub fn int_issigned(val: DataType) -> bool {
