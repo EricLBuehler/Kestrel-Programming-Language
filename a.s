@@ -47,15 +47,14 @@ f:                                      # @f
 	movss	%xmm0, -4(%rsp)
 	movss	-4(%rsp), %xmm0         # xmm0 = mem[0],zero,zero,zero
 	movss	.LCPI1_0(%rip), %xmm1   # xmm1 = mem[0],zero,zero,zero
-	movaps	%xmm0, %xmm2
-	addss	%xmm1, %xmm2
-	movss	%xmm0, -12(%rsp)
-	movss	%xmm2, -16(%rsp)
+	addss	%xmm1, %xmm0
+	movl	$1092616192, -12(%rsp)  # imm = 0x41200000
+	movss	%xmm0, -16(%rsp)
 	movss	-16(%rsp), %xmm0        # xmm0 = mem[0],zero,zero,zero
 	movss	-12(%rsp), %xmm1        # xmm1 = mem[0],zero,zero,zero
 	movss	%xmm1, -20(%rsp)
 	movss	%xmm0, -24(%rsp)
-	movl	$1094713344, -20(%rsp)  # imm = 0x41400000
+	movl	$1094713344, -24(%rsp)  # imm = 0x41400000
 	movss	-24(%rsp), %xmm0        # xmm0 = mem[0],zero,zero,zero
 	movss	-20(%rsp), %xmm1        # xmm1 = mem[0],zero,zero,zero
 	retq
