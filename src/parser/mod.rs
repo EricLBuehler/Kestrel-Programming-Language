@@ -516,10 +516,10 @@ impl<'life> Parser<'life> {
             self.advance();
 
             let mut members: std::collections::HashMap<String, Node> = std::collections::HashMap::new();
+            
+            self.skip_newline();
     
-            while !self.current_is_type(TokenType::RCURLY) {
-                self.skip_newline();
-    
+            while !self.current_is_type(TokenType::RCURLY) && !self.current_is_type(TokenType::EOF) {
                 if self.current_is_type(TokenType::RCURLY) {
                     break;
                 }
@@ -539,6 +539,12 @@ impl<'life> Parser<'life> {
                 self.advance();
                 
                 members.insert(name, self.expr(Precedence::Lowest));
+
+                self.skip_newline();
+
+                if !self.current_is_type(TokenType::COMMA) && !self.current_is_type(TokenType::RCURLY) {
+                    self.raise_error("Expected comma.", ErrorType::InvalidTok);
+                }
             }
             
             if !self.current_is_type(TokenType::RCURLY) {
