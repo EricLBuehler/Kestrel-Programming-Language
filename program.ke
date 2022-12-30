@@ -14,7 +14,7 @@ fn main() {
 fn f(x: f32) -> s{
     let y = s{
         a=x+1f32,
-        b=10f32
+        b=x
     }
     y.a=12f32
     return y
