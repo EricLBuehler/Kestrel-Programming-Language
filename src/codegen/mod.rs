@@ -1382,7 +1382,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         for element in elements[1..].to_vec() {
             data_elem.push(self.compile_expr(&element, true, false));
-            let tp_: Option<inkwell::types::AnyTypeEnum> = Self::get_anytp_from_tp(self.context, &self.inkwell_types, data_elem.first().unwrap().tp.clone());
+            let tp_: Option<inkwell::types::AnyTypeEnum> = Self::get_anytp_from_tp(self.context, &self.inkwell_types, data_elem.last().unwrap().tp.clone());
             if tp_.is_none() {
                 let fmt: String = format!("Expected '{}' type, got 'void' type.", data_elem.first().unwrap().tp.to_string());
                 errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &element.pos, self.info);
