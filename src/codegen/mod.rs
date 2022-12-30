@@ -984,6 +984,7 @@ impl<'ctx> CodeGen<'ctx> {
         let s: (types::DataType, AnyTypeEnum, std::collections::HashMap<String, i32>, ForwardDeclarationType) = self.namespaces.structs.get(&name).unwrap().clone();
 
         for member in &node.data.initst.as_ref().unwrap().members {
+            println!("{}", &member.0); //HashMap is not ordered! Fix this.
             if members.contains_key(member.0) {
                 let fmt: String = format!("Field '{}' is already declared.", member.0);
                 errors::raise_error(&fmt, errors::ErrorType::FieldReinitialization, &node.pos, self.info);

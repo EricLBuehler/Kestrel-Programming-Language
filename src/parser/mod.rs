@@ -733,6 +733,8 @@ impl<'life> Parser<'life> {
         while !self.current_is_type(TokenType::RPAREN) {            
             self.advance();
             
+            self.skip_newline();
+            
             if self.current_is_type(TokenType::RPAREN) {
                 break;
             }
