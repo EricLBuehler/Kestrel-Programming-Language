@@ -13,8 +13,11 @@ entry:
   store [7 x i8] c"Kestrel", [7 x i8]* %name, !dbg !8
   %char = alloca i32, !dbg !8
   store i32 129413, i32* %char, !dbg !8
+  %x2 = load float, float* %x, !dbg !8
+  %x3 = load float, float* %x, !dbg !8
+  %f32mul = fmul float %x2, %x3, !dbg !8
   %arr = alloca [2 x i32], !dbg !8
-  store [2 x i32] [i32 1, i32 2], [2 x i32]* %arr, !dbg !8
+  store [2 x i32] [i32 fptoui (float %f32mul to i32), i32 2], [2 x i32]* %arr, !dbg !8
   ret void, !dbg !8
 }
 

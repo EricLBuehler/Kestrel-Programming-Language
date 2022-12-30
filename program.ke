@@ -7,7 +7,7 @@ fn main() {
     f(&x)
     let name: i8[7] = "Kestrel"
     let char: char = '🦅'
-    let arr: i32[2]= [1,2]
+    let arr: i32[2]= [x*x as i32,2]
 }
 
 fn f(x: f32) -> s{

@@ -9,6 +9,7 @@ use inkwell::types::BasicType;
 use crate::fileinfo;
 use inkwell::debug_info::AsDIScope;
 use itertools::izip;
+use inkwell::values::AggregateValue;
 
 use core::panic;
 use std::error::Error;
@@ -1067,10 +1068,10 @@ impl<'ctx> CodeGen<'ctx> {
         }
         else if !anytp.is_none() && anytp.unwrap().is_int_type() && left.data.unwrap().is_float_value() {
             let res: inkwell::values::IntValue = if builtin_types::int_issigned(left.tp) {
-                left.data.unwrap().into_float_value().const_to_signed_int(left.data.unwrap().get_type().into_int_type())
+                left.data.unwrap().into_float_value().const_to_signed_int(anytp.unwrap().into_int_type())
             }
             else {
-                left.data.unwrap().into_float_value().const_to_unsigned_int(left.data.unwrap().get_type().into_int_type())
+                left.data.unwrap().into_float_value().const_to_unsigned_int(anytp.unwrap().into_int_type())
             };
 
             return types::Data {
@@ -1401,6 +1402,8 @@ impl<'ctx> CodeGen<'ctx> {
 
         let arraytp: inkwell::types::ArrayType = firsttp.array_type(elements.len() as u32);
         let array: inkwell::values::ArrayValue = Self::create_array(arr_elem);
+
+        println!("{}",array.const_extract_value(&mut [0]));
 
         let data: types::Data = types::Data {
             data: Some(inkwell::values::BasicValueEnum::ArrayValue(array)),
