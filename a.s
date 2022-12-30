@@ -6,19 +6,24 @@
 _main:                                  # @_main
 # %bb.0:                                # %entry
 	subq	$40, %rsp
-	movl	$1067282596, 8(%rsp)    # imm = 0x3F9D70A4
-	movss	8(%rsp), %xmm0          # xmm0 = mem[0],zero,zero,zero
+	movl	$1067282596, 4(%rsp)    # imm = 0x3F9D70A4
+	movss	4(%rsp), %xmm0          # xmm0 = mem[0],zero,zero,zero
 	callq	f
-	movb	$108, 19(%rsp)
-	movb	$101, 18(%rsp)
-	movb	$114, 17(%rsp)
-	movb	$116, 16(%rsp)
-	movb	$115, 15(%rsp)
-	movb	$101, 14(%rsp)
-	movb	$75, 13(%rsp)
+	movb	$-123, 19(%rsp)
+	movb	$-90, 18(%rsp)
+	movb	$-97, 17(%rsp)
+	movb	$-16, 16(%rsp)
+	movb	$32, 15(%rsp)
+	movb	$108, 14(%rsp)
+	movb	$101, 13(%rsp)
+	movb	$114, 12(%rsp)
+	movb	$116, 11(%rsp)
+	movb	$115, 10(%rsp)
+	movb	$101, 9(%rsp)
+	movb	$75, 8(%rsp)
 	movl	$129413, 28(%rsp)       # imm = 0x1F985
-	movss	8(%rsp), %xmm0          # xmm0 = mem[0],zero,zero,zero
-	mulss	8(%rsp), %xmm0
+	movss	4(%rsp), %xmm0          # xmm0 = mem[0],zero,zero,zero
+	mulss	4(%rsp), %xmm0
 	cvttss2si	%xmm0, %eax
 	movl	%eax, 20(%rsp)
 	movl	$2, 20(%rsp)

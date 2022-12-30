@@ -5,7 +5,7 @@ struct s {
 fn main() {
     let x = 1.23
     f(&x)
-    let name: i8[7] = "Kestrel"
+    let name: i8[12] = "Kestrel 🦅"
     let char: char = '🦅'
     let arr: i32[2]= [x*x as i32,2]
 }

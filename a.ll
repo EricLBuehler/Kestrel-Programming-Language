@@ -9,8 +9,8 @@ entry:
   store float 0x3FF3AE1480000000, float* %x, !dbg !8
   %x1 = load float, float* %x, !dbg !8
   %res = call { float } @f(float %x1), !dbg !8
-  %name = alloca [7 x i8], !dbg !8
-  store [7 x i8] c"Kestrel", [7 x i8]* %name, !dbg !8
+  %name = alloca [12 x i8], !dbg !8
+  store [12 x i8] c"Kestrel \F0\9F\A6\85", [12 x i8]* %name, !dbg !8
   %char = alloca i32, !dbg !8
   store i32 129413, i32* %char, !dbg !8
   %x2 = load float, float* %x, !dbg !8
