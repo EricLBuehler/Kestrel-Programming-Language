@@ -1833,10 +1833,10 @@ impl<'life> Parser<'life> {
         self.advance();
 
         let mut members: std::collections::HashMap<String, Type> = std::collections::HashMap::new();
+        
+        self.skip_newline();
 
         while !self.current_is_type(TokenType::RCURLY) {
-            self.skip_newline();
-
             if self.current_is_type(TokenType::RCURLY) {
                 break;
             }
@@ -1858,6 +1858,12 @@ impl<'life> Parser<'life> {
             let (_, tp) = self.parse_type(crate::codegen::types::DataMutablility::Mutable);
             
             members.insert(name, tp);
+
+            self.skip_newline();
+
+            if !self.current_is_type(TokenType::COMMA) && !self.current_is_type(TokenType::RCURLY) {
+                self.raise_error("Expected comma.", ErrorType::InvalidTok);
+            }
         }
         
         if !self.current_is_type(TokenType::RCURLY) {
