@@ -28,6 +28,8 @@ pub enum ErrorType {
     CannotDefineVoidArray,
     UnexpectedMultibyte,
     ArrayLengthOutOfRange,
+    CannotDefineFnArray,
+    ZeroLengthArray,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -59,6 +61,8 @@ impl std::fmt::Display for ErrorType {
             ErrorType::CannotDefineVoidArray => write!(f, "cannot define void array"),
             ErrorType::UnexpectedMultibyte => write!(f, "unexpected multibyte character"),
             ErrorType::ArrayLengthOutOfRange => write!(f, "array length out of range of 'u32'"),
+            ErrorType::CannotDefineFnArray => write!(f, "cannot define fn array"),
+            ErrorType::ZeroLengthArray => write!(f, "cannot define zero length array"),
         }
     }
 }

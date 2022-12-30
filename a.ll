@@ -13,6 +13,8 @@ entry:
   store [7 x i8] c"Kestrel", [7 x i8]* %name, !dbg !8
   %char = alloca i32, !dbg !8
   store i32 129413, i32* %char, !dbg !8
+  %arr = alloca [2 x i32], !dbg !8
+  store [2 x i32] [i32 1, i32 2], [2 x i32]* %arr, !dbg !8
   ret void, !dbg !8
 }
 
@@ -56,10 +58,10 @@ attributes #0 = { noinline nounwind optnone }
 !7 = !DIBasicType(name: "void", size: 16, flags: DIFlagPublic)
 !8 = !DILocation(line: 4, scope: !9)
 !9 = distinct !DILexicalBlock(scope: !4, file: !2, line: 4)
-!10 = distinct !DISubprogram(name: "f", linkageName: "f", scope: null, file: !2, line: 11, type: !11, scopeLine: 11, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
+!10 = distinct !DISubprogram(name: "f", linkageName: "f", scope: null, file: !2, line: 12, type: !11, scopeLine: 12, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !11 = !DISubroutineType(flags: DIFlagPublic, types: !12)
 !12 = !{!13, !14}
 !13 = !DIBasicType(name: "{ float }", size: 16, flags: DIFlagPublic)
 !14 = !DIBasicType(name: "float", size: 16, flags: DIFlagPublic)
-!15 = !DILocation(line: 11, scope: !16)
-!16 = distinct !DILexicalBlock(scope: !10, file: !2, line: 11)
+!15 = !DILocation(line: 12, scope: !16)
+!16 = distinct !DILexicalBlock(scope: !10, file: !2, line: 12)

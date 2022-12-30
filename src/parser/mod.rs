@@ -1426,13 +1426,8 @@ impl<'life> Parser<'life> {
         if !self.current_is_type(TokenType::RSQUARE) {
             self.raise_error("Expected right square bracket.", ErrorType::InvalidTok);
         }
-
-        if elements.len() > 0 {
-            pos.endcol = elements.last().unwrap().pos.endcol;
-        }
-        else {
-            pos.endcol = self.current.endcol;
-        }
+        
+        pos.endcol = self.current.endcol;
 
         let arr: nodes::ArrayNode = nodes::ArrayNode{
             elements,

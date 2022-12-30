@@ -248,7 +248,7 @@ impl<'ctx> CodeGen<'ctx> {
             return (types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), names, datatypes, mutability, Some(rettp_full.0.clone()), false, None), inkwell::types::AnyTypeEnum::FunctionType(fntp));
         }
         else if arg.isarr {
-            let (datatp, tp) = Self::get_llvm_from_type(ctx, structs, types, info, &arg.arrtp.as_ref().unwrap(), node);
+            let (_, tp) = Self::get_llvm_from_type(ctx, structs, types, info, &arg.arrtp.as_ref().unwrap(), node);
             let len: u32 = match u32::from_str_radix(arg.arrlen.as_ref().unwrap().first().unwrap().as_str(), 10) {
                 Ok(v) => {
                     v
@@ -260,7 +260,8 @@ impl<'ctx> CodeGen<'ctx> {
             };
 
             if len == 0 {
-                return (datatp, tp);
+                let fmt: String = format!("Cannot define zero-length array.");
+                errors::raise_error(&fmt, errors::ErrorType::ZeroLengthArray, &node.pos, info);
             }
 
             let mut arrtp: inkwell::types::ArrayType;
@@ -272,7 +273,8 @@ impl<'ctx> CodeGen<'ctx> {
                 arrtp = tp.into_float_type().array_type(len);
             }
             else if tp.is_function_type() {
-                arrtp = tp.into_function_type().ptr_type(inkwell::AddressSpace::Generic).array_type(len)
+                let fmt: String = format!("Cannot define array of 'fn'.",);
+                errors::raise_error(&fmt, errors::ErrorType::CannotDefineFnArray, &node.pos, info);
             }
             else if tp.is_void_type() {
                 let fmt: String = format!("Cannot define array of 'void'.");
@@ -364,6 +366,40 @@ impl<'ctx> CodeGen<'ctx> {
         }
         else if tp.is_array_type() {
             return Some(inkwell::types::BasicTypeEnum::ArrayType(tp.into_array_type()));
+        }
+        else {
+            panic!("Unexpected type");
+        }
+    }
+
+    fn create_array(arr: Vec<inkwell::values::BasicValueEnum> ) -> inkwell::values::ArrayValue {
+        if arr.first().unwrap().is_int_value() {
+            let mut elem: Vec<inkwell::values::IntValue> = Vec::new();
+            for item in &arr {
+                elem.push(item.into_int_value())
+            }
+            return arr.first().unwrap().into_int_value().get_type().const_array(&elem[..])
+        }
+        else if arr.first().unwrap().is_float_value() {
+            let mut elem: Vec<inkwell::values::FloatValue> = Vec::new();
+            for item in &arr {
+                elem.push(item.into_float_value())
+            }
+            return arr.first().unwrap().into_float_value().get_type().const_array(&elem[..])
+        }
+        else if arr.first().unwrap().is_struct_value() {
+            let mut elem: Vec<inkwell::values::StructValue> = Vec::new();
+            for item in &arr {
+                elem.push(item.into_struct_value())
+            }
+            return arr.first().unwrap().into_struct_value().get_type().const_array(&elem[..])
+        }
+        else if arr.first().unwrap().is_array_value() {
+            let mut elem: Vec<inkwell::values::ArrayValue> = Vec::new();
+            for item in &arr {
+                elem.push(item.into_array_value())
+            }
+            return arr.first().unwrap().into_array_value().get_type().const_array(&elem[..])
         }
         else {
             panic!("Unexpected type");
@@ -1322,6 +1358,58 @@ impl<'ctx> CodeGen<'ctx> {
         return types::Data {data: Some(inkwell::values::BasicValueEnum::IntValue(selfv)), tp: types::new_datatype(types::BasicDataType::U32, types::BasicDataType::U32.to_string(), None, Vec::new(), Vec::new(), None, false, None), owned: true}
     }
 
+    fn build_array(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        let elements: &Vec<parser::Node> = &node.data.arr.as_ref().unwrap().elements;
+
+        let mut data_elem: Vec<types::Data> = Vec::new();
+
+        if elements.len() == 0 {
+            let fmt: String = format!("Cannot define zero-length array.");
+            errors::raise_error(&fmt, errors::ErrorType::ZeroLengthArray, &node.pos, self.info);
+        }
+
+        data_elem.push(self.compile_expr(elements.first().unwrap(), true, false));
+        let firsttp_: Option<inkwell::types::AnyTypeEnum> = Self::get_anytp_from_tp(self.context, &self.inkwell_types, data_elem.first().unwrap().tp.clone());
+        if firsttp_.is_none() {
+            let fmt: String = format!("Cannot define array of 'void'.");
+            errors::raise_error(&fmt, errors::ErrorType::CannotDefineVoidArray, &node.pos, self.info);
+        }
+        if firsttp_.unwrap().is_function_type() {
+            let fmt: String = format!("Cannot define array of 'fn'.");
+            errors::raise_error(&fmt, errors::ErrorType::CannotDefineFnArray, &node.pos, self.info);
+        }
+        let firsttp: inkwell::types::BasicTypeEnum = Self::get_basic_from_any(firsttp_.unwrap()).unwrap();
+
+        for element in elements[1..].to_vec() {
+            data_elem.push(self.compile_expr(&element, true, false));
+            let tp_: Option<inkwell::types::AnyTypeEnum> = Self::get_anytp_from_tp(self.context, &self.inkwell_types, data_elem.first().unwrap().tp.clone());
+            if tp_.is_none() {
+                let fmt: String = format!("Expected '{}' type, got 'void' type.", data_elem.first().unwrap().tp.to_string());
+                errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &element.pos, self.info);
+            }
+            let tp: inkwell::types::BasicTypeEnum = Self::get_basic_from_any(tp_.unwrap()).unwrap();
+            if tp != firsttp {
+                let fmt: String = format!("Expected '{}' type, got '{}' type.", data_elem.first().unwrap().tp.to_string(), data_elem.last().unwrap().tp.to_string());
+                errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &element.pos, self.info);
+            }
+        }
+
+        let mut arr_elem: Vec<inkwell::values::BasicValueEnum> = Vec::new();
+        for element in data_elem {
+            arr_elem.push(element.data.unwrap());
+        }
+
+        let arraytp: inkwell::types::ArrayType = firsttp.array_type(elements.len() as u32);
+        let array: inkwell::values::ArrayValue = Self::create_array(arr_elem);
+
+        let data: types::Data = types::Data {
+            data: Some(inkwell::values::BasicValueEnum::ArrayValue(array)),
+            tp: types::new_datatype(types::BasicDataType::Array, Self::array_repr(arraytp), None, Vec::new(), Vec::new(), None, false, Some(arraytp)),
+            owned: true,
+        };
+        return data;
+    }
+
     fn compile_expr(&mut self, node: &parser::Node, give_ownership: bool, get_ptr: bool) -> types::Data<'ctx> {
         match node.tp {
             parser::NodeType::I32 => {
@@ -1548,7 +1636,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.build_char(node)
             }
             parser::NodeType::ARRAY => {
-                unimplemented!();
+                self.build_array(node)
             }
         }
     }
