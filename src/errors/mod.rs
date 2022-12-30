@@ -30,6 +30,7 @@ pub enum ErrorType {
     ArrayLengthOutOfRange,
     CannotDefineFnArray,
     ZeroLengthArray,
+    EmptyCharLiteral,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -63,6 +64,7 @@ impl std::fmt::Display for ErrorType {
             ErrorType::ArrayLengthOutOfRange => write!(f, "array length out of range of 'u32'"),
             ErrorType::CannotDefineFnArray => write!(f, "cannot define fn array"),
             ErrorType::ZeroLengthArray => write!(f, "cannot define zero length array"),
+            ErrorType::EmptyCharLiteral => write!(f, "char literals cannot be empty"),
         }
     }
 }

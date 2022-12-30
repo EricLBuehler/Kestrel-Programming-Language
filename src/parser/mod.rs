@@ -1317,6 +1317,10 @@ impl<'life> Parser<'life> {
     }
     
     fn generate_char(&mut self, data: String) -> Node{
+        if data.len() == 0 {
+            self.raise_error("Char literal cannot be empty.", ErrorType::EmptyCharLiteral);
+        }
+
         if data.len() > 4 {
             self.raise_error("Invalid multibyte sequence (>4 bytes).", ErrorType::UnexpectedMultibyte);
         }

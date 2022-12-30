@@ -511,8 +511,10 @@ fn make_string(lexer: &mut Lexer) -> Token {
 
     let mut end: usize = start+1;
 
-    for itm in String::from_utf8(data.clone()).unwrap().chars() {
-        end += unicode_width::UnicodeWidthChar::width(itm).unwrap();
+    if data.len() > 0 {
+        for itm in String::from_utf8(data.clone()).unwrap().chars() {
+            end += unicode_width::UnicodeWidthChar::width(itm).unwrap();
+        }
     }
     
     let tok = Token {
@@ -543,7 +545,13 @@ fn make_char(lexer: &mut Lexer) -> Token {
         advance(lexer);
     }
 
-    let end: usize = lexer.col;
+    let mut end: usize = start+1;
+
+    if data.len() > 0 {
+        for itm in String::from_utf8(data.clone()).unwrap().chars() {
+            end += unicode_width::UnicodeWidthChar::width(itm).unwrap();
+        }
+    }
     
     let tok = Token {
         data: if data.len() > 0 {String::from_utf8(data).unwrap()} else {String::from("")},
