@@ -12,7 +12,7 @@ fn main() {
 }
 
 fn f(x: f32) -> s{
-    let y = s{
+    let y = s {
         a=x+1f32,
         b=x
     }

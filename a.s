@@ -49,8 +49,8 @@ f:                                      # @f
 	movss	.LCPI1_0(%rip), %xmm1   # xmm1 = mem[0],zero,zero,zero
 	movaps	%xmm0, %xmm2
 	addss	%xmm1, %xmm2
-	movss	%xmm0, -16(%rsp)
 	movss	%xmm2, -12(%rsp)
+	movss	%xmm0, -16(%rsp)
 	movss	-16(%rsp), %xmm0        # xmm0 = mem[0],zero,zero,zero
 	movss	-12(%rsp), %xmm1        # xmm1 = mem[0],zero,zero,zero
 	movss	%xmm1, -20(%rsp)
