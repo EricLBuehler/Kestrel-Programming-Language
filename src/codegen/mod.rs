@@ -1547,6 +1547,9 @@ impl<'ctx> CodeGen<'ctx> {
             parser::NodeType::CHAR => {
                 self.build_char(node)
             }
+            parser::NodeType::ARRAY => {
+                unimplemented!();
+            }
         }
     }
 

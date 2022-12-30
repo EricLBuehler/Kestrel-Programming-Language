@@ -232,6 +232,17 @@ impl std::fmt::Display for StringNode {
 }
 
 #[derive(Clone, Debug)]
+pub struct ArrayNode{
+    pub elements: Vec<crate::parser::Node>,
+}
+
+impl std::fmt::Display for ArrayNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Array of {} element(s)", self.elements.len())
+    }    
+}
+
+#[derive(Clone, Debug)]
 pub struct NodeData {
     pub binary: Option<BinaryNode>,
     pub num: Option<NumNode>,
@@ -248,4 +259,5 @@ pub struct NodeData {
     pub attr: Option<AttrNode>,
     pub attrassign: Option<AttrAssignNode>,
     pub str: Option<StringNode>,
+    pub arr: Option<ArrayNode>,
 }
