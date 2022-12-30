@@ -516,6 +516,7 @@ impl<'life> Parser<'life> {
             self.advance();
 
             let mut members: std::collections::HashMap<String, Node> = std::collections::HashMap::new();
+            let mut members_vec: Vec<String> = Vec::new();
             
             self.skip_newline();
     
@@ -538,7 +539,8 @@ impl<'life> Parser<'life> {
     
                 self.advance();
                 
-                members.insert(name, self.expr(Precedence::Lowest));
+                members.insert(name.clone(), self.expr(Precedence::Lowest));
+                members_vec.push(name);
 
                 self.skip_newline();
 
@@ -561,6 +563,7 @@ impl<'life> Parser<'life> {
             let initst: nodes::StructInitNode = nodes::StructInitNode{
                 name,
                 members,
+                members_vec,
             };
         
             let nodedat: nodes::NodeData = nodes::NodeData {

@@ -187,6 +187,7 @@ impl std::fmt::Display for StructNode {
 pub struct StructInitNode{
     pub name: String,
     pub members: std::collections::HashMap<String, crate::parser::Node>,
+    pub members_vec: Vec<String>,
 }
 
 impl std::fmt::Display for StructInitNode {
