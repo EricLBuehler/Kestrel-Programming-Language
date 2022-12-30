@@ -315,6 +315,7 @@ impl<'life> Parser<'life> {
             TokenType::AMPERSAND => Some(self.generate_ref()),
             TokenType::STRING => Some(self.generate_str()),
             TokenType::CHAR => Some(self.generate_char(self.current.data.clone())),
+            //TokenType::LSQUARE => Some(self.generate_array()),
             _ => None,
         }
     }
@@ -343,7 +344,6 @@ impl<'life> Parser<'life> {
     }
     
     fn expr(&mut self, prec: Precedence) -> Node {
-        
         if self.current_is_type(TokenType::EMOJIERR) {
             self.raise_error("Identifiers cannot contain emojis.", ErrorType::InvalidTok);
         }
@@ -1532,14 +1532,9 @@ impl<'life> Parser<'life> {
 
             while self.current_is_type(TokenType::LSQUARE) {
                 self.advance();
-                if  !((!self.current_is_type(TokenType::U8) ||
-                    !self.current_is_type(TokenType::U16) ||
-                    !self.current_is_type(TokenType::U32)) ||
-                    ( (self.current_is_type(TokenType::I8) ||
-                    self.current_is_type(TokenType::I16) ||
-                    self.current_is_type(TokenType::I32)) &&
-                    self.current.data.chars().nth(0).unwrap() != '-')) {
-                    self.raise_error("Expected u8, u16, u32, or positive integer counterparts.", ErrorType::InvalidTok);
+                if  !(self.current_is_type(TokenType::I32) &&
+                    self.current.data.chars().nth(0).unwrap() != '-') {
+                    self.raise_error("Expected positive integer.", ErrorType::InvalidTok);
                 }
                 len.push(self.current.data.clone());
                 self.advance();

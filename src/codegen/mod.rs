@@ -249,7 +249,15 @@ impl<'ctx> CodeGen<'ctx> {
         }
         else if arg.isarr {
             let (datatp, tp) = Self::get_llvm_from_type(ctx, structs, types, info, &arg.arrtp.as_ref().unwrap(), node);
-            let len: u32 = u32::from_str_radix(arg.arrlen.as_ref().unwrap().first().unwrap().as_str(), 10).unwrap();
+            let len: u32 = match u32::from_str_radix(arg.arrlen.as_ref().unwrap().first().unwrap().as_str(), 10) {
+                Ok(v) => {
+                    v
+                }
+                Err(_) => {
+                    let fmt: String = format!("Value '{}' out of range for 'u32'.", arg.arrlen.as_ref().unwrap().first().unwrap());
+                    errors::raise_error(&fmt, errors::ErrorType::ArrayLengthOutOfRange, &node.pos, info);
+                }
+            };
 
             if len == 0 {
                 return (datatp, tp);

@@ -27,6 +27,7 @@ pub enum ErrorType {
     StructAttrNotFound,
     CannotDefineVoidArray,
     UnexpectedMultibyte,
+    ArrayLengthOutOfRange,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -57,6 +58,7 @@ impl std::fmt::Display for ErrorType {
             ErrorType::StructAttrNotFound => write!(f, "attribute not found"),
             ErrorType::CannotDefineVoidArray => write!(f, "cannot define void array"),
             ErrorType::UnexpectedMultibyte => write!(f, "unexpected multibyte character"),
+            ErrorType::ArrayLengthOutOfRange => write!(f, "array length out of range of 'u32'"),
         }
     }
 }
