@@ -476,7 +476,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
             Some(v) => {
                 if !self.get_variable(&name).unwrap().3.owned {
-                    let transferred: String = String::from("Name '{}' was transferred here.");
+                    let transferred: String = String::from(format!("'{}' was transferred here.", name));
                     let fmt: String = format!("Name '{}' is not owned.", name);
                     errors::raise_error_multi(errors::ErrorType::NameNotOwned, vec![transferred, fmt], vec![&self.get_variable(&name).unwrap().3.transferred.as_ref().unwrap(), &node.pos], self.info);
                 }

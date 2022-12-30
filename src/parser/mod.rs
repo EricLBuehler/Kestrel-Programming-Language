@@ -545,6 +545,12 @@ impl<'life> Parser<'life> {
                 if !self.current_is_type(TokenType::COMMA) && !self.current_is_type(TokenType::RCURLY) {
                     self.raise_error("Expected comma.", ErrorType::InvalidTok);
                 }
+
+                if self.current_is_type(TokenType::COMMA) && !self.current_is_type(TokenType::RCURLY) {
+                    self.advance();
+                }
+
+                self.skip_newline();
             }
             
             if !self.current_is_type(TokenType::RCURLY) {
@@ -1378,6 +1384,7 @@ impl<'life> Parser<'life> {
 
         while !self.current_is_type(TokenType::RSQUARE) && !self.current_is_type(TokenType::EOF) {
             elements.push(self.expr(Precedence::Lowest));
+            self.skip_newline();
             if !self.current_is_type(TokenType::COMMA) && !self.current_is_type(TokenType::RSQUARE) {
                 self.raise_error("Expected comma.", ErrorType::InvalidTok);
             }
@@ -1385,6 +1392,7 @@ impl<'life> Parser<'life> {
                 break;
             }
             self.advance();
+            self.skip_newline();
         }
         if !self.current_is_type(TokenType::RSQUARE) {
             self.raise_error("Expected right square bracket.", ErrorType::InvalidTok);
@@ -1864,6 +1872,12 @@ impl<'life> Parser<'life> {
             if !self.current_is_type(TokenType::COMMA) && !self.current_is_type(TokenType::RCURLY) {
                 self.raise_error("Expected comma.", ErrorType::InvalidTok);
             }
+
+            if self.current_is_type(TokenType::COMMA) && !self.current_is_type(TokenType::RCURLY) {
+                self.advance();
+            }
+
+            self.skip_newline();
         }
         
         if !self.current_is_type(TokenType::RCURLY) {

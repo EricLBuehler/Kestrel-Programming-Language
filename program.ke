@@ -1,5 +1,6 @@
 struct s {
-    a: f32
+    a: f32,
+    b: f32
 }
 
 fn main() {
@@ -12,7 +13,8 @@ fn main() {
 
 fn f(x: f32) -> s{
     let y = s{
-        a=x
+        a=x,
+        b=x+1f32
     }
     y.a=12f32
     return y
