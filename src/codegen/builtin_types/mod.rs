@@ -22,9 +22,7 @@ pub mod functype;
 
 fn add_simple_type<'a>(codegen: &mut codegen::CodeGen<'a>, traits: HashMap<String, Trait<'a>>, basictype: BasicDataType, name: &str){
     let tp = Type {
-        attributes: HashMap::new(),
         traits,
-        methods: HashMap::new(),
         basictype,
     };
 

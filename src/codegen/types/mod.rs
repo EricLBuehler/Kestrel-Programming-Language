@@ -118,9 +118,7 @@ impl std::fmt::Display for TraitType {
 }
 
 pub struct Type<'a> {
-    pub attributes: std::collections::HashMap<String, Type<'a>>,
     pub traits: HashMap<String, Trait<'a>>,
-    pub methods: std::collections::HashMap<String, Method>,
     pub basictype: BasicDataType,
 }
 
@@ -129,10 +127,6 @@ pub struct Trait<'a> {
     pub function: fn(&codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>,
     pub traittype: TraitType,
     pub rettp: DataType<'a>
-}
-
-pub struct Method {
-    pub function: fn(Vec<Type>) -> Type,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
