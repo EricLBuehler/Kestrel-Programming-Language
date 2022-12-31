@@ -1148,9 +1148,11 @@ impl<'ctx> CodeGen<'ctx> {
 
         let array: inkwell::values::ArrayValue = self.inkwell_types.i8tp.const_array(&arrdata[..]);
 
+        let types: Vec<types::DataType> = vec![types::new_datatype(types::BasicDataType::I8, types::BasicDataType::I8.to_string(), None, Vec::new(), Vec::new(), None, false, None)];
+
         let data: types::Data = types::Data {
             data: Some(inkwell::values::BasicValueEnum::ArrayValue(array)),
-            tp: types::new_datatype(types::BasicDataType::Array, Self::array_repr(arraytp), None, Vec::new(), Vec::new(), None, false, Some(arraytp)),
+            tp: types::new_datatype(types::BasicDataType::Array, Self::array_repr(arraytp), None, types, Vec::new(), None, false, Some(arraytp)),
             owned: true,
         };
         return data;
@@ -1199,6 +1201,8 @@ impl<'ctx> CodeGen<'ctx> {
             }
         }
 
+        let firstdatatp: types::DataType = data_elem.first().unwrap().tp.clone();
+
         let arraytp: inkwell::types::ArrayType = firsttp.array_type(elements.len() as u32);
         let array: inkwell::values::PointerValue = self.builder.build_alloca(arraytp, "arr");
 
@@ -1209,7 +1213,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         let data: types::Data = types::Data {
             data: Some(inkwell::values::BasicValueEnum::PointerValue(array)),
-            tp: types::new_datatype(types::BasicDataType::Array, Self::array_repr(arraytp), None, Vec::new(), Vec::new(), None, false, Some(arraytp)),
+            tp: types::new_datatype(types::BasicDataType::Array, Self::array_repr(arraytp), None, vec![firstdatatp], Vec::new(), None, false, Some(arraytp)),
             owned: true,
         };
         return data;
