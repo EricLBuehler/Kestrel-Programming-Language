@@ -31,6 +31,7 @@ pub enum ErrorType {
     CannotDefineFnArray,
     ZeroLengthArray,
     EmptyCharLiteral,
+    GlobalScopeStmt,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -65,6 +66,7 @@ impl std::fmt::Display for ErrorType {
             ErrorType::CannotDefineFnArray => write!(f, "cannot define fn array"),
             ErrorType::ZeroLengthArray => write!(f, "cannot define zero length array"),
             ErrorType::EmptyCharLiteral => write!(f, "char literals cannot be empty"),
+            ErrorType::GlobalScopeStmt => write!(f, "cannot have other statements in the global scope"),
         }
     }
 }

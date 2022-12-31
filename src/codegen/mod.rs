@@ -1464,6 +1464,11 @@ impl<'ctx> CodeGen<'ctx> {
                 let fmt: String = format!("Cannot define nested functions.");
                 errors::raise_error(&fmt, errors::ErrorType::NestedFunctions, &node.pos, self.info);
             }
+            if  !infn && node.tp != parser::NodeType::FUNC &&
+                node.tp != parser::NodeType::STRUCT {
+                let fmt: String = format!("Invalid global scope statement.");
+                errors::raise_error(&fmt, errors::ErrorType::GlobalScopeStmt, &node.pos, self.info);
+            }
             retv = self.compile_expr(node, false, false);
         }
         return retv;
