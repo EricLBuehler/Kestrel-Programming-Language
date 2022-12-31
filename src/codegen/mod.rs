@@ -738,6 +738,11 @@ impl<'ctx> CodeGen<'ctx> {
         let right: types::Data = self.compile_expr(&node.data.assign.as_ref().unwrap().expr, true, false);
 
         let name: String = node.data.assign.as_ref().unwrap().name.clone();
+        
+        if self.get_variable(&name) == None {
+            let fmt: String = format!("Name '{}' is not defined in namespace.", name);
+            errors::raise_error(&fmt, errors::ErrorType::NameNotFound, &node.pos, self.info);
+        }
 
         if right.data == None{
             let fmt: String = format!("Cannot assign to '{}'.", right.tp.to_string());
