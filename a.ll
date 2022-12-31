@@ -36,10 +36,10 @@ entry:
   %f32sum = fadd float %x1, 1.000000e+00, !dbg !15
   %x2 = load float, float* %x, !dbg !15
   %s = alloca { float, float }, !dbg !15
-  %b = getelementptr inbounds { float, float }, { float, float }* %s, i32 0, i32 1, !dbg !15
-  store float %x2, float* %b, !dbg !15
   %a = getelementptr inbounds { float, float }, { float, float }* %s, i32 0, i32 0, !dbg !15
   store float %f32sum, float* %a, !dbg !15
+  %b = getelementptr inbounds { float, float }, { float, float }* %s, i32 0, i32 1, !dbg !15
+  store float %x2, float* %b, !dbg !15
   %s3 = load { float, float }, { float, float }* %s, !dbg !15
   %y = alloca { float, float }, !dbg !15
   store { float, float } %s3, { float, float }* %y, !dbg !15

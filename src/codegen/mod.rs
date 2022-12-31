@@ -1012,10 +1012,10 @@ impl<'ctx> CodeGen<'ctx> {
         
         let ptr: inkwell::values::PointerValue = self.builder.build_alloca(s.1.into_struct_type(), name.as_str());
 
-        for member in members {
-            if member.1.data.is_some() {
-                let itmptr: inkwell::values::PointerValue = self.builder.build_struct_gep(ptr, *s.2.get(&member.0).unwrap() as u32, member.0.as_str()).expect("GEP Error");
-                self.builder.build_store(itmptr, member.1.data.unwrap());
+        for member in &node.data.initst.as_ref().unwrap().members_vec {
+            if members.get(member).unwrap().data.is_some() {
+                let itmptr: inkwell::values::PointerValue = self.builder.build_struct_gep(ptr, *s.2.get(member).unwrap() as u32, &member.as_str()).expect("GEP Error");
+                self.builder.build_store(itmptr, members.get(member).unwrap().data.unwrap());
             }
         }
         
