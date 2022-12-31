@@ -71,6 +71,24 @@ impl std::fmt::Display for ErrorType {
     }
 }
 
+
+#[derive(Clone)]
+pub enum WarningType {
+    ExpectedCamelCase,
+    ExpectedSnakeCase,
+}
+
+impl std::fmt::Display for WarningType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            WarningType::ExpectedCamelCase => write!(f, "expected camel case"),
+            WarningType::ExpectedSnakeCase => write!(f, "expected snake case"),
+        }
+    }
+}
+
+
+
 pub fn raise_error(error: &str, errtp: ErrorType, pos: &crate::parser::Position, info: &crate::fileinfo::FileInfo) -> !{
     let header: String = format!("error[E{:0>3}]: {}", errtp as u8 + 1, error);
     let location: String = format!("{}:{}:{}", info.name, pos.line+1, pos.startcol+1);
@@ -131,4 +149,42 @@ pub fn raise_error_multi(errtp: ErrorType, err: Vec<String>, pos: Vec<&crate::pa
         println!("{} | {}", " ".repeat(linestr.len()), arrows.green());
     }
     std::process::exit(1);
+}
+
+pub fn show_warning(warntp: WarningType, text: Vec<String>, warning: Vec<String>, pos: &crate::parser::Position, info: &crate::fileinfo::FileInfo){
+    let mut idx: usize = 0;
+    for (warn, text) in std::iter::zip(&warning, text) {
+        let location: String = format!("{}:{}:{}", info.name, pos.line+1, pos.startcol+1);
+        if idx != 0 {
+            let header: String = format!("{}", warn);
+            println!("{}", header.bright_yellow().bold());
+            idx += 1;
+            let txt: String = format!("{}", text);
+            let linestr = (pos.line+1).to_string().blue().bold();
+            println!("{} | {}", linestr, txt.green());
+        }
+        else {
+            let header: String = format!("warning[W{:0>3}]: {}", warntp.clone() as u8 + 1, warn);
+            println!("{}", header.bright_yellow().bold());
+            idx += 1;
+            println!("{}", location.red());
+            let lines = Vec::from_iter(info.data.split(|num| *num as char == '\n'));
+
+            let snippet: String = format!("{}", String::from_utf8(lines.get(pos.line).unwrap().to_vec()).unwrap().blue());
+            let mut arrows: String = String::new();
+            for idx in 0..snippet.len() {
+                if (idx as usize)>=pos.startcol && (idx as usize)<pos.endcol {
+                    arrows += "^";
+                }
+                else {
+                    arrows += " ";
+                }
+            }
+            let linestr = (pos.line+1).to_string().blue().bold();
+            println!("{} | {}", linestr, snippet);
+            println!("{} | {}", " ".repeat(linestr.len()), arrows.green());
+        }
+    }
+
+    println!("");
 }

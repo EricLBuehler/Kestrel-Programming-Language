@@ -1,5 +1,6 @@
 //Generate LLVM-IR
 
+use inflector::Inflector;
 use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
@@ -423,6 +424,11 @@ impl<'ctx> CodeGen<'ctx> {
         let right: types::Data = self.compile_expr(&node.data.letn.as_ref().unwrap().expr, true, false);
 
         let name: String = node.data.letn.as_ref().unwrap().name.clone();
+        
+        if !name.is_snake_case() {
+            errors::show_warning(errors::WarningType::ExpectedSnakeCase, vec![String::from(""), name.to_snake_case()], vec![String::from("Expected snake case"), String::from("Convert to this: ")], &node.pos, self.info)
+        }
+
         if self.get_variable(&name) != None {
             let fmt: String = format!("Name '{}' is already defined in namespace.", name);
             errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
@@ -517,6 +523,11 @@ impl<'ctx> CodeGen<'ctx> {
     
     fn build_func(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         let name: &String = &node.data.func.as_ref().unwrap().name;
+
+        if !name.is_snake_case() {
+            errors::show_warning(errors::WarningType::ExpectedSnakeCase, vec![String::from(""), name.to_snake_case()], vec![String::from("Expected snake case"), String::from("Convert to this: ")], &node.pos, self.info)
+        }
+
         if self.get_function(&name) != None && self.get_function(&name).unwrap().2 != ForwardDeclarationType::Forward {
             let fmt: String = format!("Function '{}' is already defined.", name);
             errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
@@ -946,6 +957,10 @@ impl<'ctx> CodeGen<'ctx> {
             let fmt: String = format!("Struct '{}' is already defined.", node.data.st.as_ref().unwrap().name.clone());
             errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
         }
+        
+        if !node.data.st.as_ref().unwrap().name.is_camel_case() {
+            errors::show_warning(errors::WarningType::ExpectedCamelCase, vec![String::from(""), node.data.st.as_ref().unwrap().name.to_camel_case()], vec![String::from("Expected camel case"), String::from("Convert to this: ")], &node.pos, self.info)
+        }
 
         let mut names: Vec<String> = Vec::new();
         let mut types: Vec<(types::DataType, AnyTypeEnum)> = Vec::new();
@@ -955,6 +970,9 @@ impl<'ctx> CodeGen<'ctx> {
 
         let mut idx = 0;
         for member in &node.data.st.as_ref().unwrap().members {
+            if !member.0.is_camel_case() {
+                errors::show_warning(errors::WarningType::ExpectedSnakeCase, vec![String::from(""), member.0.to_camel_case()], vec![String::from("Expected snake case"), String::from("Convert to this: ")], &node.pos, self.info)
+            }
             if names.contains(&member.0.clone()) {
                 let fmt: String = format!("Field '{}' is already declared.", member.0.clone());
                 errors::raise_error(&fmt, errors::ErrorType::FieldRedeclaration, &node.pos, self.info);
@@ -1478,6 +1496,11 @@ impl<'ctx> CodeGen<'ctx> {
         for node in nodes {
             if node.tp == parser::NodeType::FUNC {
                 let name: &String = &node.data.func.as_ref().unwrap().name;
+
+                if !name.is_snake_case() {
+                    errors::show_warning(errors::WarningType::ExpectedSnakeCase, vec![String::from(""), name.to_snake_case()], vec![String::from("Expected snake case"), String::from("Convert to this: ")], &node.pos, self.info)
+                }
+
                 if self.get_function(&name) != None {
                     let fmt: String = format!("Function '{}' is already defined.", name);
                     errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
@@ -1557,6 +1580,10 @@ impl<'ctx> CodeGen<'ctx> {
                 self.namespaces.functions.insert(name.clone(), (func, types::new_datatype(types::BasicDataType::Func, types::BasicDataType::Func.to_string(), Some(node.data.func.as_ref().unwrap().args.name.clone()), datatypes.clone(), mutability.clone(), Some(rettp_full.0.clone()), false, None), ForwardDeclarationType::Forward));
             }
             else if node.tp == parser::NodeType::STRUCT {
+                if !node.data.st.as_ref().unwrap().name.is_camel_case() {
+                    errors::show_warning(errors::WarningType::ExpectedCamelCase, vec![String::from(""), node.data.st.as_ref().unwrap().name.to_camel_case()], vec![String::from("Expected camel case"), String::from("Convert to this: ")], &node.pos, self.info)
+                }
+                    
                 let mut names: Vec<String> = Vec::new();
                 let mut types: Vec<(types::DataType, AnyTypeEnum)> = Vec::new();
                 let mut simpletypes: Vec<types::DataType> = Vec::new();
@@ -1565,6 +1592,9 @@ impl<'ctx> CodeGen<'ctx> {
 
                 let mut idx = 0;
                 for member in &node.data.st.as_ref().unwrap().members {
+                    if !member.0.is_camel_case() {
+                        errors::show_warning(errors::WarningType::ExpectedSnakeCase, vec![String::from(""), member.0.to_camel_case()], vec![String::from("Expected snake case"), String::from("Convert to this: ")], &node.pos, self.info)
+                    }
                     if names.contains(&member.0.clone()) {
                         let fmt: String = format!("Field '{}' is already declared.", member.0.clone());
                         errors::raise_error(&fmt, errors::ErrorType::FieldRedeclaration, &node.pos, self.info);
