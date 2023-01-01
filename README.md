@@ -3,7 +3,7 @@ The Kestrel Programming Language is a statically and strongly typed, compiled pr
 
 ## Depenendancies
 See [more](Cargo.toml) details.
-- ```inkwell``` - ```llvm10-0```
+- ```inkwell``` (using ```llvm10-0```)
 
 ## Links
 - [Documentation](/docs/)
