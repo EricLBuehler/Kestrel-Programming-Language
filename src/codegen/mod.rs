@@ -993,9 +993,9 @@ impl<'ctx> CodeGen<'ctx> {
             }
         }
 
-        for (member, tp, name) in izip!(&members, &s.0.types, s.0.names.as_ref().unwrap()) {
-            if member.1.tp != *tp {
-                let fmt: String = format!("Expected '{}' type for member '{}', got '{}'.", tp, name, member.1.tp);
+        for (member, tp, name) in izip!(&node.data.initst.as_ref().unwrap().members_vec, &s.0.types, s.0.names.as_ref().unwrap()) {
+            if members.get(member).unwrap().tp != *tp {
+                let fmt: String = format!("Expected '{}' type for member '{}', got '{}'.", tp, name, members.get(member).unwrap().tp);
                 errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
             }
         }
