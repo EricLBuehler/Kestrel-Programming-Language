@@ -31,7 +31,7 @@ pub struct DataType<'a> {
     pub rettp: Option<Box<DataType<'a>>>,
     pub is_ref: bool,
     pub arrtp: Option<inkwell::types::ArrayType<'a>>,
-    pub methods: Vec<Method>,
+    pub methods: Vec<Method<'a>>,
 }
 pub enum TraitType {
     Add,
@@ -142,7 +142,7 @@ pub struct DataOwnership{
     pub transferred: Option<crate::parser::Position>,
 }
 
-pub fn new_datatype<'a>(tp: BasicDataType, name: String, names: Option<Vec<String>>, types: Vec<DataType<'a>>, mutability: Vec<DataMutablility>, rettp_opt: Option<DataType<'a>>, is_ref: bool, arrtp: Option<inkwell::types::ArrayType<'a>>, methods: Vec<Method>) -> DataType<'a> {
+pub fn new_datatype<'a>(tp: BasicDataType, name: String, names: Option<Vec<String>>, types: Vec<DataType<'a>>, mutability: Vec<DataMutablility>, rettp_opt: Option<DataType<'a>>, is_ref: bool, arrtp: Option<inkwell::types::ArrayType<'a>>, methods: Vec<Method<'a>>) -> DataType<'a> {
     return DataType {
         tp,
         names,
@@ -171,6 +171,20 @@ pub fn basic_to_metadata(basic: inkwell::values::BasicValueEnum) -> inkwell::val
 }
 
 #[derive(Clone, Debug)]
-pub struct Method {
+pub enum MethodType {
+    //Builtin,
+    //Fn,
+}
 
+#[derive(Clone)]
+pub struct Method<'a> {
+    pub tp: MethodType,
+    pub builtin: Option<fn(&codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>>,
+    pub func: Option<Data<'a>>,
+}
+
+impl<'a> std::fmt::Debug for Method<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.tp)
+    }
 }
