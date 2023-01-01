@@ -1847,6 +1847,7 @@ impl<'life> Parser<'life> {
         self.advance();
 
         let mut members: std::collections::HashMap<String, Type> = std::collections::HashMap::new();
+        let mut names: Vec<String> = Vec::new();
         
         self.skip_newline();
 
@@ -1871,7 +1872,8 @@ impl<'life> Parser<'life> {
 
             let (_, tp) = self.parse_type(crate::codegen::types::DataMutablility::Mutable);
             
-            members.insert(name, tp);
+            members.insert(name.clone(), tp);
+            names.push(name);
 
             self.skip_newline();
 
@@ -1894,6 +1896,7 @@ impl<'life> Parser<'life> {
 
         let st: nodes::StructNode = nodes::StructNode{
             name,
+            names,
             members,
         };
     

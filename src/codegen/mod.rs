@@ -930,19 +930,19 @@ impl<'ctx> CodeGen<'ctx> {
         let mut idxmapping: std::collections::HashMap<String, i32> = std::collections::HashMap::new();
 
         let mut idx = 0;
-        for member in &node.data.st.as_ref().unwrap().members {
-            if !member.0.is_camel_case() {
-                errors::show_warning(errors::WarningType::ExpectedSnakeCase, vec![String::from(""), member.0.to_camel_case()], vec![String::from("Expected snake case"), String::from("Convert to this: ")], &node.pos, self.info)
+        for member in &node.data.st.as_ref().unwrap().names {
+            if !member.is_camel_case() {
+                errors::show_warning(errors::WarningType::ExpectedSnakeCase, vec![String::from(""), member.to_camel_case()], vec![String::from("Expected snake case"), String::from("Convert to this: ")], &node.pos, self.info)
             }
-            if names.contains(&member.0.clone()) {
-                let fmt: String = format!("Field '{}' is already declared.", member.0.clone());
+            if names.contains(&member.clone()) {
+                let fmt: String = format!("Field '{}' is already declared.", member.clone());
                 errors::raise_error(&fmt, errors::ErrorType::FieldRedeclaration, &node.pos, self.info);
             }
-            names.push(member.0.clone());
-            types.push(Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, member.1, node));
-            simpletypes.push(Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, member.1, node).0);
+            names.push(member.clone());
+            types.push(Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, node.data.st.as_ref().unwrap().members.get(member).unwrap(), node));
+            simpletypes.push(Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, node.data.st.as_ref().unwrap().members.get(member).unwrap(), node).0);
             mutabilitites.push(types::DataMutablility::Mutable);
-            idxmapping.insert(member.0.clone(), idx);
+            idxmapping.insert(member.clone(), idx);
             idx+=1;
         }
 
@@ -1002,7 +1002,7 @@ impl<'ctx> CodeGen<'ctx> {
         }
         
         let ptr: inkwell::values::PointerValue = self.builder.build_alloca(s.1.into_struct_type(), name.as_str());
-
+        
         for member in &node.data.initst.as_ref().unwrap().members_vec {
             if members.get(member).unwrap().data.is_some() {
                 let itmptr: inkwell::values::PointerValue = self.builder.build_struct_gep(ptr, *s.2.get(member).unwrap() as u32, &member.as_str()).expect("GEP Error");

@@ -174,6 +174,7 @@ impl std::fmt::Display for UnaryNode {
 #[derive(Clone, Debug)]
 pub struct StructNode{
     pub name: String,
+    pub names: Vec<String>,
     pub members: std::collections::HashMap<String, crate::parser::Type>,
 }
 
