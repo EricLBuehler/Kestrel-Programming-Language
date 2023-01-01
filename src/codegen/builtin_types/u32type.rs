@@ -95,6 +95,7 @@ pub fn init_u32(codegen: &mut codegen::CodeGen) {
     let tp: DataType = new_datatype(BasicDataType::U32, BasicDataType::U32.to_string(), None, Vec::new(), Vec::new(), None, false, None, Vec::new());
 
     codegen.datatypes.insert(BasicDataType::U32.to_string(), tp.clone());
+    codegen.datatypes.insert(String::from("char"), tp.clone()); //Alias
 
     traits.insert(TraitType::Add.to_string(), builtin_types::create_trait(u32_add, 2, TraitType::Add, tp.clone()));
     traits.insert(TraitType::Mul.to_string(), builtin_types::create_trait(u32_mul, 2, TraitType::Mul, tp.clone()));

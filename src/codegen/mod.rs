@@ -951,6 +951,7 @@ impl<'ctx> CodeGen<'ctx> {
         tp.types = simpletypes.clone();
         tp.mutability = mutabilitites;
 
+        self.datatypes.insert(node.data.st.as_ref().unwrap().name.clone(), tp.clone());
         self.namespaces.structs.insert(node.data.st.as_ref().unwrap().name.clone(), (tp, Self::build_struct_tp_from_types(self.context, &self.inkwell_types, &simpletypes), idxmapping, ForwardDeclarationType::Real));
 
         let data: types::Data = types::Data {
@@ -1593,7 +1594,8 @@ impl<'ctx> CodeGen<'ctx> {
                 tp.names = Some(names);
                 tp.types = simpletypes.clone();
                 tp.mutability = mutabilitites;
-
+                
+                self.datatypes.insert(node.data.st.as_ref().unwrap().name.clone(), tp.clone());
                 self.namespaces.structs.insert(node.data.st.as_ref().unwrap().name.clone(), (tp, Self::build_struct_tp_from_types(self.context, &self.inkwell_types, &simpletypes),idxmapping, ForwardDeclarationType::Forward));
             }
         }
