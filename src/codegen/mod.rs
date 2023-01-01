@@ -38,7 +38,7 @@ pub enum ForwardDeclarationType {
 }
 
 pub struct Namespaces<'ctx> {
-    locals: std::collections::HashMap<String, (Option<inkwell::values::PointerValue<'ctx>>, types::DataType<'ctx>, types::DataMutablility, types::DataOwnership)>,
+    locals: std::collections::HashMap<String, (Option<inkwell::values::PointerValue<'ctx>>, types::DataType<'ctx>, types::DataMutablility, types::DataOwnership, parser::Position)>,
     functions: std::collections::HashMap<String, (inkwell::values::FunctionValue<'ctx>, types::DataType<'ctx>, ForwardDeclarationType)>,
     structs: std::collections::HashMap<String, (types::DataType<'ctx>, inkwell::types::AnyTypeEnum<'ctx>, std::collections::HashMap<String, i32>, ForwardDeclarationType)>,
 }
@@ -59,7 +59,7 @@ pub struct CodeGen<'ctx> {
 
 //Codegen functions
 impl<'ctx> CodeGen<'ctx> {
-    fn get_variable(&self, name: &String) -> Option<&(Option<inkwell::values::PointerValue<'ctx>>, types::DataType<'ctx>, types::DataMutablility, types::DataOwnership)>{
+    fn get_variable(&self, name: &String) -> Option<&(Option<inkwell::values::PointerValue<'ctx>>, types::DataType<'ctx>, types::DataMutablility, types::DataOwnership, parser::Position)>{
         if self.namespaces.locals.iter().find(|x| *x.0 == *name) != None {
             return self.namespaces.locals.get(name);
         }
@@ -385,8 +385,9 @@ impl<'ctx> CodeGen<'ctx> {
         }
 
         if self.get_variable(&name) != None {
-            let fmt: String = format!("Name '{}' is already defined in namespace.", name);
-            errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
+            let fmt: String = format!("Name '{}' is already defined in namespace.", &name);
+            let here: String = format!("'{}' defined here.", name);
+            errors::raise_error_multi(errors::ErrorType::RedefinitionAttempt, vec![here, fmt], vec![&self.get_variable(&name).unwrap().4, &node.pos], self.info);
         }
 
         let mut tp: types::DataType = right.tp;
@@ -405,10 +406,10 @@ impl<'ctx> CodeGen<'ctx> {
                 }
             }
 
-            self.namespaces.locals.insert(name, (Some(ptr), tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}));
+            self.namespaces.locals.insert(name, (Some(ptr), tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone()));
         }
         else {
-            self.namespaces.locals.insert(name, (None, tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}));            
+            self.namespaces.locals.insert(name, (None, tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone()));            
         }
         let data: types::Data = types::Data {
             data: None,
@@ -448,7 +449,7 @@ impl<'ctx> CodeGen<'ctx> {
         let owner: types::DataOwnership = self.get_variable(&name).unwrap().3.clone();
 
         if give_ownership {
-            self.namespaces.locals.insert(name.clone(), (self.get_variable(&name).unwrap().0, self.get_variable(&name).unwrap().1.clone(), self.get_variable(&name).unwrap().2, types::DataOwnership {owned: false, transferred: Some(node.pos.clone())}));
+            self.namespaces.locals.insert(name.clone(), (self.get_variable(&name).unwrap().0, self.get_variable(&name).unwrap().1.clone(), self.get_variable(&name).unwrap().2, types::DataOwnership {owned: false, transferred: Some(node.pos.clone())}, self.get_variable(&name).unwrap().4.clone()));
         }
 
         if ptr.is_some() {
@@ -633,7 +634,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         
         //Setup locals
-        let prev_locals: std::collections::HashMap<String, (Option<inkwell::values::PointerValue>, types::DataType, types::DataMutablility, types::DataOwnership)> = self.namespaces.locals.to_owned();
+        let prev_locals: std::collections::HashMap<String, (Option<inkwell::values::PointerValue>, types::DataType, types::DataMutablility, types::DataOwnership, parser::Position)> = self.namespaces.locals.to_owned();
         self.namespaces.locals = std::collections::HashMap::new();
         
         //Setup arguments
@@ -652,10 +653,10 @@ impl<'ctx> CodeGen<'ctx> {
             
                 self.builder.build_store(ptr, argv.unwrap());
 
-                self.namespaces.locals.insert(name.to_string(), (Some(ptr), tp.clone(), mutability.get(idx_mut).unwrap().clone(), types::DataOwnership {owned: true, transferred: None}));
+                self.namespaces.locals.insert(name.to_string(), (Some(ptr), tp.clone(), mutability.get(idx_mut).unwrap().clone(), types::DataOwnership {owned: true, transferred: None}, node.pos.clone()));
             }
             else {
-                self.namespaces.locals.insert(name.to_string(), (None, tp.clone(), types::DataMutablility::Immutable, types::DataOwnership {owned: true, transferred: None}));
+                self.namespaces.locals.insert(name.to_string(), (None, tp.clone(), types::DataMutablility::Immutable, types::DataOwnership {owned: true, transferred: None}, node.pos.clone()));
             }
             idx_mut += 1;
         }
@@ -735,7 +736,7 @@ impl<'ctx> CodeGen<'ctx> {
         if ptr.is_some() {
             self.builder.build_store(ptr.unwrap(), right.data.unwrap());
 
-            self.namespaces.locals.insert(name, (ptr, right.tp.clone(), types::DataMutablility::Mutable, types::DataOwnership {owned: true, transferred: None}));
+            self.namespaces.locals.insert(name, (ptr, right.tp.clone(), types::DataMutablility::Mutable, types::DataOwnership {owned: true, transferred: None}, node.pos.clone()));
         }
 
         return right;
