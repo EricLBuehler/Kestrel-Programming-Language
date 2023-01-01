@@ -140,25 +140,25 @@ pub fn print_tokens(len: usize, tokens: &Vec<Token>) {
 }
 
 pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Token>) {  
-    let mut vector: Vec<Token> = Vec::new();
+    let mut tokens: Vec<Token> = Vec::new();
 
     while lexer.current!=b'\0' {
         let cur: char = lexer.current.into();
         
         if cur.is_digit(10) {
-            vector.push(make_number(lexer));
+            tokens.push(make_number(lexer));
         }
         else if cur.is_alphabetic() || cur=='_'{
-            vector.push(make_identifier(lexer, kwds));
+            tokens.push(make_identifier(lexer, kwds));
         }
         else if cur=='"'{
-            vector.push(make_string(lexer));
+            tokens.push(make_string(lexer));
         }
         else if cur=='\''{
-            vector.push(make_char(lexer));
+            tokens.push(make_char(lexer));
         }
         else if cur == '+' {
-            vector.push(Token {
+            tokens.push(Token {
                 data: String::from("+"),
                 tp: TokenType::PLUS,
                 line: lexer.line,
@@ -168,7 +168,7 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
             advance(lexer);
         }
         else if cur == '-' {
-            vector.push(Token {
+            tokens.push(Token {
                 data: String::from("-"),
                 tp: TokenType::HYPHEN,
                 line: lexer.line,
@@ -177,8 +177,8 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
             });
             advance(lexer);
             if lexer.current == b'>' {     
-                let popped: Token = vector.pop().unwrap();           
-                vector.push(Token {
+                let popped: Token = tokens.pop().unwrap();           
+                tokens.push(Token {
                     data: String::from("->"),
                     tp: TokenType::SMALLARROW,
                     line: popped.line,
@@ -189,7 +189,7 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
             }
         }
         else if cur == '*' {
-            vector.push(Token {
+            tokens.push(Token {
                 data: String::from("*"),
                 tp: TokenType::ASTERISK,
                 line: lexer.line,
@@ -199,7 +199,7 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
             advance(lexer);
         }
         else if cur == '/' {
-            vector.push(Token {
+            tokens.push(Token {
                 data: String::from("/"),
                 tp: TokenType::FWSLASH,
                 line: lexer.line,
@@ -207,9 +207,15 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
                 endcol: lexer.col+1,
             });
             advance(lexer);
+            if lexer.current == '/' as u8 {
+                tokens.pop();
+                while lexer.current != '\n' as u8 && lexer.current != '\0' as u8 {
+                    advance(lexer);
+                }
+            }
         }
         else if cur == '=' {
-            vector.push(Token {
+            tokens.push(Token {
                 data: String::from("="),
                 tp: TokenType::EQUALS,
                 line: lexer.line,
@@ -219,7 +225,7 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
             advance(lexer);
         }
         else if cur == '{' {
-            vector.push(Token {
+            tokens.push(Token {
                 data: String::from("{"),
                 tp: TokenType::LCURLY,
                 line: lexer.line,
@@ -229,7 +235,7 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
             advance(lexer);
         }
         else if cur == '}' {
-            vector.push(Token {
+            tokens.push(Token {
                 data: String::from("}"),
                 tp: TokenType::RCURLY,
                 line: lexer.line,
@@ -239,7 +245,7 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
             advance(lexer);
         }
         else if cur == '(' {
-            vector.push(Token {
+            tokens.push(Token {
                 data: String::from("("),
                 tp: TokenType::LPAREN,
                 line: lexer.line,
@@ -249,7 +255,7 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
             advance(lexer);
         }
         else if cur == ')' {
-            vector.push(Token {
+            tokens.push(Token {
                 data: String::from(")"),
                 tp: TokenType::RPAREN,
                 line: lexer.line,
@@ -259,7 +265,7 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
             advance(lexer);
         }
         else if cur == ':' {
-            vector.push(Token {
+            tokens.push(Token {
                 data: String::from(":"),
                 tp: TokenType::COLON,
                 line: lexer.line,
@@ -269,7 +275,7 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
             advance(lexer);
         }
         else if cur == ',' {
-            vector.push(Token {
+            tokens.push(Token {
                 data: String::from(","),
                 tp: TokenType::COMMA,
                 line: lexer.line,
@@ -279,7 +285,7 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
             advance(lexer);
         }
         else if cur == ';' as char || cur == '\r' as char || cur == '\n' as char {
-            vector.push(Token {
+            tokens.push(Token {
                 data: String::from("\\n"),
                 tp: TokenType::NEWLINE,
                 line: lexer.line,
@@ -290,7 +296,7 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
             lexer.col = 0;
         }
         else if cur == '&' {
-            vector.push(Token {
+            tokens.push(Token {
                 data: String::from("&"),
                 tp: TokenType::AMPERSAND,
                 line: lexer.line,
@@ -300,7 +306,7 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
             advance(lexer);
         }
         else if cur == '.' {
-            vector.push(Token {
+            tokens.push(Token {
                 data: String::from("."),
                 tp: TokenType::DOT,
                 line: lexer.line,
@@ -310,7 +316,7 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
             advance(lexer);
         }
         else if cur == '[' {
-            vector.push(Token {
+            tokens.push(Token {
                 data: String::from("["),
                 tp: TokenType::LSQUARE,
                 line: lexer.line,
@@ -320,7 +326,7 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
             advance(lexer);
         }
         else if cur == ']' {
-            vector.push(Token {
+            tokens.push(Token {
                 data: String::from("]"),
                 tp: TokenType::RSQUARE,
                 line: lexer.line,
@@ -333,7 +339,7 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
             advance(lexer);
         }
         else {
-            vector.push(Token {
+            tokens.push(Token {
                 data: String::from(cur),
                 tp: TokenType::UNKNOWN,
                 line: lexer.line,
@@ -345,7 +351,7 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
 
     }
 
-    vector.push(Token {
+    tokens.push(Token {
         data: String::from("\\0"),
         tp: TokenType::EOF,
         line: lexer.line,
@@ -353,7 +359,7 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
         endcol: lexer.col+1,
     });
 
-    return (vector.len(), vector);
+    return (tokens.len(), tokens);
 }
 
 fn make_number(lexer: &mut Lexer) -> Token {

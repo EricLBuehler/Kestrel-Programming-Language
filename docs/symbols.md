@@ -21,3 +21,6 @@ Traits:
 ## ```.```: Attribute access / assignment
 Traits:
 None, internal implementation
+
+## ```//```: Comment
+Comment out the rest of the line
