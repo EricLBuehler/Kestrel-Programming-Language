@@ -727,8 +727,9 @@ impl<'life> Parser<'life> {
             endcol: 0,
         };
 
-        if left.tp != NodeType::IDENTIFIER {
-            self.raise_error_pos("Expected identifier", ErrorType::InvalidTok, left);
+        if  left.tp != NodeType::IDENTIFIER &&
+            left.tp != NodeType::ATTR {
+            self.raise_error_pos("Expected name", ErrorType::InvalidTok, left);
         }
 
         let mut args: Vec<Node> = Vec::new();

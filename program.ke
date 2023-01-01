@@ -9,6 +9,7 @@ fn main() {
     let name: i8[12] = "Kestrel 🦅"
     let char: char = '🦅'
     let arr: i32[2] = [x*x as i32,2]
+    arr.get(0)
 }
 
 fn f(x: f32) -> s{
