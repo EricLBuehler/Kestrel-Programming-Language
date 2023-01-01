@@ -28,9 +28,10 @@ pub struct DataType<'a> {
     pub types: Vec<DataType<'a>>,
     pub name: String,
     pub mutability: Vec<DataMutablility>,
-    pub rettp: Vec<DataType<'a>>, //Just for indirection
+    pub rettp: Option<Box<DataType<'a>>>,
     pub is_ref: bool,
     pub arrtp: Option<inkwell::types::ArrayType<'a>>,
+    pub methods: Vec<Method>,
 }
 pub enum TraitType {
     Add,
@@ -141,16 +142,17 @@ pub struct DataOwnership{
     pub transferred: Option<crate::parser::Position>,
 }
 
-pub fn new_datatype<'a>(tp: BasicDataType, name: String, names: Option<Vec<String>>, types: Vec<DataType<'a>>, mutability: Vec<DataMutablility>, rettp_opt: Option<DataType<'a>>, is_ref: bool, arrtp: Option<inkwell::types::ArrayType<'a>>) -> DataType<'a> {
+pub fn new_datatype<'a>(tp: BasicDataType, name: String, names: Option<Vec<String>>, types: Vec<DataType<'a>>, mutability: Vec<DataMutablility>, rettp_opt: Option<DataType<'a>>, is_ref: bool, arrtp: Option<inkwell::types::ArrayType<'a>>, methods: Vec<Method>) -> DataType<'a> {
     return DataType {
         tp,
         names,
         types,
         name,
         mutability,
-        rettp: if rettp_opt.is_some() {vec![rettp_opt.unwrap()]} else {Vec::new()},
+        rettp: if rettp_opt.is_some() {Some(Box::new(rettp_opt.unwrap()))} else {None},
         is_ref,
         arrtp,
+        methods,
     };
 }
 
@@ -166,4 +168,9 @@ pub fn basic_to_metadata(basic: inkwell::values::BasicValueEnum) -> inkwell::val
     }
 
     unimplemented!("basic_to_metadata");
+}
+
+#[derive(Clone, Debug)]
+pub struct Method {
+
 }

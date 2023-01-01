@@ -1,4 +1,4 @@
-use crate::codegen::types::{Trait, TraitType, Data, new_datatype, BasicDataType};
+use crate::codegen::types::{Trait, TraitType, Data, DataType, new_datatype, BasicDataType};
 use crate::codegen;
 use crate::codegen::builtin_types;
 use crate::parser;
@@ -25,7 +25,7 @@ fn f32_add<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::FloatValue(res)),
-        tp: new_datatype(BasicDataType::F32, BasicDataType::F32.to_string(), None, Vec::new(), Vec::new(), None, false, None),
+        tp: codegen.datatypes.get(&BasicDataType::F32.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -43,7 +43,7 @@ fn f32_mul<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::FloatValue(res)),
-        tp: new_datatype(BasicDataType::F32, BasicDataType::F32.to_string(), None, Vec::new(), Vec::new(), None, false, None),
+        tp: codegen.datatypes.get(&BasicDataType::F32.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -61,7 +61,7 @@ fn f32_sub<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::FloatValue(res)),
-        tp: new_datatype(BasicDataType::F32, BasicDataType::F32.to_string(), None, Vec::new(), Vec::new(), None, false, None),
+        tp: codegen.datatypes.get(&BasicDataType::F32.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -79,7 +79,7 @@ fn f32_div<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::FloatValue(res)),
-        tp: new_datatype(BasicDataType::F32, BasicDataType::F32.to_string(), None, Vec::new(), Vec::new(), None, false, None),
+        tp: codegen.datatypes.get(&BasicDataType::F32.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -96,19 +96,24 @@ fn f32_neg<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parse
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::FloatValue(res)),
-        tp: new_datatype(BasicDataType::F32, BasicDataType::F32.to_string(), None, Vec::new(), Vec::new(), None, false, None),
+        tp: codegen.datatypes.get(&BasicDataType::F32.to_string()).unwrap().clone(),
         owned: true,
     };
 }
 
 pub fn init_f32(codegen: &mut codegen::CodeGen) {
     let mut traits: HashMap<String, Trait> = HashMap::new();
-    traits.insert(TraitType::Add.to_string(), builtin_types::create_trait(f32_add, 2, TraitType::Add, new_datatype(BasicDataType::F32, BasicDataType::F32.to_string(), None, Vec::new(), Vec::new(), None, false, None)));
-    traits.insert(TraitType::Mul.to_string(), builtin_types::create_trait(f32_mul, 2, TraitType::Mul, new_datatype(BasicDataType::F32, BasicDataType::F32.to_string(), None, Vec::new(), Vec::new(), None, false, None)));
-    traits.insert(TraitType::Sub.to_string(), builtin_types::create_trait(f32_sub, 2, TraitType::Sub, new_datatype(BasicDataType::F32, BasicDataType::F32.to_string(), None, Vec::new(), Vec::new(), None, false, None)));
-    traits.insert(TraitType::Div.to_string(), builtin_types::create_trait(f32_div, 2, TraitType::Div, new_datatype(BasicDataType::F32, BasicDataType::F32.to_string(), None, Vec::new(), Vec::new(), None, false, None)));
-    traits.insert(TraitType::Pos.to_string(), builtin_types::create_trait(f32_pos, 1, TraitType::Pos, new_datatype(BasicDataType::F32, BasicDataType::F32.to_string(), None, Vec::new(), Vec::new(), None, false, None)));
-    traits.insert(TraitType::Neg.to_string(), builtin_types::create_trait(f32_neg, 1, TraitType::Neg, new_datatype(BasicDataType::F32, BasicDataType::F32.to_string(), None, Vec::new(), Vec::new(), None, false, None)));
+    
+    let tp: DataType = new_datatype(BasicDataType::F32, BasicDataType::F32.to_string(), None, Vec::new(), Vec::new(), None, false, None, Vec::new());
+
+    codegen.datatypes.insert(BasicDataType::F32.to_string(), tp.clone());
+
+    traits.insert(TraitType::Add.to_string(), builtin_types::create_trait(f32_add, 2, TraitType::Add, tp.clone()));
+    traits.insert(TraitType::Mul.to_string(), builtin_types::create_trait(f32_mul, 2, TraitType::Mul, tp.clone()));
+    traits.insert(TraitType::Sub.to_string(), builtin_types::create_trait(f32_sub, 2, TraitType::Sub, tp.clone()));
+    traits.insert(TraitType::Div.to_string(), builtin_types::create_trait(f32_div, 2, TraitType::Div, tp.clone()));
+    traits.insert(TraitType::Pos.to_string(), builtin_types::create_trait(f32_pos, 1, TraitType::Pos, tp.clone()));
+    traits.insert(TraitType::Neg.to_string(), builtin_types::create_trait(f32_neg, 1, TraitType::Neg, tp.clone()));
 
     builtin_types::add_simple_type(codegen, traits, BasicDataType::F32, BasicDataType::F32.to_string().as_str());
 }
