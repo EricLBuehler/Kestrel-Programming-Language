@@ -43,7 +43,7 @@ fn fn_call<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
 
     return Data {
         data: None,
-        tp: new_datatype(BasicDataType::Unit, BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None, false, None),
+        tp: new_datatype(BasicDataType::Void, BasicDataType::Void.to_string(), None, Vec::new(), Vec::new(), None, false, None),
         owned: true,
     };
 }

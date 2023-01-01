@@ -5,7 +5,7 @@ use std::collections::HashMap;
 pub enum BasicDataType {
     Unknown,
     I32,
-    Unit,
+    Void,
     Func,
     U32,
     I8,
@@ -53,7 +53,7 @@ impl std::fmt::Display for BasicDataType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
             BasicDataType::I32 => write!(f, "i32"),
-            BasicDataType::Unit => write!(f, "void"),
+            BasicDataType::Void => write!(f, "void"),
             BasicDataType::Func => write!(f, "fn"),
             BasicDataType::Unknown => write!(f, "UNKNOWN"),
             BasicDataType::U32 => write!(f, "u32"),

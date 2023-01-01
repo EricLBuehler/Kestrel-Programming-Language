@@ -19,6 +19,7 @@ pub mod f64type;
 
 pub mod voidtype;
 pub mod functype;
+pub mod arrtype;
 
 fn add_simple_type<'a>(codegen: &mut codegen::CodeGen<'a>, traits: HashMap<String, Trait<'a>>, basictype: BasicDataType, name: &str){
     let tp = Type {
@@ -70,4 +71,5 @@ pub fn init(codegen: &mut codegen::CodeGen) {
 
     voidtype::init_void(codegen);
     functype::init_func(codegen);
+    arrtype::init_array(codegen);
 }

@@ -138,8 +138,8 @@ impl<'ctx> CodeGen<'ctx> {
         else if *str_rep == types::BasicDataType::F64.to_string() {
             return Some(types::new_datatype(types::BasicDataType::F64, types::BasicDataType::F64.to_string(), None, Vec::new(), Vec::new(), None, false, None));
         }
-        else if *str_rep == types::BasicDataType::Unit.to_string() {
-            return Some(types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None, false, None));
+        else if *str_rep == types::BasicDataType::Void.to_string() {
+            return Some(types::new_datatype(types::BasicDataType::Void, types::BasicDataType::Void.to_string(), None, Vec::new(), Vec::new(), None, false, None));
         }
         else if *str_rep == String::from("char") {
             return Some(types::new_datatype(types::BasicDataType::U32, types::BasicDataType::U32.to_string(), None, Vec::new(), Vec::new(), None, false, None));
@@ -179,7 +179,7 @@ impl<'ctx> CodeGen<'ctx> {
             types::BasicDataType::F64 => {
                 return Some(inkwell::types::AnyTypeEnum::FloatType(*types.f64tp));
             }
-            types::BasicDataType::Unit => {
+            types::BasicDataType::Void => {
                 return Some(inkwell::types::AnyTypeEnum::VoidType(*types.voidtp));
             }
             types::BasicDataType::Func => {
@@ -457,7 +457,7 @@ impl<'ctx> CodeGen<'ctx> {
         }
         let data: types::Data = types::Data {
             data: None,
-            tp: types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None, false, None),
+            tp: types::new_datatype(types::BasicDataType::Void, types::BasicDataType::Void.to_string(), None, Vec::new(), Vec::new(), None, false, None),
             owned: true,
         };
         return data;
@@ -681,7 +681,7 @@ impl<'ctx> CodeGen<'ctx> {
         let mut idx_mut: usize = 0;
         for (name, tp) in std::iter::zip(&args.name, &datatypes) { 
             let mut argv: Option<inkwell::values::BasicValueEnum> = None;
-            if *tp != types::BasicDataType::Unit {
+            if *tp != types::BasicDataType::Void {
                 argv = func.get_nth_param(idx);
                 idx += 1;
             }
@@ -718,7 +718,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
 
 
-            if rettp_full.0.tp != types::BasicDataType::Unit {
+            if rettp_full.0.tp != types::BasicDataType::Void {
                 self.builder.build_return(Some(&retv.data.unwrap())); 
             }
             else {
@@ -989,7 +989,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         let data: types::Data = types::Data {
             data: None,
-            tp: types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None, false, None),
+            tp: types::new_datatype(types::BasicDataType::Void, types::BasicDataType::Void.to_string(), None, Vec::new(), Vec::new(), None, false, None),
             owned: true,
         };
         return data;
@@ -1067,11 +1067,11 @@ impl<'ctx> CodeGen<'ctx> {
 
         let mut idx: u32 = 0;
         for (attrn, tp) in izip![base.tp.names.as_ref().unwrap(), &base.tp.types] {
-            if tp.tp == types::BasicDataType::Unit {
+            if tp.tp == types::BasicDataType::Void {
                 if attrn == &attr {
                     let data: types::Data = types::Data {
                         data: None,
-                        tp: types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None, false, None),
+                        tp: types::new_datatype(types::BasicDataType::Void, types::BasicDataType::Void.to_string(), None, Vec::new(), Vec::new(), None, false, None),
                         owned: true,
                     };
                     return data;
@@ -1121,11 +1121,11 @@ impl<'ctx> CodeGen<'ctx> {
 
         let mut idx: u32 = 0;
         for (attrn, tp) in izip![base.tp.names.as_ref().unwrap(), &base.tp.types] {
-            if tp.tp == types::BasicDataType::Unit {
+            if tp.tp == types::BasicDataType::Void {
                 if attrn == &attr {
                     let data: types::Data = types::Data {
                         data: None,
-                        tp: types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None, false, None),
+                        tp: types::new_datatype(types::BasicDataType::Void, types::BasicDataType::Void.to_string(), None, Vec::new(), Vec::new(), None, false, None),
                         owned: true,
                     };
                     return data;
@@ -1153,7 +1153,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         let data: types::Data = types::Data {
             data: None,
-            tp: types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None, false, None),
+            tp: types::new_datatype(types::BasicDataType::Void, types::BasicDataType::Void.to_string(), None, Vec::new(), Vec::new(), None, false, None),
             owned: true,
         };
         return data;
@@ -1473,7 +1473,7 @@ impl<'ctx> CodeGen<'ctx> {
     fn compile(&mut self, nodes: &Vec<parser::Node>, infn: bool) -> types::Data<'ctx>{
         let mut retv: types::Data = types::Data {
             data: None,
-            tp: types::new_datatype(types::BasicDataType::Unit, types::BasicDataType::Unit.to_string(), None, Vec::new(), Vec::new(), None, false, None),
+            tp: types::new_datatype(types::BasicDataType::Void, types::BasicDataType::Void.to_string(), None, Vec::new(), Vec::new(), None, false, None),
             owned: true
         };
 
