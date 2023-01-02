@@ -95,6 +95,9 @@ pub fn init_u64(codegen: &mut codegen::CodeGen) {
     let tp: DataType = new_datatype(BasicDataType::U64, BasicDataType::U64.to_string(), None, Vec::new(), Vec::new(), None, false, None, Vec::new());
 
     codegen.datatypes.insert(BasicDataType::U64.to_string(), tp.clone());
+    if std::mem::size_of::<usize>() == std::mem::size_of::<u64>() {
+        codegen.datatypes.insert(String::from("usize"), tp.clone()); //Alias        
+    }
 
     traits.insert(TraitType::Add.to_string(), builtin_types::create_trait(u64_add, 2, TraitType::Add, tp.clone()));
     traits.insert(TraitType::Mul.to_string(), builtin_types::create_trait(u64_mul, 2, TraitType::Mul, tp.clone()));

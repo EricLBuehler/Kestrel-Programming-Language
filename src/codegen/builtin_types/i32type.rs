@@ -107,6 +107,9 @@ pub fn init_i32(codegen: &mut codegen::CodeGen) {
     let tp: DataType = new_datatype(BasicDataType::I32, BasicDataType::I32.to_string(), None, Vec::new(), Vec::new(), None, false, None, Vec::new());
 
     codegen.datatypes.insert(BasicDataType::I32.to_string(), tp.clone());
+    if std::mem::size_of::<isize>() == std::mem::size_of::<i32>() {
+        codegen.datatypes.insert(String::from("isize"), tp.clone()); //Alias        
+    }
 
     traits.insert(TraitType::Add.to_string(), builtin_types::create_trait(i32_add, 2, TraitType::Add, tp.clone()));
     traits.insert(TraitType::Mul.to_string(), builtin_types::create_trait(i32_mul, 2, TraitType::Mul, tp.clone()));
