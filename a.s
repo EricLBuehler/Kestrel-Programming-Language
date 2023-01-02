@@ -6,29 +6,30 @@
 _main:                                  # @_main
 # %bb.0:                                # %entry
 	subq	$40, %rsp
-	movl	$1067282596, 4(%rsp)    # imm = 0x3F9D70A4
-	movss	4(%rsp), %xmm0          # xmm0 = mem[0],zero,zero,zero
+	movl	$1067282596, (%rsp)     # imm = 0x3F9D70A4
+	movss	(%rsp), %xmm0           # xmm0 = mem[0],zero,zero,zero
 	callq	f
-	movb	$-123, 19(%rsp)
-	movb	$-90, 18(%rsp)
-	movb	$-97, 17(%rsp)
-	movb	$-16, 16(%rsp)
-	movb	$32, 15(%rsp)
-	movb	$108, 14(%rsp)
-	movb	$101, 13(%rsp)
-	movb	$114, 12(%rsp)
-	movb	$116, 11(%rsp)
-	movb	$115, 10(%rsp)
+	movb	$-123, 15(%rsp)
+	movb	$-90, 14(%rsp)
+	movb	$-97, 13(%rsp)
+	movb	$-16, 12(%rsp)
+	movb	$32, 11(%rsp)
+	movb	$108, 10(%rsp)
 	movb	$101, 9(%rsp)
-	movb	$75, 8(%rsp)
+	movb	$114, 8(%rsp)
+	movb	$116, 7(%rsp)
+	movb	$115, 6(%rsp)
+	movb	$101, 5(%rsp)
+	movb	$75, 4(%rsp)
 	movl	$129413, 28(%rsp)       # imm = 0x1F985
-	movss	4(%rsp), %xmm0          # xmm0 = mem[0],zero,zero,zero
-	mulss	4(%rsp), %xmm0
+	movss	(%rsp), %xmm0           # xmm0 = mem[0],zero,zero,zero
+	mulss	(%rsp), %xmm0
 	cvttss2si	%xmm0, %eax
-	movl	%eax, 20(%rsp)
-	movl	$2, 20(%rsp)
-	leaq	20(%rsp), %rax
+	movl	%eax, 16(%rsp)
+	movl	$2, 16(%rsp)
+	leaq	16(%rsp), %rax
 	movq	%rax, 32(%rsp)
+	movl	$2, 24(%rsp)
 	addq	$40, %rsp
 	retq
 .Lfunc_end0:

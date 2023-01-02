@@ -24,6 +24,8 @@ entry:
   store i32 2, i32* %i324, !dbg !8
   %arr5 = alloca [2 x i32]*, !dbg !8
   store [2 x i32]* %arr, [2 x i32]** %arr5, !dbg !8
+  %len = alloca i32, !dbg !8
+  store i32 2, i32* %len, !dbg !8
   ret void, !dbg !8
 }
 
