@@ -172,7 +172,7 @@ pub fn basic_to_metadata(basic: inkwell::values::BasicValueEnum) -> inkwell::val
 
 #[derive(Clone, Debug)]
 pub enum MethodType {
-    //Builtin,
+    Builtin,
     //Fn,
 }
 
@@ -180,7 +180,8 @@ pub enum MethodType {
 pub struct Method<'a> {
     pub tp: MethodType,
     pub builtin: Option<fn(&codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>>,
-    pub func: Option<Data<'a>>,
+    pub func: Option<inkwell::values::PointerValue<'a>>,
+    pub functp: DataType<'a>,
 }
 
 impl<'a> std::fmt::Debug for Method<'a> {
