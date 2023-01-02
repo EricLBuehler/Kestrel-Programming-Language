@@ -21,6 +21,7 @@ pub mod voidtype;
 pub mod functype;
 pub mod arrtype;
 pub mod structtype;
+pub mod wrapperfntype;
 
 fn add_simple_type<'a>(codegen: &mut codegen::CodeGen<'a>, traits: HashMap<String, Trait<'a>>, basictype: BasicDataType, name: &str){
     let tp = Type {
@@ -74,4 +75,5 @@ pub fn init(codegen: &mut codegen::CodeGen) {
     functype::init_func(codegen);
     arrtype::init_array(codegen);
     structtype::init_struct(codegen);
+    wrapperfntype::init_wrapperfn(codegen);
 }

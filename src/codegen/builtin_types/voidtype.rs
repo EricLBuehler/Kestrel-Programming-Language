@@ -6,7 +6,7 @@ use std::collections::HashMap;
 pub fn init_void(codegen: &mut codegen::CodeGen) {
     let traits: HashMap<String, Trait> = HashMap::new();
     
-    let tp: DataType = new_datatype(BasicDataType::Void, BasicDataType::Void.to_string(), None, Vec::new(), Vec::new(), None, false, None, Vec::new());
+    let tp: DataType = new_datatype(BasicDataType::Void, BasicDataType::Void.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new());
 
     codegen.datatypes.insert(BasicDataType::Void.to_string(), tp);
 

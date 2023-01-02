@@ -43,16 +43,16 @@ fn fn_call<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
 
     return Data {
         data: None,
-        tp: new_datatype(BasicDataType::Void, BasicDataType::Void.to_string(), None, Vec::new(), Vec::new(), None, false, None, Vec::new()),
+        tp: codegen.datatypes.get(&BasicDataType::Void.to_string()).unwrap().clone(),
         owned: true,
     };
 }
 
 pub fn init_func(codegen: &mut codegen::CodeGen) {
     let mut traits: HashMap<String, Trait> = HashMap::new();
-    traits.insert(TraitType::Call.to_string(), builtin_types::create_trait(fn_call, 0, TraitType::Call, new_datatype(BasicDataType::Unknown, BasicDataType::Unknown.to_string(), None, Vec::new(), Vec::new(), None, false, None, Vec::new())));
+    traits.insert(TraitType::Call.to_string(), builtin_types::create_trait(fn_call, 0, TraitType::Call, new_datatype(BasicDataType::Unknown, BasicDataType::Unknown.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new())));
 
-    let tp: DataType = new_datatype(BasicDataType::Func, BasicDataType::Func.to_string(), None, Vec::new(), Vec::new(), None, false, None, Vec::new());
+    let tp: DataType = new_datatype(BasicDataType::Func, BasicDataType::Func.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new());
 
     codegen.datatypes.insert(BasicDataType::Func.to_string(), tp.clone());
 

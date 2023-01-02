@@ -20,8 +20,9 @@ pub enum BasicDataType {
     F64,
     Struct,
     Array,
+    WrapperFunc,
 }
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct DataType<'a> {
     pub tp: BasicDataType,
     pub names: Option<Vec<String>>,
@@ -31,8 +32,16 @@ pub struct DataType<'a> {
     pub rettp: Option<Box<DataType<'a>>>,
     pub is_ref: bool,
     pub arrtp: Option<inkwell::types::ArrayType<'a>>,
-    pub methods: Vec<Method<'a>>,
+    pub wrapperfn: Option<fn(&codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>>,
+    pub methods: std::collections::HashMap<String, Method<'a>>,
 }
+
+impl<'a> std::fmt::Debug for DataType<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.tp)
+    }
+}
+
 pub enum TraitType {
     Add,
     Mul,
@@ -70,6 +79,7 @@ impl std::fmt::Display for BasicDataType {
             BasicDataType::F64 => write!(f, "f64"),
             BasicDataType::Struct => write!(f, "Struct"),
             BasicDataType::Array => write!(f, "Array"),
+            BasicDataType::WrapperFunc => write!(f, "WrapperFn"),
         }
     }    
 }
@@ -142,7 +152,7 @@ pub struct DataOwnership{
     pub transferred: Option<crate::parser::Position>,
 }
 
-pub fn new_datatype<'a>(tp: BasicDataType, name: String, names: Option<Vec<String>>, types: Vec<DataType<'a>>, mutability: Vec<DataMutablility>, rettp_opt: Option<DataType<'a>>, is_ref: bool, arrtp: Option<inkwell::types::ArrayType<'a>>, methods: Vec<Method<'a>>) -> DataType<'a> {
+pub fn new_datatype<'a>(tp: BasicDataType, name: String, names: Option<Vec<String>>, types: Vec<DataType<'a>>, mutability: Vec<DataMutablility>, rettp_opt: Option<DataType<'a>>, is_ref: bool, arrtp: Option<inkwell::types::ArrayType<'a>>, methods: std::collections::HashMap<String, Method<'a>>) -> DataType<'a> {
     return DataType {
         tp,
         names,
@@ -152,6 +162,7 @@ pub fn new_datatype<'a>(tp: BasicDataType, name: String, names: Option<Vec<Strin
         rettp: if rettp_opt.is_some() {Some(Box::new(rettp_opt.unwrap()))} else {None},
         is_ref,
         arrtp,
+        wrapperfn: None,
         methods,
     };
 }
@@ -170,10 +181,10 @@ pub fn basic_to_metadata(basic: inkwell::values::BasicValueEnum) -> inkwell::val
     unimplemented!("basic_to_metadata");
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum MethodType {
     Builtin,
-    //Fn,
+    Fn,
 }
 
 #[derive(Clone)]

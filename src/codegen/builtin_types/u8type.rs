@@ -92,7 +92,7 @@ fn u8_pos<'a>(_codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parse
 pub fn init_u8(codegen: &mut codegen::CodeGen) {
     let mut traits: HashMap<String, Trait> = HashMap::new();
 
-    let tp: DataType = new_datatype(BasicDataType::U8, BasicDataType::U8.to_string(), None, Vec::new(), Vec::new(), None, false, None, Vec::new());
+    let tp: DataType = new_datatype(BasicDataType::U8, BasicDataType::U8.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new());
 
     codegen.datatypes.insert(BasicDataType::U8.to_string(), tp.clone());
 

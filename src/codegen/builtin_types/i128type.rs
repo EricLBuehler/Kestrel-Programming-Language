@@ -104,7 +104,7 @@ fn i128_neg<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &pars
 pub fn init_i128(codegen: &mut codegen::CodeGen) {
     let mut traits: HashMap<String, Trait> = HashMap::new();
 
-    let tp: DataType = new_datatype(BasicDataType::I128, BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None, false, None, Vec::new());
+    let tp: DataType = new_datatype(BasicDataType::I128, BasicDataType::I128.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new());
 
     codegen.datatypes.insert(BasicDataType::I128.to_string(), tp.clone());
 

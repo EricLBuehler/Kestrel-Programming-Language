@@ -104,7 +104,7 @@ fn i8_neg<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parser
 pub fn init_i8(codegen: &mut codegen::CodeGen) {
     let mut traits: HashMap<String, Trait> = HashMap::new();
 
-    let tp: DataType = new_datatype(BasicDataType::I8, BasicDataType::I8.to_string(), None, Vec::new(), Vec::new(), None, false, None, Vec::new());
+    let tp: DataType = new_datatype(BasicDataType::I8, BasicDataType::I8.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new());
 
     codegen.datatypes.insert(BasicDataType::I8.to_string(), tp.clone());
 

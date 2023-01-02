@@ -92,7 +92,7 @@ fn u64_pos<'a>(_codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &pars
 pub fn init_u64(codegen: &mut codegen::CodeGen) {
     let mut traits: HashMap<String, Trait> = HashMap::new();
 
-    let tp: DataType = new_datatype(BasicDataType::U64, BasicDataType::U64.to_string(), None, Vec::new(), Vec::new(), None, false, None, Vec::new());
+    let tp: DataType = new_datatype(BasicDataType::U64, BasicDataType::U64.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new());
 
     codegen.datatypes.insert(BasicDataType::U64.to_string(), tp.clone());
     if std::mem::size_of::<usize>() == std::mem::size_of::<u64>() {

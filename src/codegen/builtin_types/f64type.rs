@@ -104,7 +104,7 @@ fn f64_neg<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parse
 pub fn init_f64(codegen: &mut codegen::CodeGen) {
     let mut traits: HashMap<String, Trait> = HashMap::new();
 
-    let tp: DataType = new_datatype(BasicDataType::F64, BasicDataType::F64.to_string(), None, Vec::new(), Vec::new(), None, false, None, Vec::new());
+    let tp: DataType = new_datatype(BasicDataType::F64, BasicDataType::F64.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new());
 
     codegen.datatypes.insert(BasicDataType::F64.to_string(), tp.clone());
 

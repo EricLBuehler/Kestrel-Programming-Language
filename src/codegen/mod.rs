@@ -136,6 +136,9 @@ impl<'ctx> CodeGen<'ctx> {
             types::BasicDataType::Func => {
                 return None;
             }
+            types::BasicDataType::WrapperFunc => {
+                return None;
+            }
             types::BasicDataType::Struct => {
                 return Some(Self::build_struct_tp_from_types(ctx, types, &tp.types));
             }
@@ -1021,15 +1024,30 @@ impl<'ctx> CodeGen<'ctx> {
     fn build_attrload(&mut self, node: &parser::Node, get_ptr: bool) -> types::Data<'ctx> {
         let base: types::Data = self.compile_expr(&node.data.attr.as_ref().unwrap().name, false, true);
 
-        if base.tp.tp != types::BasicDataType::Struct {
-            let fmt: String = format!("Expected struct, got '{}'.", base.tp.tp);
-            errors::raise_error(&fmt, errors::ErrorType::GetAttrOfNonStruct, &node.pos, self.info);
-        }
-
         let attr: String = node.data.attr.as_ref().unwrap().attr.clone();
 
+        if base.tp.methods.get(&attr).is_some() {
+            let method: &types::Method = base.tp.methods.get(&attr).unwrap();
+            if method.tp == types::MethodType::Fn {
+                let data: types::Data = types::Data {
+                    data: Some(inkwell::values::BasicValueEnum::PointerValue(method.func.unwrap())),
+                    tp: method.functp.clone(),
+                    owned: true,
+                };
+                return data; 
+            }
+            let mut tp: types::DataType = self.datatypes.get(&types::BasicDataType::WrapperFunc.to_string()).unwrap().clone();
+            tp.wrapperfn = method.builtin;
+            let data: types::Data = types::Data {
+                data: None,
+                tp,
+                owned: true,
+            };
+            return data; 
+        }
+
         if !base.tp.names.as_ref().unwrap().contains(&attr) {
-            let fmt: String = format!("Struct '{}' has no attribute '{}'.", base.tp.name, attr);
+            let fmt: String = format!("Type '{}' has no attribute '{}'.", base.tp.name, attr);
             errors::raise_error(&fmt, errors::ErrorType::StructAttrNotFound, &node.pos, self.info);
         }
 
