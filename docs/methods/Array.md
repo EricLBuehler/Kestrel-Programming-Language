@@ -1,4 +1,4 @@
-# Array type methods
+# ```Array``` type methods
 
 ## ```length```
 The length method returns the length of an array as a ```usize```.
