@@ -5,7 +5,7 @@ use crate::parser;
 use std::collections::HashMap;
 
 fn wrapperfn_call<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
-    return args.get(0).unwrap().tp.wrapperfn.unwrap()(codegen, args, pos);
+    return args.get(0).unwrap().tp.wrapperfn.unwrap()(codegen, args[1..].to_vec(), pos);
 }
 
 pub fn init_wrapperfn(codegen: &mut codegen::CodeGen) {

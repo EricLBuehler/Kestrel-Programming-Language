@@ -42,6 +42,7 @@ impl<'a> std::fmt::Debug for DataType<'a> {
     }
 }
 
+#[derive(Clone)]
 pub enum TraitType {
     Add,
     Mul,
@@ -128,11 +129,13 @@ impl std::fmt::Display for TraitType {
     }    
 }
 
+#[derive(Clone)]
 pub struct Type<'a> {
     pub traits: HashMap<String, Trait<'a>>,
     pub basictype: BasicDataType,
 }
 
+#[derive(Clone)]
 pub struct Trait<'a> {
     pub nargs: usize,
     pub function: fn(&codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>,

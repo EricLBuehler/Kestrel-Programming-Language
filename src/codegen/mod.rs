@@ -279,8 +279,8 @@ impl<'ctx> CodeGen<'ctx> {
         return new;
     }
 
-    fn get_type_from_data(&self, data: &types::Data) -> &types::Type<'ctx> {
-        return self.types.get(&data.tp.to_string()).unwrap();
+    fn get_type_from_data(types: std::collections::HashMap<String, types::Type<'ctx>>, data: &types::Data) -> types::Type<'ctx> {
+        return types.get(&data.tp.to_string()).unwrap().clone();
     }
 
     fn get_basicmeta_from_any(tp: inkwell::types::AnyTypeEnum<'ctx>) -> Option<inkwell::types::BasicMetadataTypeEnum> {
@@ -339,7 +339,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         let mut args: Vec<types::Data> = Vec::new();
 
-        let tp: &types::Type = self.get_type_from_data(&left);
+        let tp: types::Type = Self::get_type_from_data(self.types.clone(), &left);
 
         let tp_str: &String = &left.tp.name.clone();
 
@@ -746,18 +746,58 @@ impl<'ctx> CodeGen<'ctx> {
     }
     
     fn build_call(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let callable: types::Data = self.compile_expr(&node.data.call.as_ref().unwrap().name, false, false);
-
         let mut args: Vec<types::Data> = Vec::new();
-        let tp_name: &String = &callable.tp.name.clone();
-        args.push(callable);
+        let tp_name: String;
+        let tp: types::Type;
+
+        if node.data.call.as_ref().unwrap().name.tp == parser::NodeType::ATTR {
+            let attr: &String = &node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().attr;
+
+            let base: types::Data = self.compile_expr(&node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().name, false, true); 
+
+            if base.tp.methods.get(attr).is_some() {
+                let method: &types::Method = base.tp.methods.get(attr).unwrap();
+                if method.tp == types::MethodType::Fn {
+                    let data: types::Data = types::Data {
+                        data: Some(inkwell::values::BasicValueEnum::PointerValue(method.func.unwrap())),
+                        tp: method.functp.clone(),
+                        owned: true,
+                    };
+                    args.push(base.clone());
+                    args.push(data);
+                    tp_name = method.functp.name.clone();
+                    tp = Self::get_type_from_data(self.types.clone(), &args.first().unwrap());
+                }
+                else {
+                    let mut tp_: types::DataType = self.datatypes.get(&types::BasicDataType::WrapperFunc.to_string()).unwrap().clone();
+                    tp_.wrapperfn = method.builtin;
+                    tp_name = tp_.name.clone();
+                    let data: types::Data = types::Data {
+                        data: None,
+                        tp: tp_,
+                        owned: true,
+                    };
+                    tp = Self::get_type_from_data(self.types.clone(), &data.clone());
+                    args.push(data);
+                    args.push(base.clone());
+                }
+            }
+            else{
+                let fmt: String = format!("Type '{}' has no method '{}'.", base.tp.name, attr);
+                errors::raise_error(&fmt, errors::ErrorType::StructAttrNotFound, &node.pos, self.info);
+            }
+        }
+        else {
+            let callable: types::Data = self.compile_expr(&node.data.call.as_ref().unwrap().name, false, false);
+            tp_name = callable.tp.name.clone();
+            args.push(callable);
+            tp = Self::get_type_from_data(self.types.clone(), &args.first().unwrap());
+        }
 
         for arg in &node.data.call.as_ref().unwrap().args{
             let v: types::Data = self.compile_expr(arg, true, false); 
             args.push(v);
         }
-
-        let tp: &types::Type = self.get_type_from_data(&args.first().unwrap());
 
         let t: &types::Trait = match tp.traits.get(&types::TraitType::Call.to_string()) {
             Some (v) => {
@@ -881,7 +921,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         let mut args: Vec<types::Data> = Vec::new();
 
-        let tp: &types::Type = self.get_type_from_data(&right);
+        let tp: types::Type = Self::get_type_from_data(self.types.clone(), &right);
 
         let tp_str: &String = &right.tp.name.clone();
 
@@ -1024,27 +1064,12 @@ impl<'ctx> CodeGen<'ctx> {
     fn build_attrload(&mut self, node: &parser::Node, get_ptr: bool) -> types::Data<'ctx> {
         let base: types::Data = self.compile_expr(&node.data.attr.as_ref().unwrap().name, false, true);
 
-        let attr: String = node.data.attr.as_ref().unwrap().attr.clone();
-
-        if base.tp.methods.get(&attr).is_some() {
-            let method: &types::Method = base.tp.methods.get(&attr).unwrap();
-            if method.tp == types::MethodType::Fn {
-                let data: types::Data = types::Data {
-                    data: Some(inkwell::values::BasicValueEnum::PointerValue(method.func.unwrap())),
-                    tp: method.functp.clone(),
-                    owned: true,
-                };
-                return data; 
-            }
-            let mut tp: types::DataType = self.datatypes.get(&types::BasicDataType::WrapperFunc.to_string()).unwrap().clone();
-            tp.wrapperfn = method.builtin;
-            let data: types::Data = types::Data {
-                data: None,
-                tp,
-                owned: true,
-            };
-            return data; 
+        if base.tp.tp != types::BasicDataType::Struct {
+            let fmt: String = format!("Expected struct, got '{}'.", base.tp.tp);
+            errors::raise_error(&fmt, errors::ErrorType::GetAttrOfNonStruct, &node.pos, self.info);
         }
+
+        let attr: String = node.data.attr.as_ref().unwrap().attr.clone();
 
         if !base.tp.names.as_ref().unwrap().contains(&attr) {
             let fmt: String = format!("Type '{}' has no attribute '{}'.", base.tp.name, attr);
