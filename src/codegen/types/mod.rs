@@ -92,15 +92,45 @@ impl<'a> std::fmt::Display for DataType<'a> {
 }
 
 impl<'a> PartialEq for DataType<'a> {
-    fn eq(&self, other: &DataType) -> bool {
+    fn eq(&self, other: &DataType<'a>) -> bool {
         if self.arrtp.is_some() && other.arrtp.is_some() {
             return self.arrtp.unwrap() == other.arrtp.unwrap();
         }
+
+        if self.tp==BasicDataType::Func && self.tp==BasicDataType::Func {
+            if  self.types != other.types || 
+                self.rettp != other.rettp ||
+                self.mutability != other.mutability {
+                    return false;
+                }
+                
+            if self.names.is_some() && other.names.is_some() {
+                if self.names.as_ref().unwrap() != other.names.as_ref().unwrap() {
+                    return false
+                }
+            }
+            
+            return true;
+        }
         return self.name == other.name;
     }
-    fn ne(&self, other: &DataType) -> bool {
+    fn ne(&self, other: &DataType<'a>) -> bool {
         if self.arrtp.is_some() && other.arrtp.is_some() {
             return self.arrtp.unwrap() != other.arrtp.unwrap();
+        }
+
+        if self.tp==BasicDataType::Func && self.tp==BasicDataType::Func {
+            if  self.types == other.types && 
+                self.rettp == other.rettp &&
+                self.mutability == other.mutability {
+                    if self.names.is_some() && other.names.is_some() {
+                        if self.names.as_ref().unwrap() == other.names.as_ref().unwrap() {
+                            return true;
+                        }
+                    }
+                }
+                
+            return false;
         }
         return self.name != other.name;
     }
