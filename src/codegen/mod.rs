@@ -763,8 +763,10 @@ impl<'ctx> CodeGen<'ctx> {
                         tp: method.functp.clone(),
                         owned: true,
                     };
+
                     args.push(base.clone());
                     args.push(data);
+
                     tp_name = method.functp.name.clone();
                     tp = Self::get_type_from_data(self.types.clone(), &args.first().unwrap());
                 }
@@ -777,7 +779,9 @@ impl<'ctx> CodeGen<'ctx> {
                         tp: tp_,
                         owned: true,
                     };
+
                     tp = Self::get_type_from_data(self.types.clone(), &data.clone());
+
                     args.push(data);
                     args.push(base.clone());
                 }
@@ -829,7 +833,6 @@ impl<'ctx> CodeGen<'ctx> {
             errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
         }
 
-
         if retv.data.is_some() {
             if !retv.owned {
                 let fmt: String = format!("Return value is not owned.");
@@ -840,8 +843,7 @@ impl<'ctx> CodeGen<'ctx> {
         else {
             self.builder.build_return(None);
         }
-
-        
+  
         return retv;
     }
 
