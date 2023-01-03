@@ -22,6 +22,7 @@ pub enum BasicDataType {
     Array,
     WrapperFunc,
 }
+
 #[derive(Clone)]
 pub struct DataType<'a> {
     pub tp: BasicDataType,
