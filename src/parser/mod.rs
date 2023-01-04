@@ -256,7 +256,7 @@ impl<'life> Parser<'life> {
             self.skip_newline();
         }
 
-        print_nodes(&nodes);
+        //print_nodes(&nodes);
         return nodes;
     }
     

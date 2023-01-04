@@ -59,7 +59,7 @@ fn main() {
 
     let (_, tokens) = lexer::generate_tokens(&mut lexer, &mut keywords);
 
-    lexer::print_tokens(tokens.len(), &tokens);
+    //lexer::print_tokens(tokens.len(), &tokens);
 
     let mut parser: parser::Parser = parser::Parser {
         tokens: &tokens,
