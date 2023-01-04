@@ -32,6 +32,7 @@ pub enum ErrorType {
     ZeroLengthArray,
     EmptyCharLiteral,
     GlobalScopeStmt,
+    ImmutableAttr,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -67,6 +68,7 @@ impl std::fmt::Display for ErrorType {
             ErrorType::ZeroLengthArray => write!(f, "cannot define zero length array"),
             ErrorType::EmptyCharLiteral => write!(f, "char literals cannot be empty"),
             ErrorType::GlobalScopeStmt => write!(f, "cannot have other statements in the global scope"),
+            ErrorType::ImmutableAttr => write!(f, "immutable attr assign"),
         }
     }
 }

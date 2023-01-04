@@ -1856,6 +1856,12 @@ impl<'life> Parser<'life> {
                 break;
             }
 
+            let mut mutability: DataMutablility = DataMutablility::Immutable;
+            if self.current_is_type(TokenType::KEYWORD) && self.current.data == "mut" {
+                self.advance();
+                mutability = DataMutablility::Mutable;
+            }
+
             if !self.current_is_type(TokenType::IDENTIFIER) {
                 self.raise_error("Expected identifier.", ErrorType::InvalidTok);
             }
@@ -1870,7 +1876,7 @@ impl<'life> Parser<'life> {
 
             self.advance();
 
-            let (_, tp) = self.parse_type(crate::codegen::types::DataMutablility::Mutable);
+            let (_, tp) = self.parse_type(mutability);
             
             members.insert(name.clone(), tp);
             names.push(name);

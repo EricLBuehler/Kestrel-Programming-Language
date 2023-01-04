@@ -1,5 +1,5 @@
 struct s {
-    a: f32,
+    mut a: f32,
     b: f32
 }
 
@@ -20,8 +20,4 @@ fn f(x: f32) -> s{
     }
     y.a=12f32
     return y
-}
-
-fn s.method(self: s) {
-
 }

@@ -986,7 +986,7 @@ impl<'ctx> CodeGen<'ctx> {
             names.push(member.clone());
             types.push(Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, node.data.st.as_ref().unwrap().members.get(member).unwrap(), node));
             simpletypes.push(Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, node.data.st.as_ref().unwrap().members.get(member).unwrap(), node).0);
-            mutabilitites.push(types::DataMutablility::Mutable);
+            mutabilitites.push(node.data.st.as_ref().unwrap().members.get(member).unwrap().mutability);
             idxmapping.insert(member.clone(), idx);
             idx+=1;
         }
@@ -1149,6 +1149,11 @@ impl<'ctx> CodeGen<'ctx> {
                 break;
             }
             idx+=1;
+        }
+
+        if base.tp.mutability.get(idx as usize).unwrap() == &types::DataMutablility::Immutable{
+            let fmt: String = format!("Attribute '{}' is immutable.", base.tp.name);
+            errors::raise_error(&fmt, errors::ErrorType::ImmutableAttr, &node.pos, self.info);
         }
 
         let itmptr: inkwell::values::PointerValue = self.builder.build_struct_gep(base.data.unwrap().into_pointer_value(), idx, base.tp.name.as_str()).expect("GEP Error");
