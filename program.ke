@@ -3,7 +3,7 @@ struct s {
     b: f32
 }
 
-fn s.a(mut self: s) {
+fn s.a(self: s) {
 
 }
 
@@ -25,6 +25,6 @@ fn f(x: f32) -> s{
     y.a=12f32
 
     y.a()
-    
+
     return y
 }
