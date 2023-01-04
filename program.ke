@@ -7,6 +7,12 @@ fn s.a(self: s) {
 
 }
 
+impl Add for s {
+    fn add(self: s, other: s) -> f32 {
+        return self.a + other.b
+    }
+}
+
 fn main() {
     let x = 1.23
     f(&x)
