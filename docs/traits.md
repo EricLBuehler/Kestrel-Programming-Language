@@ -11,8 +11,8 @@ The functions listed use generic types. To implement traits, see [keywords.md](k
 - ```Div```
     - ```fn div(self: A, other: B) -> C ```
 - ```Pos```
-    - ```fn pos(self: A, other: B) -> C ```
+    - ```fn pos(self: A) -> C ```
 - ```Neg```
-    - ```fn neg(self: A, other: B) -> C ```
+    - ```fn neg(self: A) -> C ```
 - ```Call```
     - **Not available to implement with ```impl```**
