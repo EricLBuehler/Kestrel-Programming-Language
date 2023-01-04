@@ -76,3 +76,14 @@ struct name {
     <mutability> member: type
 }
 ```
+
+## ```impl```
+The ```impl``` keyword allows for the implementation of traits onto structs.
+
+```
+impl trait for struct {
+    ...
+}
+```
+
+The body of the ```impl``` statement must be a function according to [traits.md](traits.md).
