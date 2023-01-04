@@ -96,11 +96,11 @@ pub fn init_u8(codegen: &mut codegen::CodeGen) {
 
     codegen.datatypes.insert(BasicDataType::U8.to_string(), tp.clone());
 
-    traits.insert(TraitType::Add.to_string(), builtin_types::create_trait(u8_add, 2, TraitType::Add, tp.clone()));
-    traits.insert(TraitType::Mul.to_string(), builtin_types::create_trait(u8_mul, 2, TraitType::Mul, tp.clone()));
-    traits.insert(TraitType::Sub.to_string(), builtin_types::create_trait(u8_sub, 2, TraitType::Sub, tp.clone()));
-    traits.insert(TraitType::Div.to_string(), builtin_types::create_trait(u8_div, 2, TraitType::Div, tp.clone()));
-    traits.insert(TraitType::Pos.to_string(), builtin_types::create_trait(u8_pos, 1, TraitType::Pos, tp.clone()));
+    traits.insert(TraitType::Add.to_string(), builtin_types::create_trait_func(u8_add, 2, TraitType::Add, tp.clone()));
+    traits.insert(TraitType::Mul.to_string(), builtin_types::create_trait_func(u8_mul, 2, TraitType::Mul, tp.clone()));
+    traits.insert(TraitType::Sub.to_string(), builtin_types::create_trait_func(u8_sub, 2, TraitType::Sub, tp.clone()));
+    traits.insert(TraitType::Div.to_string(), builtin_types::create_trait_func(u8_div, 2, TraitType::Div, tp.clone()));
+    traits.insert(TraitType::Pos.to_string(), builtin_types::create_trait_func(u8_pos, 1, TraitType::Pos, tp.clone()));
 
     builtin_types::add_simple_type(codegen, traits, BasicDataType::U8, BasicDataType::U8.to_string().as_str());
 }

@@ -5,7 +5,7 @@ use crate::parser;
 use crate::errors;
 use std::collections::HashMap;
 
-fn fn_call<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
+pub fn fn_call<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
     let args_ref: &Vec<Data> = &args;
     let selfv: &Data = args_ref.first().unwrap();
     let args_: &[Data] = &args_ref[1..];
@@ -50,7 +50,7 @@ fn fn_call<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
 
 pub fn init_func(codegen: &mut codegen::CodeGen) {
     let mut traits: HashMap<String, Trait> = HashMap::new();
-    traits.insert(TraitType::Call.to_string(), builtin_types::create_trait(fn_call, 0, TraitType::Call, new_datatype(BasicDataType::Unknown, BasicDataType::Unknown.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new())));
+    traits.insert(TraitType::Call.to_string(), builtin_types::create_trait_func(fn_call, 0, TraitType::Call, new_datatype(BasicDataType::Unknown, BasicDataType::Unknown.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new())));
 
     let tp: DataType = new_datatype(BasicDataType::Func, BasicDataType::Func.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new());
 

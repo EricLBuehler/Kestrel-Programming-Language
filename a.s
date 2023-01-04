@@ -79,6 +79,21 @@ s.a:                                    # @s.a
 .Lfunc_end2:
 	.size	s.a, .Lfunc_end2-s.a
                                         # -- End function
+	.globl	sadd                    # -- Begin function sadd
+	.p2align	4, 0x90
+	.type	sadd,@function
+sadd:                                   # @sadd
+# %bb.0:                                # %entry
+	movss	%xmm0, -8(%rsp)
+	movss	%xmm1, -4(%rsp)
+	movss	%xmm3, -12(%rsp)
+	movss	%xmm2, -16(%rsp)
+	movss	-8(%rsp), %xmm0         # xmm0 = mem[0],zero,zero,zero
+	addss	-12(%rsp), %xmm0
+	retq
+.Lfunc_end3:
+	.size	sadd, .Lfunc_end3-sadd
+                                        # -- End function
 	.globl	main                    # -- Begin function main
 	.p2align	4, 0x90
 	.type	main,@function
@@ -91,7 +106,7 @@ main:                                   # @main
 	xorl	%eax, %eax
 	popq	%rcx
 	retq
-.Lfunc_end3:
-	.size	main, .Lfunc_end3-main
+.Lfunc_end4:
+	.size	main, .Lfunc_end4-main
                                         # -- End function
 	.section	".note.GNU-stack","",@progbits

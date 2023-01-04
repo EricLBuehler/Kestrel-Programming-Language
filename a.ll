@@ -62,6 +62,21 @@ entry:
 }
 
 ; Function Attrs: noinline nounwind optnone
+define float @sadd({ float, float } %0, { float, float } %1) local_unnamed_addr #0 !dbg !22 {
+entry:
+  %self = alloca { float, float }, !dbg !25
+  store { float, float } %0, { float, float }* %self, !dbg !25
+  %other = alloca { float, float }, !dbg !25
+  store { float, float } %1, { float, float }* %other, !dbg !25
+  %s = getelementptr inbounds { float, float }, { float, float }* %self, i32 0, i32 0, !dbg !25
+  %a = load float, float* %s, !dbg !25
+  %s1 = getelementptr inbounds { float, float }, { float, float }* %other, i32 0, i32 1, !dbg !25
+  %b = load float, float* %s1, !dbg !25
+  %f32sum = fadd float %a, %b, !dbg !25
+  ret float %f32sum, !dbg !25
+}
+
+; Function Attrs: noinline nounwind optnone
 define i32 @main(i32 %0, i8** %1) local_unnamed_addr #0 {
 entry:
   call void @_main(), !dbg !15
@@ -77,21 +92,26 @@ attributes #0 = { noinline nounwind optnone }
 !1 = distinct !DICompileUnit(language: DW_LANG_C, file: !2, producer: "Kestrel", isOptimized: true, runtimeVersion: 0, emissionKind: FullDebug, enums: !3, splitDebugInlining: false)
 !2 = !DIFile(filename: "program.ke", directory: ".")
 !3 = !{}
-!4 = distinct !DISubprogram(name: "main", linkageName: "_main", scope: null, file: !2, line: 9, type: !5, scopeLine: 9, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
+!4 = distinct !DISubprogram(name: "main", linkageName: "_main", scope: null, file: !2, line: 15, type: !5, scopeLine: 15, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !5 = !DISubroutineType(flags: DIFlagPublic, types: !6)
 !6 = !{!7}
 !7 = !DIBasicType(name: "void", size: 16, flags: DIFlagPublic)
-!8 = !DILocation(line: 9, scope: !9)
-!9 = distinct !DILexicalBlock(scope: !4, file: !2, line: 9)
-!10 = distinct !DISubprogram(name: "f", linkageName: "f", scope: null, file: !2, line: 19, type: !11, scopeLine: 19, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
+!8 = !DILocation(line: 15, scope: !9)
+!9 = distinct !DILexicalBlock(scope: !4, file: !2, line: 15)
+!10 = distinct !DISubprogram(name: "f", linkageName: "f", scope: null, file: !2, line: 25, type: !11, scopeLine: 25, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !11 = !DISubroutineType(flags: DIFlagPublic, types: !12)
 !12 = !{!13, !14}
 !13 = !DIBasicType(name: "{ float, float }", size: 16, flags: DIFlagPublic)
 !14 = !DIBasicType(name: "float", size: 16, flags: DIFlagPublic)
-!15 = !DILocation(line: 19, scope: !16)
-!16 = distinct !DILexicalBlock(scope: !10, file: !2, line: 19)
+!15 = !DILocation(line: 25, scope: !16)
+!16 = distinct !DILexicalBlock(scope: !10, file: !2, line: 25)
 !17 = distinct !DISubprogram(name: "a", linkageName: "a", scope: null, file: !2, line: 5, type: !18, scopeLine: 5, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !18 = !DISubroutineType(flags: DIFlagPublic, types: !19)
 !19 = !{!7, !13}
 !20 = !DILocation(line: 5, scope: !21)
 !21 = distinct !DILexicalBlock(scope: !17, file: !2, line: 5)
+!22 = distinct !DISubprogram(name: "sadd", linkageName: "sadd", scope: null, file: !2, line: 10, type: !23, scopeLine: 10, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
+!23 = !DISubroutineType(flags: DIFlagPublic, types: !24)
+!24 = !{!14, !13, !13}
+!25 = !DILocation(line: 10, column: 4, scope: !26)
+!26 = distinct !DILexicalBlock(scope: !22, file: !2, line: 10, column: 4)

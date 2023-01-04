@@ -372,9 +372,24 @@ impl<'ctx> CodeGen<'ctx> {
             }
         };
 
-        let func = t.function;
+        let data: types::Data;
 
-        let data: types::Data = (func)(&self, args, &node.pos);
+        if t.function.is_some() {
+            let func = t.function.unwrap();
+
+            data = (func)(&self, args, &node.pos);
+        }
+        else {
+            let func: inkwell::values::PointerValue = t.inkfunc.unwrap();
+
+            args.insert(0, types::Data {
+                data: Some(inkwell::values::BasicValueEnum::PointerValue(func)),
+                tp: self.datatypes.get(&types::BasicDataType::Func.to_string()).unwrap().clone(),
+                owned: true,
+            });
+
+            data = builtin_types::functype::fn_call(self, args, &node.pos);
+        }
 
         return data;
     }
@@ -594,7 +609,12 @@ impl<'ctx> CodeGen<'ctx> {
             self.namespaces.structs.insert(structnm.to_owned(), (s.0, s.1, s.2, s.3));
         }
         else {
-            func = self.module.get_function(mangled_name.as_str()).replace(self.module.add_function(mangled_name.as_str(), fn_type, None)).unwrap();
+            if self.module.get_function(mangled_name.as_str()).is_some() {
+                func = self.module.get_function(mangled_name.as_str()).replace(self.module.add_function(mangled_name.as_str(), fn_type, None)).unwrap();
+            }
+            else {
+                func = self.module.add_function(mangled_name.as_str(), fn_type, None);
+            }
             self.namespaces.functions.insert(name.clone(), (func, dtp.clone(), ForwardDeclarationType::Real));
         }
         
@@ -856,9 +876,24 @@ impl<'ctx> CodeGen<'ctx> {
             }
         };
 
-        let func = t.function;
+        let data: types::Data;
 
-        let data: types::Data = (func)(&self, args, &node.pos);
+        if t.function.is_some() {
+            let func = t.function.unwrap();
+
+            data = (func)(&self, args, &node.pos);
+        }
+        else {
+            let func: inkwell::values::PointerValue = t.inkfunc.unwrap();
+
+            args.insert(0, types::Data {
+                data: Some(inkwell::values::BasicValueEnum::PointerValue(func)),
+                tp: self.datatypes.get(&types::BasicDataType::Func.to_string()).unwrap().clone(),
+                owned: true,
+            });
+
+            data = builtin_types::functype::fn_call(self, args, &node.pos);
+        }
 
         return data;
     }
@@ -994,10 +1029,25 @@ impl<'ctx> CodeGen<'ctx> {
             }
         };
 
-        let func = t.function;
+        let data: types::Data;
 
-        let data: types::Data = (func)(&self, args, &node.pos);
+        if t.function.is_some() {
+            let func = t.function.unwrap();
 
+            data = (func)(&self, args, &node.pos);
+        }
+        else {
+            let func: inkwell::values::PointerValue = t.inkfunc.unwrap();
+
+            args.insert(0, types::Data {
+                data: Some(inkwell::values::BasicValueEnum::PointerValue(func)),
+                tp: self.datatypes.get(&types::BasicDataType::Func.to_string()).unwrap().clone(),
+                owned: true,
+            });
+
+            data = builtin_types::functype::fn_call(self, args, &node.pos);
+        }
+        
         return data;
     }
 
@@ -1042,6 +1092,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         self.datatypes.insert(node.data.st.as_ref().unwrap().name.clone(), tp.clone());
         self.namespaces.structs.insert(node.data.st.as_ref().unwrap().name.clone(), (tp, Self::build_struct_tp_from_types(self.context, &self.inkwell_types, &simpletypes), idxmapping, ForwardDeclarationType::Real));
+        builtin_types::add_simple_type(self, std::collections::HashMap::new(), types::BasicDataType::Struct, &node.data.st.as_ref().unwrap().name.clone());
 
         let data: types::Data = types::Data {
             data: None,
@@ -1313,6 +1364,86 @@ impl<'ctx> CodeGen<'ctx> {
         return data;
     }
 
+    fn build_impl(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        let traitnm: &String = &node.data.impln.as_ref().unwrap().traitnm;
+        let structnm: &String = &node.data.impln.as_ref().unwrap().structnm;
+
+        if !self.traits.contains_key(traitnm) {
+            let fmt: String = format!("Trait '{}' not found.", traitnm.to_string());
+            errors::raise_error(&fmt, errors::ErrorType::TraitNotFound, &node.pos, self.info);
+        }
+
+        let traitsig: types::TraitSignature = self.traits.get(traitnm).unwrap().clone();
+       
+        if traitsig.name != node.data.impln.as_ref().unwrap().func.data.func.as_ref().unwrap().name {
+            let fmt: String = format!("Trait '{}' expected function '{}'.", traitnm.to_string(), traitsig.name);
+            errors::raise_error(&fmt, errors::ErrorType::TraitExpectProperFunctionName, &node.pos, self.info);
+        }
+
+        if traitsig.nargs != node.data.impln.as_ref().unwrap().func.data.func.as_ref().unwrap().args.args.len() {
+            let fmt: String = format!("Trait '{}' expected function with '{}' arguments.", traitnm.to_string(), traitsig.nargs);
+            errors::raise_error(&fmt, errors::ErrorType::ArgumentCountMismatch, &node.pos, self.info);
+        }
+
+        //Change function name
+        let mut func: parser::nodes::FuncNode = node.data.impln.as_ref().unwrap().func.data.func.as_ref().unwrap().clone();
+        func.name = structnm.to_owned() + node.data.impln.as_ref().unwrap().func.data.func.as_ref().unwrap().name.as_str();
+
+        let nodedat: parser::nodes::NodeData = parser::nodes::NodeData {
+            binary: None,
+            num: None,
+            letn: None,
+            identifier: None,
+            func: Some(func),
+            assign: None,
+            call: None,
+            ret: None,
+            to: None,
+            unary: None,
+            st: None,
+            initst: None,
+            attr: None,
+            attrassign: None,
+            str: None,
+            arr: None,
+            impln: None,
+        };
+
+        let n: parser::Node = parser::Node {
+            tp: parser::NodeType::FUNC,
+            data: Box::new(nodedat),
+            pos: node.data.impln.as_ref().unwrap().func.pos.clone(),
+        };
+
+        let func: types::Data = self.build_func(&n);
+
+        if !self.namespaces.structs.contains_key(structnm) {
+            let fmt: String = format!("Struct '{}' is not defined.", structnm);
+            errors::raise_error(&fmt, errors::ErrorType::StructNotDefined, &node.pos, self.info);
+        }
+        
+        let mut tp: types::Type = self.types.get(structnm).unwrap().clone();
+
+        let rettp: types::DataType = Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, node.data.impln.as_ref().unwrap().func.data.func.as_ref().unwrap().args.rettp.first().unwrap(), node).0;
+
+        let traittp: types::TraitType = types::get_traittp_from_str(traitnm.to_owned());
+        if traittp == types::TraitType::Call {
+            let fmt: String = format!("Cannot implement 'Call' trait.");
+            errors::raise_error(&fmt, errors::ErrorType::CannotImplementCallTrait, &node.pos, self.info);
+        }
+
+        tp.traits.insert(traitnm.to_owned(), builtin_types::create_trait_ink(func.data.unwrap().into_pointer_value(), traitsig.nargs, traittp, rettp));
+        
+        self.types.insert(structnm.to_owned(), tp);
+
+        let data: types::Data = types::Data {
+            data: None,
+            tp: self.datatypes.get(&types::BasicDataType::Void.to_string()).unwrap().clone(),
+            owned: true,
+        };
+        return data;
+    }
+
     fn compile_expr(&mut self, node: &parser::Node, give_ownership: bool, get_ptr: bool) -> types::Data<'ctx> {
         match node.tp {
             parser::NodeType::I32 => {
@@ -1538,6 +1669,9 @@ impl<'ctx> CodeGen<'ctx> {
             parser::NodeType::ARRAY => {
                 self.build_array(node)
             }
+            parser::NodeType::IMPL => {
+                self.build_impl(node)
+            }
         }
     }
 
@@ -1554,7 +1688,8 @@ impl<'ctx> CodeGen<'ctx> {
                 errors::raise_error(&fmt, errors::ErrorType::NestedFunctions, &node.pos, self.info);
             }
             if  !infn && node.tp != parser::NodeType::FUNC &&
-                node.tp != parser::NodeType::STRUCT {
+                node.tp != parser::NodeType::STRUCT &&
+                node.tp != parser::NodeType::IMPL {
                 let fmt: String = format!("Invalid global scope statement.");
                 errors::raise_error(&fmt, errors::ErrorType::GlobalScopeStmt, &node.pos, self.info);
             }

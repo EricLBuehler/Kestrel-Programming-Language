@@ -10,7 +10,7 @@ fn wrapperfn_call<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: 
 
 pub fn init_wrapperfn(codegen: &mut codegen::CodeGen) {
     let mut traits: HashMap<String, Trait> = HashMap::new();
-    traits.insert(TraitType::Call.to_string(), builtin_types::create_trait(wrapperfn_call, 0, TraitType::Call, new_datatype(BasicDataType::Unknown, BasicDataType::Unknown.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new())));
+    traits.insert(TraitType::Call.to_string(), builtin_types::create_trait_func(wrapperfn_call, 0, TraitType::Call, new_datatype(BasicDataType::Unknown, BasicDataType::Unknown.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new())));
 
     let tp: DataType = new_datatype(BasicDataType::WrapperFunc, BasicDataType::WrapperFunc.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new());
 

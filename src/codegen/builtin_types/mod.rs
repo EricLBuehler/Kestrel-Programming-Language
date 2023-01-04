@@ -24,7 +24,7 @@ pub mod arrtype;
 pub mod structtype;
 pub mod wrapperfntype;
 
-fn add_simple_type<'a>(codegen: &mut codegen::CodeGen<'a>, traits: HashMap<String, Trait<'a>>, basictype: BasicDataType, name: &str){
+pub fn add_simple_type<'a>(codegen: &mut codegen::CodeGen<'a>, traits: HashMap<String, Trait<'a>>, basictype: BasicDataType, name: &str){
     let tp = Type {
         traits,
         basictype,
@@ -33,10 +33,21 @@ fn add_simple_type<'a>(codegen: &mut codegen::CodeGen<'a>, traits: HashMap<Strin
     codegen.types.insert(String::from(name), tp);
 }
 
-fn create_trait<'a>(function: fn(&codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>, nargs: usize, traittype: TraitType, rettp: DataType<'a>) -> Trait<'a>{
+pub fn create_trait_func<'a>(function: fn(&codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>, nargs: usize, traittype: TraitType, rettp: DataType<'a>) -> Trait<'a>{
     Trait {
         nargs,
-        function,
+        function: Some(function),
+        inkfunc: None,
+        traittype,
+        rettp,
+    }
+}
+
+pub fn create_trait_ink<'a>(ink: inkwell::values::PointerValue<'a>, nargs: usize, traittype: TraitType, rettp: DataType<'a>) -> Trait<'a>{
+    Trait {
+        nargs,
+        function: None,
+        inkfunc: Some(ink),
         traittype,
         rettp,
     }

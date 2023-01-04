@@ -111,12 +111,12 @@ pub fn init_i32(codegen: &mut codegen::CodeGen) {
         codegen.datatypes.insert(String::from("isize"), tp.clone()); //Alias        
     }
 
-    traits.insert(TraitType::Add.to_string(), builtin_types::create_trait(i32_add, 2, TraitType::Add, tp.clone()));
-    traits.insert(TraitType::Mul.to_string(), builtin_types::create_trait(i32_mul, 2, TraitType::Mul, tp.clone()));
-    traits.insert(TraitType::Sub.to_string(), builtin_types::create_trait(i32_sub, 2, TraitType::Sub, tp.clone()));
-    traits.insert(TraitType::Div.to_string(), builtin_types::create_trait(i32_div, 2, TraitType::Div, tp.clone()));
-    traits.insert(TraitType::Pos.to_string(), builtin_types::create_trait(i32_pos, 1, TraitType::Pos, tp.clone()));
-    traits.insert(TraitType::Neg.to_string(), builtin_types::create_trait(i32_neg, 1, TraitType::Neg, tp.clone()));
+    traits.insert(TraitType::Add.to_string(), builtin_types::create_trait_func(i32_add, 2, TraitType::Add, tp.clone()));
+    traits.insert(TraitType::Mul.to_string(), builtin_types::create_trait_func(i32_mul, 2, TraitType::Mul, tp.clone()));
+    traits.insert(TraitType::Sub.to_string(), builtin_types::create_trait_func(i32_sub, 2, TraitType::Sub, tp.clone()));
+    traits.insert(TraitType::Div.to_string(), builtin_types::create_trait_func(i32_div, 2, TraitType::Div, tp.clone()));
+    traits.insert(TraitType::Pos.to_string(), builtin_types::create_trait_func(i32_pos, 1, TraitType::Pos, tp.clone()));
+    traits.insert(TraitType::Neg.to_string(), builtin_types::create_trait_func(i32_neg, 1, TraitType::Neg, tp.clone()));
     
     builtin_types::add_simple_type(codegen, traits, BasicDataType::I32, BasicDataType::I32.to_string().as_str());
 }

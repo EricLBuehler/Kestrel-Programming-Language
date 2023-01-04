@@ -33,6 +33,10 @@ pub enum ErrorType {
     EmptyCharLiteral,
     GlobalScopeStmt,
     ImmutableAttr,
+    InvlaidStatement,
+    TraitNotFound,
+    TraitExpectProperFunctionName,
+    CannotImplementCallTrait,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -69,6 +73,10 @@ impl std::fmt::Display for ErrorType {
             ErrorType::EmptyCharLiteral => write!(f, "char literals cannot be empty"),
             ErrorType::GlobalScopeStmt => write!(f, "cannot have other statements in the global scope"),
             ErrorType::ImmutableAttr => write!(f, "immutable attr assign"),
+            ErrorType::InvlaidStatement => write!(f, "immutable statement"),
+            ErrorType::TraitNotFound => write!(f, "trait not found"),
+            ErrorType::TraitExpectProperFunctionName => write!(f, "trait implementation expects function with proper name"),
+            ErrorType::CannotImplementCallTrait => write!(f, "cannot implement call trait"),
         }
     }
 }

@@ -43,6 +43,8 @@ fn main() {
                                             String::from("to"),
                                             String::from("as"),
                                             String::from("struct"),
+                                            String::from("impl"),
+                                            String::from("for"),
                                             ];
 
     let mut lexer: lexer::Lexer = lexer::Lexer {

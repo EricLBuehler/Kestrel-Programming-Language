@@ -246,6 +246,19 @@ impl std::fmt::Display for ArrayNode {
 }
 
 #[derive(Clone, Debug)]
+pub struct ImplNode{
+    pub func: crate::parser::Node,
+    pub traitnm: String,
+    pub structnm: String,
+}
+
+impl std::fmt::Display for ImplNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Implement \"{}\" for \"{}\"", self.traitnm, self.structnm)
+    }    
+}
+
+#[derive(Clone, Debug)]
 pub struct NodeData {
     pub binary: Option<BinaryNode>,
     pub num: Option<NumNode>,
@@ -263,4 +276,5 @@ pub struct NodeData {
     pub attrassign: Option<AttrAssignNode>,
     pub str: Option<StringNode>,
     pub arr: Option<ArrayNode>,
+    pub impln: Option<ImplNode>,
 }

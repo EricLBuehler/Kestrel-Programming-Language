@@ -43,7 +43,7 @@ impl<'a> std::fmt::Debug for DataType<'a> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum TraitType {
     Add,
     Mul,
@@ -187,7 +187,8 @@ pub struct Type<'a> {
 #[derive(Clone)]
 pub struct Trait<'a> {
     pub nargs: usize,
-    pub function: fn(&codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>,
+    pub function: Option<fn(&codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>>,
+    pub inkfunc: Option<inkwell::values::PointerValue<'a>>,
     pub traittype: TraitType,
     pub rettp: DataType<'a>
 }
@@ -260,4 +261,30 @@ impl<'a> std::fmt::Debug for Method<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.tp)
     }
+}
+
+pub fn get_traittp_from_str(tp: String) -> TraitType {
+    if tp == TraitType::Add.to_string() {
+        return TraitType::Add;
+    }
+    else if tp == TraitType::Sub.to_string() {
+        return TraitType::Sub;
+    }
+    else if tp == TraitType::Mul.to_string() {
+        return TraitType::Mul;
+    }
+    else if tp == TraitType::Div.to_string() {
+        return TraitType::Div;
+    }
+    else if tp == TraitType::Pos.to_string() {
+        return TraitType::Pos;
+    }
+    else if tp == TraitType::Neg.to_string() {
+        return TraitType::Neg;
+    }
+    else if tp == TraitType::Call.to_string() {
+        return TraitType::Call;
+    }
+    
+    panic!("Invalid trait type '{}'", tp);
 }
