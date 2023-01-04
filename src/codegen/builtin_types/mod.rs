@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use crate::codegen;
 use crate::codegen::types::{Type, BasicDataType, Trait, TraitType, Data};
 use super::types::DataType;
+use super::types;
 
 pub mod i32type;
 pub mod u32type;
@@ -76,4 +77,25 @@ pub fn init(codegen: &mut codegen::CodeGen) {
     arrtype::init_array(codegen);
     structtype::init_struct(codegen);
     wrapperfntype::init_wrapperfn(codegen);
+}
+
+pub fn init_traits(codegen: &mut codegen::CodeGen) {
+    codegen.traits.insert(types::TraitType::Add.to_string(), types::TraitSignature {
+         nargs: 2, name: String::from("add")
+        });
+    codegen.traits.insert(types::TraitType::Sub.to_string(), types::TraitSignature {
+         nargs: 2, name: String::from("sub")
+        });
+    codegen.traits.insert(types::TraitType::Mul.to_string(), types::TraitSignature {
+         nargs: 2, name: String::from("mul")
+        });
+    codegen.traits.insert(types::TraitType::Div.to_string(), types::TraitSignature {
+         nargs: 2, name: String::from("div")
+        });
+    codegen.traits.insert(types::TraitType::Pos.to_string(), types::TraitSignature {
+         nargs: 1, name: String::from("pos")
+        });
+    codegen.traits.insert(types::TraitType::Neg.to_string(), types::TraitSignature {
+         nargs: 1, name: String::from("neg")
+        });
 }

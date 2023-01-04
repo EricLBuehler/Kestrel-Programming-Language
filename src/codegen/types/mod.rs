@@ -192,6 +192,12 @@ pub struct Trait<'a> {
     pub rettp: DataType<'a>
 }
 
+#[derive(Clone)]
+pub struct TraitSignature {
+    pub nargs: usize,
+    pub name: String,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum DataMutablility{
     Immutable,

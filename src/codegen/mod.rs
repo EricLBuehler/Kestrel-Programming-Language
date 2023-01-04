@@ -55,6 +55,7 @@ pub struct CodeGen<'ctx> {
     dibuilder: inkwell::debug_info::DebugInfoBuilder<'ctx>,
     dicompile_unit: inkwell::debug_info::DICompileUnit<'ctx>,
     expected_rettp: Option<types::DataType<'ctx>>,
+    traits: std::collections::HashMap<String, types::TraitSignature>,
 }
 
 //Codegen functions
@@ -1757,6 +1758,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
         dibuilder: dibuilder,
         dicompile_unit: compile_unit,
         expected_rettp: None, 
+        traits: std::collections::HashMap::new(),
     };
     
     //Pass manager (optimizer)
@@ -1767,6 +1769,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
 
     //Setup builtin types
     builtin_types::init(&mut codegen);
+    builtin_types::init_traits(&mut codegen);
 
     //Generate forward-declaration functions
     codegen.forward_declare(&nodes);
