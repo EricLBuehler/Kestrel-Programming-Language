@@ -1645,8 +1645,18 @@ impl<'life> Parser<'life> {
         }
 
         let name: String = self.current.data.clone();
+        let mut methodname: Option<String> = None;
 
         self.advance();
+
+        if self.current_is_type(TokenType::DOT) {
+            self.advance();
+            if !self.current_is_type(TokenType::IDENTIFIER) {
+                self.raise_error("Expected identifier.", ErrorType::InvalidTok);
+            }
+            methodname = Some(self.current.data.clone());
+            self.advance();
+        }
 
         if !self.current_is_type(TokenType::LPAREN) {
             self.raise_error("Expected left parenthesis.", ErrorType::InvalidTok);
@@ -1751,8 +1761,9 @@ impl<'life> Parser<'life> {
             name,
             blocks,
             args,
+            methodname,
         };
-    
+
         let nodedat: nodes::NodeData = nodes::NodeData {
             binary: None,
             num: None,
@@ -1772,10 +1783,9 @@ impl<'life> Parser<'life> {
             arr: None,
         };
 
-    
         let n: Node = self.create_node(NodeType::FUNC, nodedat, pos);
 
-        return n;        
+        return n; 
     }
 
     fn parse_return(&mut self) -> Node{

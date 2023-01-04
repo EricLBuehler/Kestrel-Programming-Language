@@ -88,6 +88,7 @@ pub struct FuncNode {
     pub name: String,
     pub blocks: Vec<crate::parser::Node>,
     pub args: crate::parser::Args,
+    pub methodname: Option<String>,
 }
 
 impl std::fmt::Display for FuncNode {

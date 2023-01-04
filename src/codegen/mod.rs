@@ -481,7 +481,11 @@ impl<'ctx> CodeGen<'ctx> {
     }
     
     fn build_func(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let name: &String = &node.data.func.as_ref().unwrap().name;
+        let mut name: &String = &node.data.func.as_ref().unwrap().name;
+
+        if node.data.func.as_ref().unwrap().methodname.is_some() {
+            name = node.data.func.as_ref().unwrap().methodname.as_ref().unwrap();
+        }
 
         if !name.is_snake_case() {
             errors::show_warning(errors::WarningType::ExpectedSnakeCase, vec![String::from(""), name.to_snake_case()], vec![String::from("Expected snake case"), String::from("Convert to this: ")], &node.pos, self.info)
@@ -560,14 +564,38 @@ impl<'ctx> CodeGen<'ctx> {
         }
         //
 
-        let func = self.module.get_function(mangled_name.as_str()).replace(self.module.add_function(mangled_name.as_str(), fn_type, None)).unwrap();
+        let func: inkwell::values::FunctionValue;
 
         let mut dtp: types::DataType = self.datatypes.get(&types::BasicDataType::Func.to_string()).unwrap().clone();
         dtp.names = Some(node.data.func.as_ref().unwrap().args.name.clone());
         dtp.types = datatypes.clone();
         dtp.mutability =mutability.clone();
         dtp.rettp =  Some(Box::new(rettp_full.0.clone()));
-        self.namespaces.functions.insert(name.clone(), (func, dtp, ForwardDeclarationType::Real));
+
+        if node.data.func.as_ref().unwrap().methodname.is_some() {
+            let structnm: &String = &node.data.func.as_ref().unwrap().name;
+
+            if self.namespaces.structs.get(structnm).is_none() {
+                let fmt: String = format!("Struct '{}' is not defined.", structnm);
+                errors::raise_error(&fmt, errors::ErrorType::StructNotDefined, &node.pos, self.info);
+            }
+
+            func = self.module.add_function(&(structnm.to_owned()+"."+mangled_name.as_str()), fn_type, None);
+    
+            let mut s: (types::DataType, AnyTypeEnum, std::collections::HashMap<String, i32>, ForwardDeclarationType) = self.namespaces.structs.get(structnm).unwrap().clone();
+            s.0.methods.insert(name.clone(), types::Method {
+                tp: types::MethodType::Fn,
+                builtin: None,
+                func: Some(func.as_global_value().as_pointer_value()),
+                functp: dtp.clone(),
+            });
+
+            self.namespaces.structs.insert(structnm.to_owned(), (s.0, s.1, s.2, s.3));
+        }
+        else {
+            func = self.module.get_function(mangled_name.as_str()).replace(self.module.add_function(mangled_name.as_str(), fn_type, None)).unwrap();
+            self.namespaces.functions.insert(name.clone(), (func, dtp.clone(), ForwardDeclarationType::Real));
+        }
         
         // Add debug information
         let mut diparamtps: Vec<inkwell::debug_info::DIType> = Vec::new();
@@ -703,7 +731,7 @@ impl<'ctx> CodeGen<'ctx> {
         
         let data: types::Data = types::Data {
             data: Some(inkwell::values::BasicValueEnum::PointerValue(func.as_global_value().as_pointer_value())),
-            tp: self.namespaces.functions.get(&name.clone()).unwrap().1.clone(),
+            tp: dtp,
             owned: true,
         };
         return data;
@@ -754,7 +782,7 @@ impl<'ctx> CodeGen<'ctx> {
             let attr: &String = &node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().attr;
 
             let base: types::Data = self.compile_expr(&node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().name, false, true); 
-
+            
             if base.tp.methods.get(attr).is_some() {
                 let method: &types::Method = base.tp.methods.get(attr).unwrap();
                 if method.tp == types::MethodType::Fn {
@@ -764,11 +792,16 @@ impl<'ctx> CodeGen<'ctx> {
                         owned: true,
                     };
 
-                    args.push(base.clone());
-                    args.push(data);
+                    args.push(data.clone());
+                    args.push(types::Data {
+                        data: Some(self.builder.build_load(base.data.unwrap().into_pointer_value(), &base.tp.name)),
+                        tp: base.tp.clone(),
+                        owned: base.owned,
+                    });
 
                     tp_name = method.functp.name.clone();
-                    tp = Self::get_type_from_data(self.types.clone(), &args.first().unwrap());
+                    
+                    tp = Self::get_type_from_data(self.types.clone(), &data);
                 }
                 else {
                     let mut tp_: types::DataType = self.datatypes.get(&types::BasicDataType::WrapperFunc.to_string()).unwrap().clone();
@@ -800,7 +833,16 @@ impl<'ctx> CodeGen<'ctx> {
 
         for arg in &node.data.call.as_ref().unwrap().args{
             let v: types::Data = self.compile_expr(arg, true, false); 
-            args.push(v);
+            if v.tp.tp != types::BasicDataType::Struct {
+                args.push(v);
+            }
+            else {
+                args.push(types::Data {
+                    data: Some(self.builder.build_load(v.data.unwrap().into_pointer_value(), &v.tp.name)),
+                    tp: v.tp.clone(),
+                    owned: v.owned,
+                });
+            }
         }
 
         let t: &types::Trait = match tp.traits.get(&types::TraitType::Call.to_string()) {
@@ -1523,6 +1565,9 @@ impl<'ctx> CodeGen<'ctx> {
     fn forward_declare(&mut self, nodes: &Vec<parser::Node>){
         for node in nodes {
             if node.tp == parser::NodeType::FUNC {
+                if node.data.func.as_ref().unwrap().methodname.is_some() {
+                    continue;
+                }
                 let name: &String = &node.data.func.as_ref().unwrap().name;
 
                 if !name.is_snake_case() {

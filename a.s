@@ -45,23 +45,39 @@ _main:                                  # @_main
 	.type	f,@function
 f:                                      # @f
 # %bb.0:                                # %entry
-	movss	%xmm0, -4(%rsp)
-	movss	-4(%rsp), %xmm0         # xmm0 = mem[0],zero,zero,zero
+	subq	$24, %rsp
+	movss	%xmm0, 20(%rsp)
+	movss	20(%rsp), %xmm0         # xmm0 = mem[0],zero,zero,zero
 	movss	.LCPI1_0(%rip), %xmm1   # xmm1 = mem[0],zero,zero,zero
 	movaps	%xmm0, %xmm2
 	addss	%xmm1, %xmm2
-	movss	%xmm2, -16(%rsp)
-	movss	%xmm0, -12(%rsp)
-	movss	-16(%rsp), %xmm0        # xmm0 = mem[0],zero,zero,zero
-	movss	-12(%rsp), %xmm1        # xmm1 = mem[0],zero,zero,zero
-	movss	%xmm1, -20(%rsp)
-	movss	%xmm0, -24(%rsp)
-	movl	$1094713344, -24(%rsp)  # imm = 0x41400000
-	movss	-24(%rsp), %xmm0        # xmm0 = mem[0],zero,zero,zero
-	movss	-20(%rsp), %xmm1        # xmm1 = mem[0],zero,zero,zero
+	movss	%xmm2, 8(%rsp)
+	movss	%xmm0, 12(%rsp)
+	movss	8(%rsp), %xmm0          # xmm0 = mem[0],zero,zero,zero
+	movss	12(%rsp), %xmm1         # xmm1 = mem[0],zero,zero,zero
+	movss	%xmm1, 4(%rsp)
+	movss	%xmm0, (%rsp)
+	movl	$1094713344, (%rsp)     # imm = 0x41400000
+	movss	(%rsp), %xmm0           # xmm0 = mem[0],zero,zero,zero
+	movss	4(%rsp), %xmm1          # xmm1 = mem[0],zero,zero,zero
+	callq	s.a
+	movss	(%rsp), %xmm0           # xmm0 = mem[0],zero,zero,zero
+	movss	4(%rsp), %xmm1          # xmm1 = mem[0],zero,zero,zero
+	addq	$24, %rsp
 	retq
 .Lfunc_end1:
 	.size	f, .Lfunc_end1-f
+                                        # -- End function
+	.globl	s.a                     # -- Begin function s.a
+	.p2align	4, 0x90
+	.type	s.a,@function
+s.a:                                    # @s.a
+# %bb.0:                                # %entry
+	movss	%xmm0, -8(%rsp)
+	movss	%xmm1, -4(%rsp)
+	retq
+.Lfunc_end2:
+	.size	s.a, .Lfunc_end2-s.a
                                         # -- End function
 	.globl	main                    # -- Begin function main
 	.p2align	4, 0x90
@@ -75,7 +91,7 @@ main:                                   # @main
 	xorl	%eax, %eax
 	popq	%rcx
 	retq
-.Lfunc_end2:
-	.size	main, .Lfunc_end2-main
+.Lfunc_end3:
+	.size	main, .Lfunc_end3-main
                                         # -- End function
 	.section	".note.GNU-stack","",@progbits

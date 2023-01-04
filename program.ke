@@ -3,6 +3,10 @@ struct s {
     b: f32
 }
 
+fn s.a(mut self: s) {
+
+}
+
 fn main() {
     let x = 1.23
     f(&x)
@@ -19,5 +23,8 @@ fn f(x: f32) -> s{
         b=x
     }
     y.a=12f32
+
+    y.a()
+    
     return y
 }

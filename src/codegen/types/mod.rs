@@ -226,6 +226,9 @@ pub fn basic_to_metadata(basic: inkwell::values::BasicValueEnum) -> inkwell::val
     else if basic.is_pointer_value() {
         return inkwell::values::BasicMetadataValueEnum::PointerValue(basic.into_pointer_value());
     }
+    else if basic.is_struct_value() {
+        return inkwell::values::BasicMetadataValueEnum::StructValue(basic.into_struct_value());
+    }
     else if basic.is_float_value() {
         return inkwell::values::BasicMetadataValueEnum::FloatValue(basic.into_float_value());
     }
