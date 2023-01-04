@@ -1,6 +1,6 @@
 # Traits
 
-The functions listed use generic types. To implement traits, see [keywords.md](keywords.md).
+The functions listed use generic types. To implement traits, see [```impl```](keywords.md#impl).
 
 - ```Add```
     - ```fn add(self: A, other: B) -> C ```
