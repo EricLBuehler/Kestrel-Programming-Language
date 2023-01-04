@@ -48,17 +48,20 @@ entry:
   %s4 = getelementptr inbounds { float, float }, { float, float }* %y, i32 0, i32 0, !dbg !15
   store float 1.200000e+01, float* %s4, !dbg !15
   %s5 = load { float, float }, { float, float }* %y, !dbg !15
-  call void @s.a({ float, float } %s5), !dbg !15
+  %res = call float @s.a({ float, float } %s5), !dbg !15
   %y6 = load { float, float }, { float, float }* %y, !dbg !15
   ret { float, float } %y6, !dbg !15
 }
 
 ; Function Attrs: noinline nounwind optnone
-define void @s.a({ float, float } %0) local_unnamed_addr #0 !dbg !17 {
+define float @s.a({ float, float } %0) local_unnamed_addr #0 !dbg !17 {
 entry:
   %self = alloca { float, float }, !dbg !20
   store { float, float } %0, { float, float }* %self, !dbg !20
-  ret void, !dbg !20
+  %s = getelementptr inbounds { float, float }, { float, float }* %self, i32 0, i32 0, !dbg !20
+  %a = load float, float* %s, !dbg !20
+  %f32mul = fmul float %a, 1.000000e+02, !dbg !20
+  ret float %f32mul, !dbg !20
 }
 
 ; Function Attrs: noinline nounwind optnone
@@ -107,7 +110,7 @@ attributes #0 = { noinline nounwind optnone }
 !16 = distinct !DILexicalBlock(scope: !10, file: !2, line: 25)
 !17 = distinct !DISubprogram(name: "a", linkageName: "a", scope: null, file: !2, line: 5, type: !18, scopeLine: 5, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !18 = !DISubroutineType(flags: DIFlagPublic, types: !19)
-!19 = !{!7, !13}
+!19 = !{!14, !13}
 !20 = !DILocation(line: 5, scope: !21)
 !21 = distinct !DILexicalBlock(scope: !17, file: !2, line: 5)
 !22 = distinct !DISubprogram(name: "sadd", linkageName: "sadd", scope: null, file: !2, line: 10, type: !23, scopeLine: 10, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)

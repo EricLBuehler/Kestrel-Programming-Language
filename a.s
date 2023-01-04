@@ -68,13 +68,21 @@ f:                                      # @f
 .Lfunc_end1:
 	.size	f, .Lfunc_end1-f
                                         # -- End function
-	.globl	s.a                     # -- Begin function s.a
+	.section	.rodata.cst4,"aM",@progbits,4
+	.p2align	2               # -- Begin function s.a
+.LCPI2_0:
+	.long	1120403456              # float 100
+	.text
+	.globl	s.a
 	.p2align	4, 0x90
 	.type	s.a,@function
 s.a:                                    # @s.a
 # %bb.0:                                # %entry
+	movss	.LCPI2_0(%rip), %xmm2   # xmm2 = mem[0],zero,zero,zero
 	movss	%xmm0, -8(%rsp)
 	movss	%xmm1, -4(%rsp)
+	mulss	-8(%rsp), %xmm2
+	movaps	%xmm2, %xmm0
 	retq
 .Lfunc_end2:
 	.size	s.a, .Lfunc_end2-s.a
