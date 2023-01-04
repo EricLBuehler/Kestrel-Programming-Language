@@ -20,6 +20,18 @@ fn name(parameter: <mutability> type, ...) {
 }
 ```
 
+Furthermore, the ```fn``` keyword also allows the definition of a method. A method must be tied to a struct: 
+
+```
+fn struct.name(parameter: <mutability> type, ...) -> tp {
+
+}
+fn struct.name(parameter: <mutability> type, ...) {
+
+}
+```
+
+
 ## ```mut```
 The ```mut``` keyword defines the parameter or a variable as mutable.
 
@@ -61,6 +73,6 @@ Fine-grained, per-member mutablility control is also allowed:
 
 ```
 struct name {
-    mut member: type
+    <mutability> member: type
 }
 ```
