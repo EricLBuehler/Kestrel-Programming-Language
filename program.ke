@@ -28,6 +28,7 @@ fn f(x: f32) -> f32{
         a=x+1f32,
         b=x
     }
+    
     y.a=12f32
 
     return y.a()
