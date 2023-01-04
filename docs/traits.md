@@ -15,4 +15,4 @@ The functions listed use generic types. To implement traits, see [keywords.md](k
 - ```Neg```
     - ```fn neg(self: A, other: B) -> C ```
 - ```Call```
-    - **Not available for user-defined types**
+    - **Not available to implement wiht ```impl```**
