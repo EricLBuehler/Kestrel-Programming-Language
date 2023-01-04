@@ -56,3 +56,11 @@ struct name {
     member: type
 }
 ```
+
+Fine-grained, per-member mutablility control is also allowed:
+
+```
+struct name {
+    mut member: type
+}
+```
