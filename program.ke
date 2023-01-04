@@ -23,14 +23,12 @@ fn main() {
     let len: usize = arr.length()
 }
 
-fn f(x: f32) -> s{
+fn f(x: f32) -> f32{
     let y = s {
         a=x+1f32,
         b=x
     }
     y.a=12f32
 
-    y.a()
-
-    return y
+    return y.a()
 }

@@ -8,7 +8,7 @@ entry:
   %x = alloca float, !dbg !8
   store float 0x3FF3AE1480000000, float* %x, !dbg !8
   %x1 = load float, float* %x, !dbg !8
-  %res = call { float, float } @f(float %x1), !dbg !8
+  %res = call float @f(float %x1), !dbg !8
   %name = alloca [12 x i8], !dbg !8
   store [12 x i8] c"Kestrel \F0\9F\A6\85", [12 x i8]* %name, !dbg !8
   %char = alloca i32, !dbg !8
@@ -30,31 +30,30 @@ entry:
 }
 
 ; Function Attrs: noinline nounwind optnone
-define { float, float } @f(float %0) local_unnamed_addr #0 !dbg !10 {
+define float @f(float %0) local_unnamed_addr #0 !dbg !10 {
 entry:
-  %x = alloca float, !dbg !15
-  store float %0, float* %x, !dbg !15
-  %x1 = load float, float* %x, !dbg !15
-  %f32sum = fadd float %x1, 1.000000e+00, !dbg !15
-  %x2 = load float, float* %x, !dbg !15
-  %s = alloca { float, float }, !dbg !15
-  %a = getelementptr inbounds { float, float }, { float, float }* %s, i32 0, i32 0, !dbg !15
-  store float %f32sum, float* %a, !dbg !15
-  %b = getelementptr inbounds { float, float }, { float, float }* %s, i32 0, i32 1, !dbg !15
-  store float %x2, float* %b, !dbg !15
-  %s3 = load { float, float }, { float, float }* %s, !dbg !15
-  %y = alloca { float, float }, !dbg !15
-  store { float, float } %s3, { float, float }* %y, !dbg !15
-  %s4 = getelementptr inbounds { float, float }, { float, float }* %y, i32 0, i32 0, !dbg !15
-  store float 1.200000e+01, float* %s4, !dbg !15
-  %s5 = load { float, float }, { float, float }* %y, !dbg !15
-  %res = call float @s.a({ float, float } %s5), !dbg !15
-  %y6 = load { float, float }, { float, float }* %y, !dbg !15
-  ret { float, float } %y6, !dbg !15
+  %x = alloca float, !dbg !14
+  store float %0, float* %x, !dbg !14
+  %x1 = load float, float* %x, !dbg !14
+  %f32sum = fadd float %x1, 1.000000e+00, !dbg !14
+  %x2 = load float, float* %x, !dbg !14
+  %s = alloca { float, float }, !dbg !14
+  %a = getelementptr inbounds { float, float }, { float, float }* %s, i32 0, i32 0, !dbg !14
+  store float %f32sum, float* %a, !dbg !14
+  %b = getelementptr inbounds { float, float }, { float, float }* %s, i32 0, i32 1, !dbg !14
+  store float %x2, float* %b, !dbg !14
+  %s3 = load { float, float }, { float, float }* %s, !dbg !14
+  %y = alloca { float, float }, !dbg !14
+  store { float, float } %s3, { float, float }* %y, !dbg !14
+  %s4 = getelementptr inbounds { float, float }, { float, float }* %y, i32 0, i32 0, !dbg !14
+  store float 1.200000e+01, float* %s4, !dbg !14
+  %s5 = load { float, float }, { float, float }* %y, !dbg !14
+  %res = call float @s.a({ float, float } %s5), !dbg !14
+  ret float %res, !dbg !14
 }
 
 ; Function Attrs: noinline nounwind optnone
-define float @s.a({ float, float } %0) local_unnamed_addr #0 !dbg !17 {
+define float @s.a({ float, float } %0) local_unnamed_addr #0 !dbg !16 {
 entry:
   %self = alloca { float, float }, !dbg !20
   store { float, float } %0, { float, float }* %self, !dbg !20
@@ -82,8 +81,8 @@ entry:
 ; Function Attrs: noinline nounwind optnone
 define i32 @main(i32 %0, i8** %1) local_unnamed_addr #0 {
 entry:
-  call void @_main(), !dbg !15
-  ret i32 0, !dbg !15
+  call void @_main(), !dbg !14
+  ret i32 0, !dbg !14
 }
 
 attributes #0 = { noinline nounwind optnone }
@@ -103,18 +102,18 @@ attributes #0 = { noinline nounwind optnone }
 !9 = distinct !DILexicalBlock(scope: !4, file: !2, line: 15)
 !10 = distinct !DISubprogram(name: "f", linkageName: "f", scope: null, file: !2, line: 25, type: !11, scopeLine: 25, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !11 = !DISubroutineType(flags: DIFlagPublic, types: !12)
-!12 = !{!13, !14}
-!13 = !DIBasicType(name: "{ float, float }", size: 16, flags: DIFlagPublic)
-!14 = !DIBasicType(name: "float", size: 16, flags: DIFlagPublic)
-!15 = !DILocation(line: 25, scope: !16)
-!16 = distinct !DILexicalBlock(scope: !10, file: !2, line: 25)
-!17 = distinct !DISubprogram(name: "a", linkageName: "a", scope: null, file: !2, line: 5, type: !18, scopeLine: 5, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
-!18 = !DISubroutineType(flags: DIFlagPublic, types: !19)
-!19 = !{!14, !13}
+!12 = !{!13, !13}
+!13 = !DIBasicType(name: "float", size: 16, flags: DIFlagPublic)
+!14 = !DILocation(line: 25, scope: !15)
+!15 = distinct !DILexicalBlock(scope: !10, file: !2, line: 25)
+!16 = distinct !DISubprogram(name: "a", linkageName: "a", scope: null, file: !2, line: 5, type: !17, scopeLine: 5, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
+!17 = !DISubroutineType(flags: DIFlagPublic, types: !18)
+!18 = !{!13, !19}
+!19 = !DIBasicType(name: "{ float, float }", size: 16, flags: DIFlagPublic)
 !20 = !DILocation(line: 5, scope: !21)
-!21 = distinct !DILexicalBlock(scope: !17, file: !2, line: 5)
+!21 = distinct !DILexicalBlock(scope: !16, file: !2, line: 5)
 !22 = distinct !DISubprogram(name: "sadd", linkageName: "sadd", scope: null, file: !2, line: 10, type: !23, scopeLine: 10, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !23 = !DISubroutineType(flags: DIFlagPublic, types: !24)
-!24 = !{!14, !13, !13}
+!24 = !{!13, !19, !19}
 !25 = !DILocation(line: 10, column: 4, scope: !26)
 !26 = distinct !DILexicalBlock(scope: !22, file: !2, line: 10, column: 4)

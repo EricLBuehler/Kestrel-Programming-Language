@@ -61,8 +61,6 @@ f:                                      # @f
 	movss	(%rsp), %xmm0           # xmm0 = mem[0],zero,zero,zero
 	movss	4(%rsp), %xmm1          # xmm1 = mem[0],zero,zero,zero
 	callq	s.a
-	movss	(%rsp), %xmm0           # xmm0 = mem[0],zero,zero,zero
-	movss	4(%rsp), %xmm1          # xmm1 = mem[0],zero,zero,zero
 	addq	$24, %rsp
 	retq
 .Lfunc_end1:
