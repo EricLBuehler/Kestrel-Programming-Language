@@ -496,15 +496,17 @@ impl<'ctx> CodeGen<'ctx> {
         return data;
     }
     
-    fn build_func(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let mut name: &String = &node.data.func.as_ref().unwrap().name;
+    fn build_func(&mut self, node: &parser::Node, altnm: Option<String>) -> types::Data<'ctx> {
+        let mut name: String = if altnm.is_none() { node.data.func.as_ref().unwrap().name.clone() } else { altnm.as_ref().unwrap().clone() };
 
-        if node.data.func.as_ref().unwrap().methodname.is_some() {
-            name = node.data.func.as_ref().unwrap().methodname.as_ref().unwrap();
-        }
+        if altnm.is_none(){
+            if node.data.func.as_ref().unwrap().methodname.is_some() {
+                name = node.data.func.as_ref().unwrap().methodname.as_ref().unwrap().to_string();
+            }
 
-        if !name.is_snake_case() {
-            errors::show_warning(errors::WarningType::ExpectedSnakeCase, vec![String::from(""), name.to_snake_case()], vec![String::from("Expected snake case"), String::from("Convert to this: ")], &node.pos, self.info)
+            if !name.is_snake_case() {
+                errors::show_warning(errors::WarningType::ExpectedSnakeCase, vec![String::from(""), name.to_snake_case()], vec![String::from("Expected snake case"), String::from("Convert to this: ")], &node.pos, self.info)
+            }
         }
 
         if self.get_function(&name) != None && self.get_function(&name).unwrap().2 != ForwardDeclarationType::Forward {
@@ -643,7 +645,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         let func_scope: inkwell::debug_info::DISubprogram = self.dibuilder.create_function(
             self.dicompile_unit.as_debug_info_scope(),
-            name,
+            &name,
             Some(&mangled_name),
             self.dicompile_unit.get_file(),
             node.pos.line as u32,
@@ -1385,37 +1387,7 @@ impl<'ctx> CodeGen<'ctx> {
             errors::raise_error(&fmt, errors::ErrorType::ArgumentCountMismatch, &node.pos, self.info);
         }
 
-        //Change function name
-        let mut func: parser::nodes::FuncNode = node.data.impln.as_ref().unwrap().func.data.func.as_ref().unwrap().clone();
-        func.name = structnm.to_owned() + node.data.impln.as_ref().unwrap().func.data.func.as_ref().unwrap().name.as_str();
-
-        let nodedat: parser::nodes::NodeData = parser::nodes::NodeData {
-            binary: None,
-            num: None,
-            letn: None,
-            identifier: None,
-            func: Some(func),
-            assign: None,
-            call: None,
-            ret: None,
-            to: None,
-            unary: None,
-            st: None,
-            initst: None,
-            attr: None,
-            attrassign: None,
-            str: None,
-            arr: None,
-            impln: None,
-        };
-
-        let n: parser::Node = parser::Node {
-            tp: parser::NodeType::FUNC,
-            data: Box::new(nodedat),
-            pos: node.data.impln.as_ref().unwrap().func.pos.clone(),
-        };
-
-        let func: types::Data = self.build_func(&n);
+        let func: types::Data = self.build_func(&node.data.impln.as_ref().unwrap().func, Some(structnm.to_owned() + "." + node.data.impln.as_ref().unwrap().func.data.func.as_ref().unwrap().name.as_str()));
 
         if !self.namespaces.structs.contains_key(structnm) {
             let fmt: String = format!("Struct '{}' is not defined.", structnm);
@@ -1472,7 +1444,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.build_loadname(node, give_ownership, get_ptr)
             }
             parser::NodeType::FUNC => {
-                self.build_func(node)
+                self.build_func(node, None)
             }
             parser::NodeType::ASSIGN => {
                 self.build_assign(node)

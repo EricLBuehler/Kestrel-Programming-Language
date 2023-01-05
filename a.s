@@ -85,10 +85,10 @@ s.a:                                    # @s.a
 .Lfunc_end2:
 	.size	s.a, .Lfunc_end2-s.a
                                         # -- End function
-	.globl	sadd                    # -- Begin function sadd
+	.globl	s.add                   # -- Begin function s.add
 	.p2align	4, 0x90
-	.type	sadd,@function
-sadd:                                   # @sadd
+	.type	s.add,@function
+s.add:                                  # @s.add
 # %bb.0:                                # %entry
 	movss	%xmm0, -8(%rsp)
 	movss	%xmm1, -4(%rsp)
@@ -98,7 +98,7 @@ sadd:                                   # @sadd
 	addss	-12(%rsp), %xmm0
 	retq
 .Lfunc_end3:
-	.size	sadd, .Lfunc_end3-sadd
+	.size	s.add, .Lfunc_end3-s.add
                                         # -- End function
 	.globl	main                    # -- Begin function main
 	.p2align	4, 0x90

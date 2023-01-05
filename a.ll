@@ -64,7 +64,7 @@ entry:
 }
 
 ; Function Attrs: noinline nounwind optnone
-define float @sadd({ float, float } %0, { float, float } %1) local_unnamed_addr #0 !dbg !22 {
+define float @s.add({ float, float } %0, { float, float } %1) local_unnamed_addr #0 !dbg !22 {
 entry:
   %self = alloca { float, float }, !dbg !25
   store { float, float } %0, { float, float }* %self, !dbg !25
@@ -112,7 +112,7 @@ attributes #0 = { noinline nounwind optnone }
 !19 = !DIBasicType(name: "{ float, float }", size: 16, flags: DIFlagPublic)
 !20 = !DILocation(line: 5, scope: !21)
 !21 = distinct !DILexicalBlock(scope: !16, file: !2, line: 5)
-!22 = distinct !DISubprogram(name: "sadd", linkageName: "sadd", scope: null, file: !2, line: 10, type: !23, scopeLine: 10, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
+!22 = distinct !DISubprogram(name: "s.add", linkageName: "s.add", scope: null, file: !2, line: 10, type: !23, scopeLine: 10, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !23 = !DISubroutineType(flags: DIFlagPublic, types: !24)
 !24 = !{!13, !19, !19}
 !25 = !DILocation(line: 10, column: 4, scope: !26)
