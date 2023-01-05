@@ -517,6 +517,24 @@ fn make_identifier(lexer: &mut Lexer, kwds: &Vec<String>) -> Token {
 
     if kwds.iter().find(|x| **x==tok.data)!=None {
         tok.tp = TokenType::KEYWORD;
+        if  tok.data == String::from("true") {
+            tok = Token {
+                data: String::from("1"),
+                tp: TokenType::I8,
+                line,
+                startcol: start,
+                endcol: end+1,
+            };                
+        }
+        else if  tok.data == String::from("false") {
+            tok = Token {
+                data: String::from("0"),
+                tp: TokenType::I8,
+                line,
+                startcol: start,
+                endcol: end+1,
+            };                
+        }
     }
     return tok;
 }

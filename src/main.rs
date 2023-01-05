@@ -98,6 +98,8 @@ fn main() {
                                             String::from("struct"),
                                             String::from("impl"),
                                             String::from("for"),
+                                            String::from("true"),
+                                            String::from("false"),
                                             ];
 
     let mut lexer: lexer::Lexer = lexer::Lexer {
