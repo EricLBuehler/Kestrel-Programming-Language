@@ -13,7 +13,7 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
 
     if args.last().unwrap() == &String::from("--help") && args.len() == 2 {
-        println!("usage: kestrel [--version | --help] [--err <error> | --warn <warning>] <program>");
+        println!("usage: kestrel [--version | --help] [--err <error> | --warn <warning>] [<program>]");
         return;
     }
 

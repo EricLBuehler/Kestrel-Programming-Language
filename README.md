@@ -10,7 +10,8 @@ Kestrel is written in Rust, and is currently system-independent.
 ## Usage
 See an example [here](program.ke).
 
-To run Kestrel, execute the ```kestrel``` binary with the program to execute as a command line parameter.
+```kestrel [--version | --help] [--err <error> | --warn <warning>] [<program>]```
+
 
 ## Links
 - [Documentation](/docs/)
