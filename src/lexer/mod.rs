@@ -457,6 +457,9 @@ fn make_number(lexer: &mut Lexer) -> Token {
                     tp=TokenType::I64;
                 }
             }
+            else if specified_tp=="bool" { 
+                tp=TokenType::I8;
+            }
             else {
                 crate::errors::raise_error(format!("Invalid specified type {}.", specified_tp).as_str(), crate::errors::ErrorType::UnknownType, &crate::parser::Position { line, startcol: start, endcol: end+1 }, lexer.info);
             }
