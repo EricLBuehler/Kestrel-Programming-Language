@@ -1,4 +1,7 @@
 use fileinfo::FileInfo;
+extern crate num;
+#[macro_use]
+extern crate num_derive;
 
 mod fileinfo;
 mod errors;
@@ -9,7 +12,57 @@ mod codegen;
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
-    if args.len()!=2 {
+    if args.last().unwrap() == &String::from("--help") && args.len() == 2 {
+        println!("usage: kestrel [--version | --help] [--err <error> | --warn <warning>] <program>");
+        return;
+    }
+
+    if args.last().unwrap() == &String::from("--version") && args.len() == 2 {
+        println!("{}", env!("CARGO_PKG_VERSION"));
+        return;
+    }
+
+    if args.get(1).unwrap() == &String::from("--err") {
+        let error = args.get(2).unwrap().parse::<i32>();
+        if error.is_err() || error.clone().unwrap()<=0{
+            println!("Invalid numeric value.");
+            return;
+        }
+
+        let res: Option<errors::ErrorType> = num::FromPrimitive::from_i32(error.clone().unwrap()-1);
+        
+        match res {
+            Some(v) => {
+                println!("{}", format!("error[E{:0>3}]: {}", error.unwrap(), errors::repr_err(v)));
+            }
+            None => {
+                println!("Error not found.");
+            }
+        }
+        return;
+    }
+
+    if args.get(1).unwrap() == &String::from("--warn") {
+        let warning = args.get(2).unwrap().parse::<i32>();
+        if warning.is_err() || warning.clone().unwrap()<=0 {
+            println!("Invalid numeric value.");
+            return;
+        }
+
+        let res: Option<errors::WarningType> = num::FromPrimitive::from_i32(warning.clone().unwrap()-1);
+        
+        match res {
+            Some(v) => {
+                println!("{}", format!("warning[E{:0>3}]: {}", warning.unwrap(), errors::repr_warn(v)));
+            }
+            None => {
+                println!("Error not found.");
+            }
+        }
+        return;        
+    }
+
+    if args.len() != 2 {
         println!("Invalid number of command line arguments. Expected 2, got {}.", args.len());
         return;
     }

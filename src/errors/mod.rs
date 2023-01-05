@@ -1,6 +1,6 @@
 use colored::Colorize;
 
-#[derive(Clone)]
+#[derive(Clone, FromPrimitive)]
 pub enum ErrorType {
     InvalidTok,    
     InvalidDataTypes,
@@ -41,48 +41,52 @@ pub enum ErrorType {
 
 impl std::fmt::Display for ErrorType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match *self {
-            ErrorType::InvalidTok => write!(f, "invalid token"),
-            ErrorType::InvalidDataTypes => write!(f, "invalid data types for operation"),
-            ErrorType::InvalidLiteralForRadix => write!(f, "invalid data literal for implicit or explicit radix"),
-            ErrorType::MissingTrait => write!(f, "missing trait"),
-            ErrorType::RedefinitionAttempt => write!(f, "attempt to redefine name"),
-            ErrorType::NameNotFound => write!(f, "name not defined"),
-            ErrorType::NestedFunctions => write!(f, "attempt to define nested functions"),
-            ErrorType::CannotAssign => write!(f, "cannot assign to type"),
-            ErrorType::UnknownType => write!(f, "unknown type"),
-            ErrorType::ArgumentCountMismatch => write!(f, "invalid number of arguments were passed to a function"),
-            ErrorType::TypeMismatch => write!(f, "mismatch of types"),
-            ErrorType::ImmutableAssign => write!(f, "cannot assign to immutable variable"),
-            ErrorType::InvalidCast => write!(f, "invalid cast"),
-            ErrorType::NameNotOwned => write!(f, "name is not owned"),
-            ErrorType::ReturnValueNotOwned => write!(f, "return value is not owned"),
-            ErrorType::ReturnOutsideOfFunction => write!(f, "cannot return outside of function"),
-            ErrorType::StructNotDefined => write!(f, "struct is not defined"),
-            ErrorType::InvalidMemberCount => write!(f, "invalid member count"),
-            ErrorType::MemberNameNotFound => write!(f, "member name not found"),
-            ErrorType::FieldRedeclaration => write!(f, "field is redefined"),
-            ErrorType::FieldReinitialization => write!(f, "field is reinitialized"),
-            ErrorType::GetAttrOfNonStruct => write!(f, "cannot get attribute of non-struct"),
-            ErrorType::StructAttrNotFound => write!(f, "attribute not found"),
-            ErrorType::CannotDefineVoidArray => write!(f, "cannot define void array"),
-            ErrorType::UnexpectedMultibyte => write!(f, "unexpected multibyte character"),
-            ErrorType::ArrayLengthOutOfRange => write!(f, "array length out of range of 'u32'"),
-            ErrorType::CannotDefineFnArray => write!(f, "cannot define fn array"),
-            ErrorType::ZeroLengthArray => write!(f, "cannot define zero length array"),
-            ErrorType::EmptyCharLiteral => write!(f, "char literals cannot be empty"),
-            ErrorType::GlobalScopeStmt => write!(f, "cannot have other statements in the global scope"),
-            ErrorType::ImmutableAttr => write!(f, "immutable attr assign"),
-            ErrorType::InvlaidStatement => write!(f, "immutable statement"),
-            ErrorType::TraitNotFound => write!(f, "trait not found"),
-            ErrorType::TraitExpectProperFunctionName => write!(f, "trait implementation expects function with proper name"),
-            ErrorType::CannotImplementCallTrait => write!(f, "cannot implement call trait"),
-        }
+        write!(f, "{}", repr_err(self.clone()))
+    }
+}
+
+pub fn repr_err(tp: ErrorType) -> &'static str {
+    match tp {
+        ErrorType::InvalidTok => "invalid token",
+        ErrorType::InvalidDataTypes => "invalid data types for operation",
+        ErrorType::InvalidLiteralForRadix => "invalid data literal for implicit or explicit radix",
+        ErrorType::MissingTrait => "missing trait",
+        ErrorType::RedefinitionAttempt => "attempt to redefine name",
+        ErrorType::NameNotFound => "name not defined",
+        ErrorType::NestedFunctions => "attempt to define nested functions",
+        ErrorType::CannotAssign => "cannot assign to type",
+        ErrorType::UnknownType => "unknown type",
+        ErrorType::ArgumentCountMismatch => "invalid number of arguments were passed to a function",
+        ErrorType::TypeMismatch => "mismatch of types",
+        ErrorType::ImmutableAssign => "cannot assign to immutable variable",
+        ErrorType::InvalidCast => "invalid cast",
+        ErrorType::NameNotOwned => "name is not owned",
+        ErrorType::ReturnValueNotOwned => "return value is not owned",
+        ErrorType::ReturnOutsideOfFunction => "cannot return outside of function",
+        ErrorType::StructNotDefined => "struct is not defined",
+        ErrorType::InvalidMemberCount => "invalid member count",
+        ErrorType::MemberNameNotFound => "member name not found",
+        ErrorType::FieldRedeclaration => "field is redefined",
+        ErrorType::FieldReinitialization => "field is reinitialized",
+        ErrorType::GetAttrOfNonStruct => "cannot get attribute of non-struct",
+        ErrorType::StructAttrNotFound => "attribute not found",
+        ErrorType::CannotDefineVoidArray => "cannot define void array",
+        ErrorType::UnexpectedMultibyte => "unexpected multibyte character",
+        ErrorType::ArrayLengthOutOfRange => "array length out of range of 'u32'",
+        ErrorType::CannotDefineFnArray => "cannot define fn array",
+        ErrorType::ZeroLengthArray => "cannot define zero length array",
+        ErrorType::EmptyCharLiteral => "char literals cannot be empty",
+        ErrorType::GlobalScopeStmt => "cannot have other statements in the global scope",
+        ErrorType::ImmutableAttr => "immutable attr assign",
+        ErrorType::InvlaidStatement => "immutable statement",
+        ErrorType::TraitNotFound => "trait not found",
+        ErrorType::TraitExpectProperFunctionName => "trait implementation expects function with proper name",
+        ErrorType::CannotImplementCallTrait => "cannot implement call trait",
     }
 }
 
 
-#[derive(Clone)]
+#[derive(Clone, FromPrimitive)]
 pub enum WarningType {
     ExpectedCamelCase,
     ExpectedSnakeCase,
@@ -90,10 +94,14 @@ pub enum WarningType {
 
 impl std::fmt::Display for WarningType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match *self {
-            WarningType::ExpectedCamelCase => write!(f, "expected camel case"),
-            WarningType::ExpectedSnakeCase => write!(f, "expected snake case"),
-        }
+        write!(f, "{}", repr_warn(self.clone()))
+    }
+}
+
+pub fn repr_warn(tp: WarningType) -> &'static str {
+    match tp {
+        WarningType::ExpectedCamelCase => "expected camel case",
+        WarningType::ExpectedSnakeCase => "expected snake case",
     }
 }
 
