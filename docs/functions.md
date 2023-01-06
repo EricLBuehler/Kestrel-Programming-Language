@@ -1,6 +1,6 @@
 # Function Types
 
-Functions are defined by the [```fn```](fn.md#fn) keyword. There are 2 variants:
+Functions are defined by the [```fn```](keywords.md#fn) keyword. There are 2 variants:
 
 - Methods
 - Namespace
