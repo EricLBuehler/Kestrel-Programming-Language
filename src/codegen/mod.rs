@@ -40,7 +40,7 @@ pub enum ForwardDeclarationType {
 pub struct Namespaces<'ctx> {
     locals: std::collections::HashMap<String, (Option<inkwell::values::PointerValue<'ctx>>, types::DataType<'ctx>, types::DataMutablility, types::DataOwnership, parser::Position)>,
     functions: std::collections::HashMap<String, (inkwell::values::FunctionValue<'ctx>, types::DataType<'ctx>, ForwardDeclarationType)>,
-    structs: std::collections::HashMap<String, (types::DataType<'ctx>, inkwell::types::AnyTypeEnum<'ctx>, std::collections::HashMap<String, i32>, ForwardDeclarationType)>,
+    structs: std::collections::HashMap<String, (types::DataType<'ctx>, Option<inkwell::types::AnyTypeEnum<'ctx>>, std::collections::HashMap<String, i32>, ForwardDeclarationType)>,
 }
 
 pub struct CodeGen<'ctx> {
@@ -152,7 +152,7 @@ impl<'ctx> CodeGen<'ctx> {
         }
     }
 
-    pub fn get_llvm_from_type(ctx: &'ctx Context, structs: &std::collections::HashMap<String, (types::DataType<'ctx>, inkwell::types::AnyTypeEnum<'ctx>, std::collections::HashMap<String, i32>, ForwardDeclarationType)>, types: &InkwellTypes<'ctx>, datatypes: &std::collections::HashMap<String, types::DataType<'ctx>>, info: &fileinfo::FileInfo, arg: &parser::Type, node: &parser::Node) -> (types::DataType<'ctx>, inkwell::types::AnyTypeEnum<'ctx>) {
+    pub fn get_llvm_from_type(ctx: &'ctx Context, structs: &std::collections::HashMap<String, (types::DataType<'ctx>, Option<inkwell::types::AnyTypeEnum<'ctx>>, std::collections::HashMap<String, i32>, ForwardDeclarationType)>, types: &InkwellTypes<'ctx>, datatypes: &std::collections::HashMap<String, types::DataType<'ctx>>, info: &fileinfo::FileInfo, arg: &parser::Type, node: &parser::Node) -> (types::DataType<'ctx>, inkwell::types::AnyTypeEnum<'ctx>) {
         if arg.isfn {
             let args: &Vec<parser::Type> = &arg.args.as_ref().unwrap().args;
             let mut datatypes_: Vec<types::DataType> = Vec::new();
@@ -603,7 +603,7 @@ impl<'ctx> CodeGen<'ctx> {
 
             func = self.module.add_function(&(structnm.to_owned()+"."+mangled_name.as_str()), fn_type, None);
     
-            let mut s: (types::DataType, AnyTypeEnum, std::collections::HashMap<String, i32>, ForwardDeclarationType) = self.namespaces.structs.get(structnm).unwrap().clone();
+            let mut s: (types::DataType, Option<AnyTypeEnum>, std::collections::HashMap<String, i32>, ForwardDeclarationType) = self.namespaces.structs.get(structnm).unwrap().clone();
             s.0.methods.insert(name.clone(), types::Method {
                 tp: types::MethodType::Fn,
                 builtin: None,
@@ -624,7 +624,7 @@ impl<'ctx> CodeGen<'ctx> {
 
             func = self.module.add_function(&(structnm.to_owned()+"."+mangled_name.as_str()), fn_type, None);
     
-            let mut s: (types::DataType, AnyTypeEnum, std::collections::HashMap<String, i32>, ForwardDeclarationType) = self.namespaces.structs.get(structnm).unwrap().clone();
+            let mut s: (types::DataType, Option<AnyTypeEnum>, std::collections::HashMap<String, i32>, ForwardDeclarationType) = self.namespaces.structs.get(structnm).unwrap().clone();
             s.0.methods.insert(name.clone(), types::Method {
                 tp: types::MethodType::Fn,
                 builtin: None,
@@ -841,13 +841,11 @@ impl<'ctx> CodeGen<'ctx> {
                     };
 
                     args.push(data.clone());
-                    if method.isinstance {
-                        args.push(types::Data {
-                            data: Some(self.builder.build_load(base.data.unwrap().into_pointer_value(), &base.tp.name)),
-                            tp: base.tp.clone(),
-                            owned: base.owned,
-                        });
-                    }
+                    args.push(types::Data {
+                        data: Some(self.builder.build_load(base.data.unwrap().into_pointer_value(), &base.tp.name)),
+                        tp: base.tp.clone(),
+                        owned: base.owned,
+                    });
 
                     tp_name = method.functp.name.clone();
                     
@@ -1120,7 +1118,7 @@ impl<'ctx> CodeGen<'ctx> {
         tp.mutability = mutabilitites;
 
         self.datatypes.insert(node.data.st.as_ref().unwrap().name.clone(), tp.clone());
-        self.namespaces.structs.insert(node.data.st.as_ref().unwrap().name.clone(), (tp, Self::build_struct_tp_from_types(self.context, &self.inkwell_types, &simpletypes), idxmapping, ForwardDeclarationType::Real));
+        self.namespaces.structs.insert(node.data.st.as_ref().unwrap().name.clone(), (tp, Some(Self::build_struct_tp_from_types(self.context, &self.inkwell_types, &simpletypes)), idxmapping, ForwardDeclarationType::Real));
         builtin_types::add_simple_type(self, std::collections::HashMap::new(), types::BasicDataType::Struct, &node.data.st.as_ref().unwrap().name.clone());
 
         let data: types::Data = types::Data {
@@ -1140,7 +1138,7 @@ impl<'ctx> CodeGen<'ctx> {
             errors::raise_error(&fmt, errors::ErrorType::StructNotDefined, &node.pos, self.info);
         }
 
-        let s: (types::DataType, AnyTypeEnum, std::collections::HashMap<String, i32>, ForwardDeclarationType) = self.namespaces.structs.get(&name).unwrap().clone();
+        let s: (types::DataType, Option<AnyTypeEnum>, std::collections::HashMap<String, i32>, ForwardDeclarationType) = self.namespaces.structs.get(&name).unwrap().clone();
 
         for member in &node.data.initst.as_ref().unwrap().members_vec {
             if members.contains_key(member) {
@@ -1169,7 +1167,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
         }
         
-        let ptr: inkwell::values::PointerValue = self.builder.build_alloca(s.1.into_struct_type(), name.as_str());
+        let ptr: inkwell::values::PointerValue = self.builder.build_alloca(s.1.unwrap().into_struct_type(), name.as_str());
         
         for member in &node.data.initst.as_ref().unwrap().members_vec {
             if members.get(member).unwrap().data.is_some() {
@@ -1443,6 +1441,48 @@ impl<'ctx> CodeGen<'ctx> {
         return data;
     }
 
+    fn build_namespaceload(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        let attr: &String = &node.data.attr.as_ref().unwrap().attr;
+
+        if self.namespaces.structs.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).is_none() {
+            let fmt: String = format!("Struct '{}' is not defined.", &node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name);
+            errors::raise_error(&fmt, errors::ErrorType::StructNotDefined, &node.pos, self.info);
+        }
+
+        let st = self.namespaces.structs.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().clone();
+
+        //First check methods
+        let method_: Option<&types::Method> = st.0.methods.get(attr);
+        if method_.is_some() {
+            let method: &types::Method = method_.unwrap();
+            if method.tp == types::MethodType::Fn {
+                let data: types::Data = types::Data {
+                    data: Some(inkwell::values::BasicValueEnum::PointerValue(method.func.unwrap())),
+                    tp: method.functp.clone(),
+                    owned: true,
+                };
+
+                return data;
+            }
+            else {
+                let mut tp_: types::DataType = self.datatypes.get(&types::BasicDataType::WrapperFunc.to_string()).unwrap().clone();
+                tp_.wrapperfn = method.builtin;
+                let data: types::Data = types::Data {
+                    data: None,
+                    tp: tp_,
+                    owned: true,
+                };
+
+                return data;
+            }
+        }
+
+        //Last case
+        let fmt: String = format!("Type '{}' has no namespace attribute '{}'.", node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name, attr);
+        errors::raise_error(&fmt, errors::ErrorType::NamespaceAttrNotFound, &node.pos, self.info);
+    }
+
+
     fn compile_expr(&mut self, node: &parser::Node, give_ownership: bool, get_ptr: bool) -> types::Data<'ctx> {
         match node.tp {
             parser::NodeType::I32 => {
@@ -1671,6 +1711,9 @@ impl<'ctx> CodeGen<'ctx> {
             parser::NodeType::IMPL => {
                 self.build_impl(node)
             }
+            parser::NodeType::NAMESPACE => {
+                self.build_namespaceload(node)
+            }
         }
     }
 
@@ -1828,7 +1871,7 @@ impl<'ctx> CodeGen<'ctx> {
                 tp.mutability = mutabilitites;
                 
                 self.datatypes.insert(node.data.st.as_ref().unwrap().name.clone(), tp.clone());
-                self.namespaces.structs.insert(node.data.st.as_ref().unwrap().name.clone(), (tp, Self::build_struct_tp_from_types(self.context, &self.inkwell_types, &simpletypes),idxmapping, ForwardDeclarationType::Forward));
+                self.namespaces.structs.insert(node.data.st.as_ref().unwrap().name.clone(), (tp, Some(Self::build_struct_tp_from_types(self.context, &self.inkwell_types, &simpletypes)), idxmapping, ForwardDeclarationType::Forward));
             }
         }
     }
@@ -1902,9 +1945,10 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
     let manager: inkwell::passes::PassManager<Module> = inkwell::passes::PassManager::create(());
     pass_manager_builder.populate_module_pass_manager(&manager);
 
-    //Setup builtin types
+    //Setup builtin types and structs
     builtin_types::init(&mut codegen);
     builtin_types::init_traits(&mut codegen);
+    builtin_types::init_structs(&mut codegen);
 
     //Generate forward-declaration functions
     codegen.forward_declare(&nodes);

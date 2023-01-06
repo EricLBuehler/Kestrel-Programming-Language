@@ -9,21 +9,25 @@ entry:
   store float 0x3FF3AE1480000000, float* %x, !dbg !8
   %x1 = load float, float* %x, !dbg !8
   %res = call float @f(float %x1), !dbg !8
-  %name = alloca [12 x i8], !dbg !8
-  store [12 x i8] c"Kestrel \F0\9F\A6\85", [12 x i8]* %name, !dbg !8
+  %String = alloca { [12 x i8] }, !dbg !8
+  %arr = getelementptr inbounds { [12 x i8] }, { [12 x i8] }* %String, i32 0, i32 0, !dbg !8
+  store [12 x i8] c"Kestrel \F0\9F\A6\85", [12 x i8]* %arr, !dbg !8
+  %string = load { [12 x i8] }, { [12 x i8] }* %String, !dbg !8
+  %name = alloca { [12 x i8] }, !dbg !8
+  store { [12 x i8] } %string, { [12 x i8] }* %name, !dbg !8
   %char = alloca i32, !dbg !8
   store i32 129413, i32* %char, !dbg !8
   %x2 = load float, float* %x, !dbg !8
   %x3 = load float, float* %x, !dbg !8
   %f32mul = fmul float %x2, %x3, !dbg !8
   %ftoi = fptosi float %f32mul to i32, !dbg !8
-  %arr = alloca [2 x i32], !dbg !8
-  %i32 = getelementptr [2 x i32], [2 x i32]* %arr, i8 0, i8 0, !dbg !8
+  %arr4 = alloca [2 x i32], !dbg !8
+  %i32 = getelementptr [2 x i32], [2 x i32]* %arr4, i8 0, i8 0, !dbg !8
   store i32 %ftoi, i32* %i32, !dbg !8
-  %i324 = getelementptr [2 x i32], [2 x i32]* %arr, i8 0, i8 0, !dbg !8
-  store i32 2, i32* %i324, !dbg !8
-  %arr5 = alloca [2 x i32]*, !dbg !8
-  store [2 x i32]* %arr, [2 x i32]** %arr5, !dbg !8
+  %i325 = getelementptr [2 x i32], [2 x i32]* %arr4, i8 0, i8 0, !dbg !8
+  store i32 2, i32* %i325, !dbg !8
+  %arr6 = alloca [2 x i32]*, !dbg !8
+  store [2 x i32]* %arr4, [2 x i32]** %arr6, !dbg !8
   %len = alloca i32, !dbg !8
   store i32 2, i32* %len, !dbg !8
   ret void, !dbg !8

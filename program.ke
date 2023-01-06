@@ -16,7 +16,7 @@ impl Add for s {
 fn main() {
     let x = 1.23
     f(&x)
-    let name: i8[12] = "Kestrel 🦅"
+    let name: String = String::new("Kestrel 🦅")
     let char: char = '🦅'
     let arr: i32[2] = [x*x as i32,2]
     //This is a comment

@@ -24,6 +24,8 @@ pub mod arrtype;
 pub mod structtype;
 pub mod wrapperfntype;
 
+pub mod structs;
+
 pub fn add_simple_type<'a>(codegen: &mut codegen::CodeGen<'a>, traits: HashMap<String, Trait<'a>>, basictype: BasicDataType, name: &str){
     let tp = Type {
         traits,
@@ -109,4 +111,8 @@ pub fn init_traits(codegen: &mut codegen::CodeGen) {
     codegen.traits.insert(types::TraitType::Neg.to_string(), types::TraitSignature {
          nargs: 1, name: String::from("neg")
         });
+}
+
+pub fn init_structs(codegen: &mut codegen::CodeGen) {
+    structs::stringtype::init_string(codegen);
 }

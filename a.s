@@ -5,32 +5,62 @@
 	.type	_main,@function
 _main:                                  # @_main
 # %bb.0:                                # %entry
-	subq	$40, %rsp
-	movl	$1067282596, (%rsp)     # imm = 0x3F9D70A4
-	movss	(%rsp), %xmm0           # xmm0 = mem[0],zero,zero,zero
+	pushq	%rbp
+	pushq	%r14
+	pushq	%rbx
+	subq	$64, %rsp
+	movl	$1067282596, 36(%rsp)   # imm = 0x3F9D70A4
+	movss	36(%rsp), %xmm0         # xmm0 = mem[0],zero,zero,zero
 	callq	f
-	movb	$-123, 15(%rsp)
-	movb	$-90, 14(%rsp)
-	movb	$-97, 13(%rsp)
-	movb	$-16, 12(%rsp)
-	movb	$32, 11(%rsp)
-	movb	$108, 10(%rsp)
+	movb	$-123, 19(%rsp)
+	movb	$-90, 18(%rsp)
+	movb	$-97, 17(%rsp)
+	movb	$-16, 16(%rsp)
+	movb	$32, 15(%rsp)
+	movb	$108, 14(%rsp)
+	movb	$101, 13(%rsp)
+	movb	$114, 12(%rsp)
+	movb	$116, 11(%rsp)
+	movb	$115, 10(%rsp)
 	movb	$101, 9(%rsp)
-	movb	$114, 8(%rsp)
-	movb	$116, 7(%rsp)
-	movb	$115, 6(%rsp)
-	movb	$101, 5(%rsp)
-	movb	$75, 4(%rsp)
-	movl	$129413, 28(%rsp)       # imm = 0x1F985
-	movss	(%rsp), %xmm0           # xmm0 = mem[0],zero,zero,zero
-	mulss	(%rsp), %xmm0
+	movb	$75, 8(%rsp)
+	movb	8(%rsp), %sil
+	movb	9(%rsp), %dil
+	movb	10(%rsp), %r8b
+	movb	11(%rsp), %r9b
+	movb	12(%rsp), %r10b
+	movb	13(%rsp), %r11b
+	movb	14(%rsp), %bpl
+	movb	15(%rsp), %r14b
+	movb	16(%rsp), %dl
+	movb	17(%rsp), %bl
+	movb	18(%rsp), %al
+	movb	19(%rsp), %cl
+	movb	%cl, 35(%rsp)
+	movb	%al, 34(%rsp)
+	movb	%bl, 33(%rsp)
+	movb	%dl, 32(%rsp)
+	movb	%r14b, 31(%rsp)
+	movb	%bpl, 30(%rsp)
+	movb	%r11b, 29(%rsp)
+	movb	%r10b, 28(%rsp)
+	movb	%r9b, 27(%rsp)
+	movb	%r8b, 26(%rsp)
+	movb	%dil, 25(%rsp)
+	movb	%sil, 24(%rsp)
+	movl	$129413, 52(%rsp)       # imm = 0x1F985
+	movss	36(%rsp), %xmm0         # xmm0 = mem[0],zero,zero,zero
+	mulss	36(%rsp), %xmm0
 	cvttss2si	%xmm0, %eax
-	movl	%eax, 16(%rsp)
-	movl	$2, 16(%rsp)
-	leaq	16(%rsp), %rax
-	movq	%rax, 32(%rsp)
-	movl	$2, 24(%rsp)
-	addq	$40, %rsp
+	movl	%eax, 40(%rsp)
+	movl	$2, 40(%rsp)
+	leaq	40(%rsp), %rax
+	movq	%rax, 56(%rsp)
+	movl	$2, 48(%rsp)
+	addq	$64, %rsp
+	popq	%rbx
+	popq	%r14
+	popq	%rbp
 	retq
 .Lfunc_end0:
 	.size	_main, .Lfunc_end0-_main

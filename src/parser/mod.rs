@@ -48,7 +48,8 @@ pub enum NodeType {
     STRING,
     CHAR,
     ARRAY,
-    IMPL
+    IMPL,
+    NAMESPACE,
 }
 
 #[derive(Clone, Debug)]
@@ -110,7 +111,8 @@ impl std::fmt::Display for Node {
             NodeType::REF => write!(f, "{}", self.data.unary.as_ref().unwrap() ),
             NodeType::STRUCT => write!(f, "{}", self.data.st.as_ref().unwrap() ),
             NodeType::INITSTRUCT => write!(f, "{}", self.data.initst.as_ref().unwrap() ),
-            NodeType::ATTR => write!(f, "{}", self.data.attr.as_ref().unwrap() ),
+            NodeType::ATTR |
+            NodeType::NAMESPACE => write!(f, "{}", self.data.attr.as_ref().unwrap() ),
             NodeType::ATTRASSIGN => write!(f, "{}", self.data.attrassign.as_ref().unwrap() ),
             NodeType::STRING => write!(f, "{}", self.data.str.as_ref().unwrap() ),
             NodeType::ARRAY => write!(f, "{}", self.data.arr.as_ref().unwrap() ),
@@ -672,6 +674,49 @@ impl<'life> Parser<'life> {
                 n = self.create_node(NodeType::ATTR, nodedat, pos.clone());
             }
         }
+        else if self.next_is_type(TokenType::DOUBLECOLON) {
+            let mut pos = Position {
+                line: self.current.line,
+                startcol: self.current.startcol,
+                endcol: 0,
+            };
+            self.advance();
+            self.advance();
+            let attr: String = self.current.data.clone();
+
+            pos.endcol = self.current.endcol;
+
+            let attr: nodes::AttrNode = nodes::AttrNode{
+                name: n,
+                attr,
+            };
+        
+            let nodedat: nodes::NodeData = nodes::NodeData {
+                binary: None,
+                num: None,
+                letn: None,
+                identifier: None,
+                func: None,
+                assign: None,
+                call: None,
+                ret: None,
+                to: None,
+                unary: None,
+                st: None,
+                initst: None,
+                attr: Some(attr),
+                attrassign: None,
+                str: None,
+                arr: None,
+                impln: None,
+            };
+        
+            n = self.create_node(NodeType::NAMESPACE, nodedat, pos.clone());
+
+            self.advance();
+
+            n = self.generate_call(n);
+        }
     
         return n;
     }
@@ -740,7 +785,8 @@ impl<'life> Parser<'life> {
         };
 
         if  left.tp != NodeType::IDENTIFIER &&
-            left.tp != NodeType::ATTR {
+            left.tp != NodeType::ATTR &&
+            left.tp != NodeType::NAMESPACE {
             self.raise_error_pos("Expected name", ErrorType::InvalidTok, left);
         }
 
