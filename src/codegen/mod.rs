@@ -606,6 +606,7 @@ impl<'ctx> CodeGen<'ctx> {
                 builtin: None,
                 func: Some(func.as_global_value().as_pointer_value()),
                 functp: dtp.clone(),
+                isinstance: true,
             });
 
             self.namespaces.structs.insert(structnm.to_owned(), (s.0, s.1, s.2, s.3));
@@ -816,11 +817,13 @@ impl<'ctx> CodeGen<'ctx> {
                     };
 
                     args.push(data.clone());
-                    args.push(types::Data {
-                        data: Some(self.builder.build_load(base.data.unwrap().into_pointer_value(), &base.tp.name)),
-                        tp: base.tp.clone(),
-                        owned: base.owned,
-                    });
+                    if method.isinstance {
+                        args.push(types::Data {
+                            data: Some(self.builder.build_load(base.data.unwrap().into_pointer_value(), &base.tp.name)),
+                            tp: base.tp.clone(),
+                            owned: base.owned,
+                        });
+                    }
 
                     tp_name = method.functp.name.clone();
                     

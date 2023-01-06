@@ -255,6 +255,7 @@ pub struct Method<'a> {
     pub builtin: Option<fn(&codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>>,
     pub func: Option<inkwell::values::PointerValue<'a>>,
     pub functp: DataType<'a>,
+    pub isinstance: bool,
 }
 
 impl<'a> std::fmt::Debug for Method<'a> {

@@ -39,6 +39,7 @@ pub fn init_array(codegen: &mut codegen::CodeGen) {
         builtin: Some(length),
         func: None,
         functp: lengthfntp,
+        isinstance: true,
     });
 
     let mut alt_tp: DataType = codegen.datatypes.get(&BasicDataType::Array.to_string()).unwrap().clone();
