@@ -21,8 +21,7 @@ jobs:
           version: "10.0"
       - uses: actions/checkout@v3
       - name: Init
-        run: llvm
-        run: llvm-config --version
+        run: llvm-config
       - name: Build
         run: cargo build --verbose --release
       - name: Run tests
