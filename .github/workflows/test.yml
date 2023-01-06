@@ -21,6 +21,6 @@ jobs:
           version: "10.0"
       - uses: actions/checkout@v3
       - name: Build
-        run: cargo build --verbose --features llvm${{ "10-0" }}
+        run: cargo build --verbose --release
       - name: Run tests
-        run: cargo test --verbose --features llvm${{ "10-0" }}
+        run: cargo test --verbose --release
