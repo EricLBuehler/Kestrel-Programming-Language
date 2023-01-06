@@ -79,3 +79,8 @@ Array literals are given by the following ```Rust```-style syntax: ```[element, 
 [1,2,3]
 ```
 All elements must be of the same type
+
+# Structs
+
+## ```String```
+The ```String``` wraps a ```char``` array with [methods](methods/String.md).
