@@ -56,7 +56,7 @@ _main:                                  # @_main
 	movl	$2, 40(%rsp)
 	leaq	40(%rsp), %rax
 	movq	%rax, 56(%rsp)
-	movl	$2, 48(%rsp)
+	movl	$12, 48(%rsp)
 	addq	$64, %rsp
 	popq	%rbx
 	popq	%r14

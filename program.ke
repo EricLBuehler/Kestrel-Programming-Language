@@ -20,7 +20,7 @@ fn main() {
     let char: char = '🦅'
     let arr: i32[2] = [x*x as i32,2]
     //This is a comment
-    let len: usize = arr.length()
+    let len: usize = name.length()
 }
 
 fn f(x: f32) -> f32{

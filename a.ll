@@ -28,8 +28,10 @@ entry:
   store i32 2, i32* %i325, !dbg !8
   %arr6 = alloca [2 x i32]*, !dbg !8
   store [2 x i32]* %arr4, [2 x i32]** %arr6, !dbg !8
+  %arr7 = getelementptr inbounds { [12 x i8] }, { [12 x i8] }* %name, i32 0, i32 0, !dbg !8
+  %arr8 = load [12 x i8], [12 x i8]* %arr7, !dbg !8
   %len = alloca i32, !dbg !8
-  store i32 2, i32* %len, !dbg !8
+  store i32 12, i32* %len, !dbg !8
   ret void, !dbg !8
 }
 

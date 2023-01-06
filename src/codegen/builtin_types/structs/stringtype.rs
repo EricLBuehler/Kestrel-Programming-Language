@@ -8,11 +8,14 @@ fn string_length<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &
         let fmt: String = format!("Expected 1 argument, got {}.", args.len());
         errors::raise_error(&fmt, errors::ErrorType::ArgumentCountMismatch, pos, codegen.info);
     }
+    
+    let itmptr: inkwell::values::PointerValue = codegen.builder.build_struct_gep(args.get(0).unwrap().data.unwrap().into_pointer_value(), 0 as u32, "arr").expect("GEP Error");
+    let arr: inkwell::values::ArrayValue = codegen.builder.build_load(itmptr, "arr").into_array_value();
 
-    let len: u32 = args.get(0).unwrap().tp.arrtp.unwrap().len();
+    let len: u32 = arr.get_type().len();
 
     return Data {
-        data: Some(inkwell::values::BasicValueEnum::IntValue(codegen.inkwell_types.i8tp.const_int(len.into(), false))),
+        data: Some(inkwell::values::BasicValueEnum::IntValue(codegen.inkwell_types.i32tp.const_int(len.into(), false))),
         tp: codegen.datatypes.get("usize").unwrap().clone(),
         owned: true,
     };
