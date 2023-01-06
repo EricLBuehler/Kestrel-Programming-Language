@@ -1677,6 +1677,7 @@ impl<'life> Parser<'life> {
 
         let name: String = self.current.data.clone();
         let mut methodname: Option<String> = None;
+        let mut namespacename: Option<String> = None;
 
         self.advance();
 
@@ -1686,6 +1687,15 @@ impl<'life> Parser<'life> {
                 self.raise_error("Expected identifier.", ErrorType::InvalidTok);
             }
             methodname = Some(self.current.data.clone());
+            self.advance();
+        }
+
+        if self.current_is_type(TokenType::DOUBLECOLON) {
+            self.advance();
+            if !self.current_is_type(TokenType::IDENTIFIER) {
+                self.raise_error("Expected identifier.", ErrorType::InvalidTok);
+            }
+            namespacename = Some(self.current.data.clone());
             self.advance();
         }
 
@@ -1793,6 +1803,7 @@ impl<'life> Parser<'life> {
             blocks,
             args,
             methodname,
+            namespacename,
         };
 
         let nodedat: nodes::NodeData = nodes::NodeData {

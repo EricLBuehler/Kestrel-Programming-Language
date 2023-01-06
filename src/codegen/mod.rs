@@ -503,6 +503,9 @@ impl<'ctx> CodeGen<'ctx> {
             if node.data.func.as_ref().unwrap().methodname.is_some() {
                 name = node.data.func.as_ref().unwrap().methodname.as_ref().unwrap().to_string();
             }
+            if node.data.func.as_ref().unwrap().namespacename.is_some() {
+                name = node.data.func.as_ref().unwrap().namespacename.as_ref().unwrap().to_string();
+            }
 
             if !name.is_snake_case() {
                 errors::show_warning(errors::WarningType::ExpectedSnakeCase, vec![String::from(""), name.to_snake_case()], vec![String::from("Expected snake case"), String::from("Convert to this: ")], &node.pos, self.info)
@@ -607,6 +610,27 @@ impl<'ctx> CodeGen<'ctx> {
                 func: Some(func.as_global_value().as_pointer_value()),
                 functp: dtp.clone(),
                 isinstance: true,
+            });
+
+            self.namespaces.structs.insert(structnm.to_owned(), (s.0, s.1, s.2, s.3));
+        }
+        else if node.data.func.as_ref().unwrap().namespacename.is_some() {
+            let structnm: &String = &node.data.func.as_ref().unwrap().name;
+
+            if self.namespaces.structs.get(structnm).is_none() {
+                let fmt: String = format!("Struct '{}' is not defined.", structnm);
+                errors::raise_error(&fmt, errors::ErrorType::StructNotDefined, &node.pos, self.info);
+            }
+
+            func = self.module.add_function(&(structnm.to_owned()+"."+mangled_name.as_str()), fn_type, None);
+    
+            let mut s: (types::DataType, AnyTypeEnum, std::collections::HashMap<String, i32>, ForwardDeclarationType) = self.namespaces.structs.get(structnm).unwrap().clone();
+            s.0.methods.insert(name.clone(), types::Method {
+                tp: types::MethodType::Fn,
+                builtin: None,
+                func: Some(func.as_global_value().as_pointer_value()),
+                functp: dtp.clone(),
+                isinstance: false,
             });
 
             self.namespaces.structs.insert(structnm.to_owned(), (s.0, s.1, s.2, s.3));
@@ -1676,7 +1700,8 @@ impl<'ctx> CodeGen<'ctx> {
     fn forward_declare(&mut self, nodes: &Vec<parser::Node>){
         for node in nodes {
             if node.tp == parser::NodeType::FUNC {
-                if node.data.func.as_ref().unwrap().methodname.is_some() {
+                if  node.data.func.as_ref().unwrap().methodname.is_some() ||
+                    node.data.func.as_ref().unwrap().namespacename.is_some() {
                     continue;
                 }
                 let name: &String = &node.data.func.as_ref().unwrap().name;
