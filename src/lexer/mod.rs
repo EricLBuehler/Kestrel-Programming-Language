@@ -38,6 +38,7 @@ pub enum TokenType {
     RSQUARE,
     CHAR,
     EMOJIERR,
+    DOUBLECOLON,
 }
 
 pub struct Lexer<'life> {
@@ -104,6 +105,7 @@ impl std::fmt::Display for TokenType {
            TokenType::RSQUARE => write!(f, "RSQUARE"),
            TokenType::CHAR => write!(f, "CHAR"),
            TokenType::EMOJIERR => write!(f, "EMOJIERR"),
+           TokenType::DOUBLECOLON => write!(f, "DOUBLECOLON"),
        }
     }
 }
@@ -273,6 +275,17 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
                 endcol: lexer.col+1,
             });
             advance(lexer);
+            if lexer.current == b':' {     
+                let popped: Token = tokens.pop().unwrap();           
+                tokens.push(Token {
+                    data: String::from("::"),
+                    tp: TokenType::DOUBLECOLON,
+                    line: popped.line,
+                    startcol: popped.startcol,
+                    endcol: popped.endcol+1,
+                });
+                advance(lexer);
+            }
         }
         else if cur == ',' {
             tokens.push(Token {
