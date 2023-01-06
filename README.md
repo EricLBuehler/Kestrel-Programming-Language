@@ -1,4 +1,6 @@
 # Kestrel Programming Language
+![Minimum rustc 1.61](https://img.shields.io/badge/rustc-1.61%2B-red)
+
 The Kestrel Programming Language is a statically and strongly typed, compiled programming language written in Rust.
 
 ## Depenendencies
