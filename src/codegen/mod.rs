@@ -1736,6 +1736,9 @@ impl<'ctx> CodeGen<'ctx> {
             parser::NodeType::NAMESPACE => {
                 self.build_namespaceload(node)
             }
+            parser::NodeType::IF => {
+                unimplemented!();
+            }
         }
     }
 

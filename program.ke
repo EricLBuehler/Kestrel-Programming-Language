@@ -21,6 +21,9 @@ fn main() {
     let arr: i32[2] = [x*x as i32,2]
     //This is a comment
     let len: usize = name.length()
+    if 1==1 {
+        let x = 123;
+    }
 }
 
 fn f(x: f32) -> f32{

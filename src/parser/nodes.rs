@@ -272,6 +272,22 @@ impl std::fmt::Display for ImplNode {
 }
 
 #[derive(Clone, Debug)]
+pub struct IfNode{
+    pub body: Vec<crate::parser::Node>,
+    pub expr: crate::parser::Node,
+}
+
+impl std::fmt::Display for IfNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "If '{}' {{", self.expr)?;
+        for node in self.body.clone() {
+            writeln!(f, "    {}", node)?;
+        }
+        write!(f, "    }}")
+    }    
+}
+
+#[derive(Clone, Debug)]
 pub struct NodeData {
     pub binary: Option<BinaryNode>,
     pub num: Option<NumNode>,
@@ -290,4 +306,5 @@ pub struct NodeData {
     pub str: Option<StringNode>,
     pub arr: Option<ArrayNode>,
     pub impln: Option<ImplNode>,
+    pub ifn: Option<IfNode>,
 }
