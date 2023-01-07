@@ -1101,7 +1101,7 @@ impl<'ctx> CodeGen<'ctx> {
             let fmt: String = format!("Struct '{}' is already defined.", node.data.st.as_ref().unwrap().name.clone());
             errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
         }
-        if self.datatypes.get(&node.data.st.as_ref().unwrap().name.clone()).is_some(){
+        if self.datatypes.get(&node.data.st.as_ref().unwrap().name.clone()).is_some() && self.namespaces.structs.get(&node.data.st.as_ref().unwrap().name.clone()).unwrap().3 != ForwardDeclarationType::Forward {
             let fmt: String = format!("Type '{}' is already defined.", node.data.st.as_ref().unwrap().name.clone());
             errors::raise_error(&fmt, errors::ErrorType::TypeRedefinitionAttempt, &node.pos, self.info);
         }
