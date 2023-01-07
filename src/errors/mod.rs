@@ -38,6 +38,7 @@ pub enum ErrorType {
     TraitExpectProperFunctionName,
     CannotImplementCallTrait,
     NamespaceAttrNotFound,
+    TypeRedefinitionAttempt,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -84,6 +85,7 @@ pub fn repr_err(tp: ErrorType) -> &'static str {
         ErrorType::TraitExpectProperFunctionName => "trait implementation expects function with proper name",
         ErrorType::CannotImplementCallTrait => "cannot implement call trait",
         ErrorType::NamespaceAttrNotFound => "namespace attribute is not found",
+        ErrorType::TypeRedefinitionAttempt => "attempt to redefine type",
     }
 }
 

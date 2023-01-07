@@ -1101,6 +1101,10 @@ impl<'ctx> CodeGen<'ctx> {
             let fmt: String = format!("Struct '{}' is already defined.", node.data.st.as_ref().unwrap().name.clone());
             errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
         }
+        if self.datatypes.get(&node.data.st.as_ref().unwrap().name.clone()).is_some(){
+            let fmt: String = format!("Type '{}' is already defined.", node.data.st.as_ref().unwrap().name.clone());
+            errors::raise_error(&fmt, errors::ErrorType::TypeRedefinitionAttempt, &node.pos, self.info);
+        }
         
         if !node.data.st.as_ref().unwrap().name.is_camel_case() {
             errors::show_warning(errors::WarningType::ExpectedCamelCase, vec![String::from(""), node.data.st.as_ref().unwrap().name.to_camel_case()], vec![String::from("Expected camel case"), String::from("Convert to this: ")], &node.pos, self.info)
