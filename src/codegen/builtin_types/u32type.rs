@@ -101,6 +101,114 @@ fn u32_bool<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &pars
     };
 }
 
+fn u32_eq<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
+    if args.get(1).unwrap().tp != BasicDataType::U32 {
+        let fmt: String = format!("invalid types for u32 Eq, got '{}'.", args.get(1).unwrap().tp);
+        errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
+    }
+
+    let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();  
+    let otherv: inkwell::values::IntValue = args.get(0).unwrap().data.unwrap().into_int_value();
+
+    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::EQ, selfv, otherv, "i8eq");
+
+    return Data {
+        data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
+        tp: codegen.datatypes.get(&BasicDataType::I8.to_string()).unwrap().clone(),
+        owned: true,
+    };
+}
+
+fn u32_lt<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
+    if args.get(1).unwrap().tp != BasicDataType::U32 {
+        let fmt: String = format!("invalid types for u32 Lt, got '{}'.", args.get(1).unwrap().tp);
+        errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
+    }
+
+    let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();  
+    let otherv: inkwell::values::IntValue = args.get(0).unwrap().data.unwrap().into_int_value();
+
+    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::UGE, selfv, otherv, "i8lt");
+
+    return Data {
+        data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
+        tp: codegen.datatypes.get(&BasicDataType::I8.to_string()).unwrap().clone(),
+        owned: true,
+    };
+}
+
+fn u32_gt<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
+    if args.get(1).unwrap().tp != BasicDataType::U32 {
+        let fmt: String = format!("invalid types for u32 Gt, got '{}'.", args.get(1).unwrap().tp);
+        errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
+    }
+
+    let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();  
+    let otherv: inkwell::values::IntValue = args.get(0).unwrap().data.unwrap().into_int_value();
+
+    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::UGE, selfv, otherv, "i8gt");
+
+    return Data {
+        data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
+        tp: codegen.datatypes.get(&BasicDataType::I8.to_string()).unwrap().clone(),
+        owned: true,
+    };
+}
+
+fn u32_le<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
+    if args.get(1).unwrap().tp != BasicDataType::U32 {
+        let fmt: String = format!("invalid types for u32 Le, got '{}'.", args.get(1).unwrap().tp);
+        errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
+    }
+
+    let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();  
+    let otherv: inkwell::values::IntValue = args.get(0).unwrap().data.unwrap().into_int_value();
+
+    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::UGE, selfv, otherv, "i8lt");
+
+    return Data {
+        data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
+        tp: codegen.datatypes.get(&BasicDataType::I8.to_string()).unwrap().clone(),
+        owned: true,
+    };
+}
+
+fn u32_ge<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
+    if args.get(1).unwrap().tp != BasicDataType::U32 {
+        let fmt: String = format!("invalid types for u32 Ge, got '{}'.", args.get(1).unwrap().tp);
+        errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
+    }
+
+    let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();  
+    let otherv: inkwell::values::IntValue = args.get(0).unwrap().data.unwrap().into_int_value();
+
+    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::UGE, selfv, otherv, "i8gt");
+
+    return Data {
+        data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
+        tp: codegen.datatypes.get(&BasicDataType::I8.to_string()).unwrap().clone(),
+        owned: true,
+    };
+}
+
+fn u32_ne<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
+    if args.get(1).unwrap().tp != BasicDataType::U8 {
+        let fmt: String = format!("invalid types for u32 Ne, got '{}'.", args.get(1).unwrap().tp);
+        errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
+    }
+
+    let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();  
+    let otherv: inkwell::values::IntValue = args.get(0).unwrap().data.unwrap().into_int_value();
+
+    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::NE, selfv, otherv, "u32ne");
+
+    return Data {
+        data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
+        tp: codegen.datatypes.get(&BasicDataType::I8.to_string()).unwrap().clone(),
+        owned: true,
+    };
+}
+
 pub fn init_u32(codegen: &mut codegen::CodeGen) {
     let mut traits: HashMap<String, Trait> = HashMap::new();
 
@@ -118,6 +226,12 @@ pub fn init_u32(codegen: &mut codegen::CodeGen) {
     traits.insert(TraitType::Div.to_string(), builtin_types::create_trait_func(u32_div, 2, TraitType::Div, tp.clone()));
     traits.insert(TraitType::Pos.to_string(), builtin_types::create_trait_func(u32_pos, 1, TraitType::Pos, tp.clone()));
     traits.insert(TraitType::Bool.to_string(), builtin_types::create_trait_func(u32_bool, 1, TraitType::Bool, tp.clone()));
+    traits.insert(TraitType::Eq.to_string(), builtin_types::create_trait_func(u32_eq, 2, TraitType::Eq, tp.clone()));
+    traits.insert(TraitType::Ne.to_string(), builtin_types::create_trait_func(u32_ne, 2, TraitType::Ne, tp.clone()));
+    traits.insert(TraitType::Gt.to_string(), builtin_types::create_trait_func(u32_gt, 2, TraitType::Gt, tp.clone()));
+    traits.insert(TraitType::Lt.to_string(), builtin_types::create_trait_func(u32_lt, 2, TraitType::Lt, tp.clone()));
+    traits.insert(TraitType::Ge.to_string(), builtin_types::create_trait_func(u32_ge, 2, TraitType::Ge, tp.clone()));
+    traits.insert(TraitType::Le.to_string(), builtin_types::create_trait_func(u32_le, 2, TraitType::Le, tp.clone()));
     
     builtin_types::add_simple_type(codegen, traits, BasicDataType::U32, BasicDataType::U32.to_string().as_str());
 }
