@@ -19,7 +19,7 @@ impl<'ctx> CodeGen<'ctx> {
     fn compile(&self) {
         let i8_type: inkwell::types::IntType = self.context.i8_type();
         let i32_type: inkwell::types::IntType = self.context.i32_type();
-        let char_ptr: inkwell::types::PointerType = i8_type.ptr_type(inkwell::AddressSpace::Generic);
+        let char_ptr: inkwell::types::PointerType = i8_type.ptr_type(inkwell::AddressSpace::from(0u16));
 
         let printf_type: inkwell::types::FunctionType = i32_type.fn_type(&[char_ptr.into()], true);
         let printf: inkwell::values::FunctionValue = self.module.add_function("printf", printf_type, Some(inkwell::module::Linkage::External));

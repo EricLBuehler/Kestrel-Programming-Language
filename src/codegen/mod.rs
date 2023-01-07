@@ -181,7 +181,7 @@ impl<'ctx> CodeGen<'ctx> {
                 fntp = tp.into_float_type().fn_type(&inktypes[..], false);
             }
             else if tp.is_function_type() {
-                fntp = tp.into_function_type().ptr_type(inkwell::AddressSpace::Generic).fn_type(&inktypes[..], false);
+                fntp = tp.into_function_type().ptr_type(inkwell::AddressSpace::from(0u16)).fn_type(&inktypes[..], false);
             }
             else if tp.is_void_type() {
                 fntp = tp.into_void_type().fn_type(&inktypes[..], false);
@@ -292,7 +292,7 @@ impl<'ctx> CodeGen<'ctx> {
             return Some(inkwell::types::BasicMetadataTypeEnum::FloatType(tp.into_float_type()));
         }
         else if tp.is_function_type() {
-            return Some(inkwell::types::BasicMetadataTypeEnum::PointerType(tp.into_function_type().ptr_type(inkwell::AddressSpace::Generic)));
+            return Some(inkwell::types::BasicMetadataTypeEnum::PointerType(tp.into_function_type().ptr_type(inkwell::AddressSpace::from(0u16))));
         }
         else if tp.is_void_type() {
             return None;
@@ -316,7 +316,7 @@ impl<'ctx> CodeGen<'ctx> {
             return Some(inkwell::types::BasicTypeEnum::FloatType(tp.into_float_type()));
         }
         else if tp.is_function_type() {
-            return Some(inkwell::types::BasicTypeEnum::PointerType(tp.into_function_type().ptr_type(inkwell::AddressSpace::Generic)));
+            return Some(inkwell::types::BasicTypeEnum::PointerType(tp.into_function_type().ptr_type(inkwell::AddressSpace::from(0u16))));
         }
         else if tp.is_void_type() {
             return None;
@@ -551,7 +551,7 @@ impl<'ctx> CodeGen<'ctx> {
             fn_type = tp.into_float_type().fn_type(&inktypes[..], false);
         }
         else if tp.is_function_type() {
-            fn_type = tp.into_function_type().ptr_type(inkwell::AddressSpace::Generic).fn_type(&inktypes[..], false);
+            fn_type = tp.into_function_type().ptr_type(inkwell::AddressSpace::from(0u16)).fn_type(&inktypes[..], false);
         }
         else if tp.is_void_type() {
             fn_type = tp.into_void_type().fn_type(&inktypes[..], false);
@@ -1792,7 +1792,7 @@ impl<'ctx> CodeGen<'ctx> {
                     fn_type = tp.into_float_type().fn_type(&inktypes[..], false);
                 }
                 else if tp.is_function_type() {
-                    fn_type = tp.into_function_type().ptr_type(inkwell::AddressSpace::Generic).fn_type(&inktypes[..], false);
+                    fn_type = tp.into_function_type().ptr_type(inkwell::AddressSpace::from(0u16)).fn_type(&inktypes[..], false);
                 }
                 else if tp.is_void_type() {
                     fn_type = tp.into_void_type().fn_type(&inktypes[..], false);
@@ -1964,7 +1964,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
 
     let (main, _, _) = codegen.namespaces.functions.get(&String::from("main")).unwrap();
 
-    let main_tp: inkwell::types::FunctionType = codegen.inkwell_types.i32tp.fn_type(&[inkwell::types::BasicMetadataTypeEnum::IntType(*codegen.inkwell_types.i32tp), inkwell::types::BasicMetadataTypeEnum::PointerType(codegen.inkwell_types.i8tp.ptr_type(inkwell::AddressSpace::Generic).ptr_type(inkwell::AddressSpace::Generic))], false);
+    let main_tp: inkwell::types::FunctionType = codegen.inkwell_types.i32tp.fn_type(&[inkwell::types::BasicMetadataTypeEnum::IntType(*codegen.inkwell_types.i32tp), inkwell::types::BasicMetadataTypeEnum::PointerType(codegen.inkwell_types.i8tp.ptr_type(inkwell::AddressSpace::from(0u16)).ptr_type(inkwell::AddressSpace::from(0u16)))], false);
     let realmain: inkwell::values::FunctionValue = codegen.module.add_function("main", main_tp, None);
     let basic_block: inkwell::basic_block::BasicBlock = codegen.context.append_basic_block(realmain, "entry");
 
