@@ -24,6 +24,12 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
             command: install llvmenv
+      - name: init
+        run: llvmenv init
+      - name: entries
+        run: llvmenv entries
+      - name: build
+        run: llvmenv build-entry 10.0.0
       - name: Run cargo test
         uses: actions-rs/cargo@v1
         with:
