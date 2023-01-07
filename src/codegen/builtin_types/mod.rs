@@ -114,6 +114,24 @@ pub fn init_traits(codegen: &mut codegen::CodeGen) {
     codegen.traits.insert(types::TraitType::Bool.to_string(), types::TraitSignature {
             nargs: 1, name: String::from("bool")
         });
+    codegen.traits.insert(types::TraitType::Eq.to_string(), types::TraitSignature {
+            nargs: 2, name: String::from("eq")
+        });
+    codegen.traits.insert(types::TraitType::Ne.to_string(), types::TraitSignature {
+        nargs: 2, name: String::from("ne")
+        });
+    codegen.traits.insert(types::TraitType::Gt.to_string(), types::TraitSignature {
+            nargs: 2, name: String::from("gt")
+        });
+    codegen.traits.insert(types::TraitType::Lt.to_string(), types::TraitSignature {
+            nargs: 2, name: String::from("lt")
+        });
+    codegen.traits.insert(types::TraitType::Ge.to_string(), types::TraitSignature {
+            nargs: 2, name: String::from("ge")
+        });
+    codegen.traits.insert(types::TraitType::Le.to_string(), types::TraitSignature {
+            nargs: 2, name: String::from("le")
+        });
 }
 
 pub fn init_structs(codegen: &mut codegen::CodeGen) {

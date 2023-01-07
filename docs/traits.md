@@ -18,3 +18,15 @@ The functions listed use generic types. To implement traits, see [```impl```](ke
     - **Not available to implement with ```impl```**
 - ```Bool```
     - ```fn bool(self: A) -> C ```
+- ```Eq```
+    - ```fn eq(self: A, other: B) -> C ```
+- ```Ne```
+    - ```fn ne(self: A, other: B) -> C ```
+- ```Gt```
+    - ```fn gt(self: A, other: B) -> C ```
+- ```Lt```
+    - ```fn lt(self: A, other: B) -> C ```
+- ```Ge```
+    - ```fn ge(self: A, other: B) -> C ```
+- ```Le```
+    - ```fn le(self: A, other: B) -> C ```
