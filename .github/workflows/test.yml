@@ -15,8 +15,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout repo
+      - uses: actions/checkout@v3
     
+    - name: Install LLVM and Clang
+      uses: KyleMayes/install-llvm-action@v1
+      with:
+        version: ${{ "10.0" }}
+
     - name: Run cargo check
       uses: actions-rs/cargo@v1
       with:
