@@ -109,7 +109,10 @@ pub fn init_traits(codegen: &mut codegen::CodeGen) {
          nargs: 1, name: String::from("pos")
         });
     codegen.traits.insert(types::TraitType::Neg.to_string(), types::TraitSignature {
-         nargs: 1, name: String::from("neg")
+            nargs: 1, name: String::from("neg")
+        });
+    codegen.traits.insert(types::TraitType::Bool.to_string(), types::TraitSignature {
+            nargs: 1, name: String::from("bool")
         });
 }
 

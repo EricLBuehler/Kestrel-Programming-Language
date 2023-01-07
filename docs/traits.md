@@ -16,3 +16,5 @@ The functions listed use generic types. To implement traits, see [```impl```](ke
     - ```fn neg(self: A) -> C ```
 - ```Call```
     - **Not available to implement with ```impl```**
+- ```Bool```
+    - ```fn bool(self: A) -> C ```
