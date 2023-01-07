@@ -366,7 +366,13 @@ impl<'life> Parser<'life> {
                 TokenType::PLUS |
                 TokenType::HYPHEN |
                 TokenType::ASTERISK |
-                TokenType::FWSLASH => {
+                TokenType::FWSLASH |
+                TokenType::GT |
+                TokenType::GTE |
+                TokenType::LT |
+                TokenType::LTE |
+                TokenType::EQ |
+                TokenType::NE => {
                     left = self.generate_binary(left, self.get_precedence());
                 }
 
@@ -449,6 +455,12 @@ impl<'life> Parser<'life> {
             TokenType::HYPHEN => nodes::BinaryOpType::SUB,
             TokenType::ASTERISK => nodes::BinaryOpType::MUL,
             TokenType::FWSLASH => nodes::BinaryOpType::DIV,
+            TokenType::GT => nodes::BinaryOpType::GT,
+            TokenType::GTE => nodes::BinaryOpType::GTE,
+            TokenType::LT => nodes::BinaryOpType::LT,
+            TokenType::LTE => nodes::BinaryOpType::LTE,
+            TokenType::EQ => nodes::BinaryOpType::EQ,
+            TokenType::NE => nodes::BinaryOpType::NE,
             _ => self.raise_error("Invalid token.", ErrorType::InvalidTok),
         };
 

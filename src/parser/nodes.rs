@@ -4,6 +4,12 @@ pub enum BinaryOpType {
     SUB,
     MUL,
     DIV,
+    GT,
+    GTE,
+    LT,
+    LTE,
+    EQ,
+    NE,
 }
 
 impl std::fmt::Display for BinaryOpType {
@@ -13,6 +19,12 @@ impl std::fmt::Display for BinaryOpType {
             BinaryOpType::SUB => write!(f, "-"),
             BinaryOpType::MUL => write!(f, "*"),
             BinaryOpType::DIV => write!(f, "/"),
+            BinaryOpType::GT => write!(f, ">"),
+            BinaryOpType::GTE => write!(f, ">="),
+            BinaryOpType::LT => write!(f, "<"),
+            BinaryOpType::LTE => write!(f, "<="),
+            BinaryOpType::EQ => write!(f, "=="),
+            BinaryOpType::NE => write!(f, "!="),
         }
     }    
 }

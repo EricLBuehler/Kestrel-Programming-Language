@@ -360,6 +360,24 @@ impl<'ctx> CodeGen<'ctx> {
             parser::nodes::BinaryOpType::DIV => {
                 types::TraitType::Div
             }
+            parser::nodes::BinaryOpType::GT => {
+                types::TraitType::Gt
+            }
+            parser::nodes::BinaryOpType::GTE => {
+                types::TraitType::Ge
+            }
+            parser::nodes::BinaryOpType::LT => {
+                types::TraitType::Lt
+            }
+            parser::nodes::BinaryOpType::LTE => {
+                types::TraitType::Le
+            }
+            parser::nodes::BinaryOpType::EQ => {
+                types::TraitType::Eq
+            }
+            parser::nodes::BinaryOpType::NE => {
+                types::TraitType::Ne
+            }
         };
 
         let t: &types::Trait = match tp.traits.get(&traittp.to_string()) {

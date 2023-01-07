@@ -39,6 +39,12 @@ pub enum TokenType {
     CHAR,
     EMOJIERR,
     DOUBLECOLON,
+    GT,
+    GTE,
+    LT,
+    LTE,
+    EQ,
+    NE,
 }
 
 pub struct Lexer<'life> {
@@ -106,6 +112,12 @@ impl std::fmt::Display for TokenType {
            TokenType::CHAR => write!(f, "CHAR"),
            TokenType::EMOJIERR => write!(f, "EMOJIERR"),
            TokenType::DOUBLECOLON => write!(f, "DOUBLECOLON"),
+           TokenType::GT => write!(f, "GT"),
+           TokenType::GTE => write!(f, "GTE"),
+           TokenType::LT => write!(f, "LT"),
+           TokenType::LTE => write!(f, "LTE"),
+           TokenType::EQ => write!(f, "EQ"),
+           TokenType::NE => write!(f, "NE"),
        }
     }
 }
@@ -225,6 +237,17 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
                 endcol: lexer.col+1,
             });
             advance(lexer);
+            if lexer.current == b'=' {     
+                let popped: Token = tokens.pop().unwrap();           
+                tokens.push(Token {
+                    data: String::from("=="),
+                    tp: TokenType::EQ,
+                    line: popped.line,
+                    startcol: popped.startcol,
+                    endcol: popped.endcol+1,
+                });
+                advance(lexer);
+            }
         }
         else if cur == '{' {
             tokens.push(Token {
@@ -347,6 +370,61 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
                 endcol: lexer.col+1,
             });
             advance(lexer);
+        }
+        else if cur == '>' {
+            tokens.push(Token {
+                data: String::from(">"),
+                tp: TokenType::GT,
+                line: lexer.line,
+                startcol: lexer.col,
+                endcol: lexer.col+1,
+            });
+            advance(lexer);
+            if lexer.current == b'=' {     
+                let popped: Token = tokens.pop().unwrap();           
+                tokens.push(Token {
+                    data: String::from(">="),
+                    tp: TokenType::GTE,
+                    line: popped.line,
+                    startcol: popped.startcol,
+                    endcol: popped.endcol+1,
+                });
+                advance(lexer);
+            }
+        }
+        else if cur == '<' {
+            tokens.push(Token {
+                data: String::from("<"),
+                tp: TokenType::LT,
+                line: lexer.line,
+                startcol: lexer.col,
+                endcol: lexer.col+1,
+            });
+            advance(lexer);
+            if lexer.current == b'=' {     
+                let popped: Token = tokens.pop().unwrap();           
+                tokens.push(Token {
+                    data: String::from("<="),
+                    tp: TokenType::LTE,
+                    line: popped.line,
+                    startcol: popped.startcol,
+                    endcol: popped.endcol+1,
+                });
+                advance(lexer);
+            }
+        }
+        else if cur == '!' {
+            advance(lexer);
+            if lexer.current == b'=' {           
+                tokens.push(Token {
+                    data: String::from("!="),
+                    tp: TokenType::NE,
+                    line: lexer.line,
+                    startcol: lexer.col-1,
+                    endcol: lexer.col+1,
+                });
+                advance(lexer);
+            }
         }
         else if cur.is_whitespace() {
             advance(lexer);
