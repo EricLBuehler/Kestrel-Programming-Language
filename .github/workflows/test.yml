@@ -20,7 +20,7 @@ jobs:
         with:
           version: "10.0"
       - uses: actions/checkout@v3
-      - name: Build
-        run: cargo build --verbose --release --features llvm10-0
+      - name: Check for errors
+        run: cargo check --verbose --release
       - name: Run tests
         run: cargo test --verbose --release

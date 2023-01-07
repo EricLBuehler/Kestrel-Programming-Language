@@ -1,6 +1,6 @@
 //Generate tokens from text
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum TokenType {
     I32,
     PLUS,
@@ -51,7 +51,7 @@ pub struct Lexer<'life> {
     pub info: &'life crate::fileinfo::FileInfo<'life>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Token {
     pub data: String,
     pub tp: TokenType,

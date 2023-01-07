@@ -9,6 +9,8 @@ mod lexer;
 mod parser;
 mod codegen;
 
+mod tests;
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
@@ -69,6 +71,7 @@ fn main() {
 
     let filename: &String = &args[1];
     let file_data: String;
+    
     
     let res: Result<String, std::io::Error> = std::fs::read_to_string(filename);
     match res {
