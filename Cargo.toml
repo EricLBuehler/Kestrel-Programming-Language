@@ -3,8 +3,6 @@ name = "kestrel"
 version = "0.1.5"
 edition = "2021"
 
-[features]
-
 [dependencies]
 llvm-sys = "100"
 inkwell = {git = "https://github.com/TheDan64/inkwell", branch = "master", features = ["llvm10-0"]}
