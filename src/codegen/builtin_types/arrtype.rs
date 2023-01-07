@@ -1,7 +1,8 @@
-use crate::codegen::types::{Trait, BasicDataType, new_datatype, DataType, Data, Method, MethodType};
+use crate::codegen::types::{Trait, BasicDataType, new_datatype, DataType, Data, Method, MethodType, TraitType};
 use crate::codegen;
 use crate::codegen::builtin_types;
 use crate::errors;
+use crate::parser;
 use std::collections::HashMap;
 
 fn length<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &crate::parser::Position) -> Data<'a> {
@@ -19,12 +20,24 @@ fn length<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &crate::
     };
 }
 
+fn array_bool<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {
+    let res: inkwell::values::IntValue = if args.get(0).unwrap().tp.arrtp.unwrap().len()> 0 {codegen.inkwell_types.i8tp.const_int(1, false)} else {codegen.inkwell_types.i8tp.const_int(0, false)};
+
+    return Data {
+        data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
+        tp: codegen.datatypes.get(&BasicDataType::I8.to_string()).unwrap().clone(),
+        owned: true,
+    };
+}
+
 pub fn init_array(codegen: &mut codegen::CodeGen) {
-    let traits: HashMap<String, Trait> = HashMap::new();
+    let mut traits: HashMap<String, Trait> = HashMap::new();
     let mut methods: HashMap<String, Method> = HashMap::new();
     
     let tp: DataType = new_datatype(BasicDataType::Array, BasicDataType::Array.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new());
 
+    traits.insert(TraitType::Bool.to_string(), builtin_types::create_trait_func(array_bool, 1, TraitType::Bool, tp.clone()));
+    
     codegen.datatypes.insert(BasicDataType::Array.to_string(), tp);
 
     //length()

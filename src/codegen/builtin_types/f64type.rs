@@ -92,11 +92,23 @@ fn f64_neg<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parse
     let selfv: inkwell::values::FloatValue = args.first().unwrap().data.unwrap().into_float_value();
     let otherv: inkwell::values::FloatValue = codegen.inkwell_types.f64tp.const_float_from_string("-1");
 
-    let res: inkwell::values::FloatValue = codegen.builder.build_float_mul(selfv, otherv, "f32neg");
+    let res: inkwell::values::FloatValue = codegen.builder.build_float_mul(selfv, otherv, "f64neg");
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::FloatValue(res)),
         tp: codegen.datatypes.get(&BasicDataType::F64.to_string()).unwrap().clone(),
+        owned: true,
+    };
+}
+
+fn f64_bool<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {    
+    let selfv: inkwell::values::FloatValue = args.first().unwrap().data.unwrap().into_float_value();
+
+    let res: inkwell::values::IntValue = codegen.builder.build_float_compare(inkwell::FloatPredicate::ONE, selfv, codegen.inkwell_types.f64tp.const_zero(), "f64bool");
+
+    return Data {
+        data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
+        tp: codegen.datatypes.get(&BasicDataType::I8.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -114,6 +126,7 @@ pub fn init_f64(codegen: &mut codegen::CodeGen) {
     traits.insert(TraitType::Div.to_string(), builtin_types::create_trait_func(f64_div, 2, TraitType::Div, tp.clone()));
     traits.insert(TraitType::Pos.to_string(), builtin_types::create_trait_func(f64_pos, 1, TraitType::Pos, tp.clone()));
     traits.insert(TraitType::Neg.to_string(), builtin_types::create_trait_func(f64_neg, 1, TraitType::Neg, tp.clone()));
+    traits.insert(TraitType::Bool.to_string(), builtin_types::create_trait_func(f64_bool, 1, TraitType::Bool, tp.clone()));
 
     builtin_types::add_simple_type(codegen, traits, BasicDataType::F64, BasicDataType::F64.to_string().as_str());
 }

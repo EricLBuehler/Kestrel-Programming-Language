@@ -89,6 +89,18 @@ fn u128_pos<'a>(_codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &par
     return args.get(0).unwrap().clone();
 }
 
+fn u128_bool<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {  
+    let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();
+
+    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::NE, selfv, codegen.inkwell_types.i8tp.const_zero(), "u128bool");
+
+    return Data {
+        data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
+        tp: codegen.datatypes.get(&BasicDataType::I8.to_string()).unwrap().clone(),
+        owned: true,
+    };
+}
+
 pub fn init_u128(codegen: &mut codegen::CodeGen) {
     let mut traits: HashMap<String, Trait> = HashMap::new();
 
@@ -101,6 +113,7 @@ pub fn init_u128(codegen: &mut codegen::CodeGen) {
     traits.insert(TraitType::Sub.to_string(), builtin_types::create_trait_func(u128_sub, 2, TraitType::Sub, tp.clone()));
     traits.insert(TraitType::Div.to_string(), builtin_types::create_trait_func(u128_div, 2, TraitType::Div, tp.clone()));
     traits.insert(TraitType::Pos.to_string(), builtin_types::create_trait_func(u128_pos, 1, TraitType::Pos, tp.clone()));
-
+    traits.insert(TraitType::Bool.to_string(), builtin_types::create_trait_func(u128_bool, 1, TraitType::Bool, tp.clone()));
+    
     builtin_types::add_simple_type(codegen, traits, BasicDataType::U128, BasicDataType::U128.to_string().as_str());
 }

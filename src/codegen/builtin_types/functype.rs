@@ -48,11 +48,21 @@ pub fn fn_call<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &pa
     };
 }
 
+fn func_bool<'a>(codegen: &codegen::CodeGen<'a>, _args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {
+    return Data {
+        data: Some(inkwell::values::BasicValueEnum::IntValue(codegen.inkwell_types.i8tp.const_int(0, false))),
+        tp: codegen.datatypes.get(&BasicDataType::I8.to_string()).unwrap().clone(),
+        owned: true,
+    };
+}
+
 pub fn init_func(codegen: &mut codegen::CodeGen) {
     let mut traits: HashMap<String, Trait> = HashMap::new();
     traits.insert(TraitType::Call.to_string(), builtin_types::create_trait_func(fn_call, 0, TraitType::Call, new_datatype(BasicDataType::Unknown, BasicDataType::Unknown.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new())));
 
     let tp: DataType = new_datatype(BasicDataType::Func, BasicDataType::Func.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new());
+    
+    traits.insert(TraitType::Bool.to_string(), builtin_types::create_trait_func(func_bool, 1, TraitType::Bool, tp.clone()));
 
     codegen.datatypes.insert(BasicDataType::Func.to_string(), tp.clone());
 
