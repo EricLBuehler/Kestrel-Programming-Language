@@ -20,8 +20,6 @@ jobs:
         with:
           version: "10.0"
       - uses: actions/checkout@v3
-      - name: Init
-        run: cp  /home/runner/work/Kestrel-Programming-Language/Kestrel-Programming-Language/llvm /usr/bin
       - name: Build
         run: cargo build --verbose --release
       - name: Run tests
