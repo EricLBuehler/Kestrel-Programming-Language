@@ -1,38 +1,6 @@
-struct s {
-    mut a: f32,
-    b: f32
-}
-
-fn s.a(self: s) -> f32{
-    return self.a * 100f32
-}
-
-impl Add for s {
-    fn add(self: s, other: s) -> f32 {
-        return self.a + other.b
-    }
-}
-
 fn main() {
-    let x = 1.23
-    f(&x)
-    let name: String = String::new("Kestrel 🦅")
-    let char: char = '🦅'
-    let arr: i32[2] = [x*x as i32,2]
-    //This is a comment
-    let len: usize = name.length()
+    let y = 2
     if 1==1 {
-        let x = 123;
+        let x = 1+2
     }
-}
-
-fn f(x: f32) -> f32{
-    let y = s {
-        a=x+1f32,
-        b=x
-    }
-    
-    y.a=12f32
-
-    return y.a()
 }

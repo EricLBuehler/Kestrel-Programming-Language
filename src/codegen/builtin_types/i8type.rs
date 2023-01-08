@@ -108,7 +108,7 @@ fn i8_bool<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parse
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&String::from("bool")).unwrap().clone(),
+        tp: codegen.datatypes.get(&BasicDataType::I8.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -227,9 +227,8 @@ pub fn init_i8(codegen: &mut codegen::CodeGen) {
     let tp: DataType = new_datatype(BasicDataType::I8, BasicDataType::I8.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new());
 
     codegen.datatypes.insert(BasicDataType::I8.to_string(), tp.clone());
-    if std::mem::size_of::<isize>() == std::mem::size_of::<i32>() {
-        codegen.datatypes.insert(String::from("bool"), tp.clone()); //Alias        
-    }
+    
+    codegen.datatypes.insert(String::from("bool"), tp.clone()); //Alias        
 
     traits.insert(TraitType::Add.to_string(), builtin_types::create_trait_func(i8_add, 2, TraitType::Add, tp.clone()));
     traits.insert(TraitType::Mul.to_string(), builtin_types::create_trait_func(i8_mul, 2, TraitType::Mul, tp.clone()));

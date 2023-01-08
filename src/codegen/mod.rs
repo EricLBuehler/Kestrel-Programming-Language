@@ -56,6 +56,7 @@ pub struct CodeGen<'ctx> {
     dicompile_unit: inkwell::debug_info::DICompileUnit<'ctx>,
     expected_rettp: Option<types::DataType<'ctx>>,
     traits: std::collections::HashMap<String, types::TraitSignature>,
+    enclosing_block: Option<inkwell::basic_block::BasicBlock<'ctx>>,
 }
 
 //Codegen functions
@@ -586,6 +587,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         //Main function specifics
         let mangled_name = self.mangle_name_main(&name);
+        
         if self.get_function(&mangled_name) != None && self.get_function(&mangled_name).unwrap().2 != ForwardDeclarationType::Forward {
             let fmt: String = format!("Mangled function 'main' name '{}' is already defined.", mangled_name);
             errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
@@ -717,6 +719,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         //Continue function compilation
         let basic_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(func, "entry");
+        self.enclosing_block = Some(basic_block);
         self.builder.set_current_debug_location(self.context, location);
 
         let mut attr: inkwell::attributes::Attribute = self.context.create_enum_attribute(inkwell::attributes::Attribute::get_named_enum_kind_id("noinline"), 0);
@@ -787,9 +790,12 @@ impl<'ctx> CodeGen<'ctx> {
         let pass_manager_builder: inkwell::passes::PassManagerBuilder = inkwell::passes::PassManagerBuilder::create();
         pass_manager_builder.set_optimization_level(inkwell::OptimizationLevel::Aggressive);
         let manager = inkwell::passes::PassManager::create(&self.module);
+        manager.add_cfg_simplification_pass();
         pass_manager_builder.populate_function_pass_manager(&manager);
+        
 
         unsafe { func.run_in_pass_manager(&manager); }
+        
         if node.data.func.as_ref().unwrap().blocks.len() > 0 && !retv.owned {
             let fmt: String = format!("Return value is not owned.");
             errors::raise_error(&fmt, errors::ErrorType::ReturnValueNotOwned, &node.data.func.as_ref().unwrap().blocks.last().unwrap().pos, self.info);
@@ -1504,6 +1510,71 @@ impl<'ctx> CodeGen<'ctx> {
         errors::raise_error(&fmt, errors::ErrorType::NamespaceAttrNotFound, &node.pos, self.info);
     }
 
+    fn build_if(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        let right: types::Data = self.compile_expr(&node.data.ifn.as_ref().unwrap().expr, false, false);
+        
+        let mut args: Vec<types::Data> = Vec::new();
+
+        let tp: types::Type = Self::get_type_from_data(self.types.clone(), &right);
+
+        let tp_str: &String = &right.tp.name.clone();
+
+        args.push(right);
+
+        let traittp: types::TraitType = types::TraitType::Bool;
+
+        let t: &types::Trait = match tp.traits.get(&traittp.to_string()) {
+            Some (v) => {
+                v
+            }
+            None => {
+                let fmt: String = format!("Type '{}' has no trait '{}'.", tp_str, &traittp.to_string());
+                errors::raise_error(&fmt, errors::ErrorType::MissingTrait, &node.pos, self.info);
+            }
+        };
+
+        let data: types::Data;
+
+        if t.function.is_some() {
+            let func = t.function.unwrap();
+
+            data = (func)(&self, args, &node.pos);
+        }
+        else {
+            let func: inkwell::values::PointerValue = t.inkfunc.unwrap();
+
+            args.insert(0, types::Data {
+                data: Some(inkwell::values::BasicValueEnum::PointerValue(func)),
+                tp: self.datatypes.get(&types::BasicDataType::Func.to_string()).unwrap().clone(),
+                owned: true,
+            });
+
+            data = builtin_types::functype::fn_call(self, args, &node.pos);
+        }
+
+        if data.tp != self.datatypes.get(&types::BasicDataType::I8.to_string()).unwrap().clone() {
+            let fmt: String = format!("Expected 'bool' type, got '{}' type.", data.tp);
+            errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+        }
+
+        let then_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "if");
+        let end_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "if_end");
+
+        self.builder.build_conditional_branch(data.data.unwrap().into_int_value(), then_block, end_block);
+
+        self.builder.position_at_end(then_block);
+
+        let res: types::Data = self.compile(&node.data.ifn.as_ref().unwrap().body, true);
+
+        self.builder.build_unconditional_branch(end_block);
+        
+        self.builder.position_at_end(end_block);
+
+        self.enclosing_block = Some(end_block);
+        
+        return res;
+    }
+
 
     fn compile_expr(&mut self, node: &parser::Node, give_ownership: bool, get_ptr: bool) -> types::Data<'ctx> {
         match node.tp {
@@ -1737,7 +1808,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.build_namespaceload(node)
             }
             parser::NodeType::IF => {
-                unimplemented!();
+                self.build_if(node)
             }
         }
     }
@@ -1962,6 +2033,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
         dicompile_unit: compile_unit,
         expected_rettp: None, 
         traits: std::collections::HashMap::new(),
+        enclosing_block: None,
     };
     
     //Pass manager (optimizer)
