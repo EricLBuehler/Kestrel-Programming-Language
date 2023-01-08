@@ -87,3 +87,20 @@ impl trait for struct {
 ```
 
 The body of the ```impl``` statement must be a function according to [traits.md](traits.md).
+
+## ```if```, ```elif```, ```else```
+The ```if```, ```elif```, and ```else``` keywords implement control flow.
+
+```
+if condition {
+    ...
+}
+elif condition2 {
+    ...
+}
+else {
+    ...
+}
+```
+
+All conditions must be of type [```bool```](types.md#bool).

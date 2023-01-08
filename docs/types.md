@@ -50,7 +50,7 @@ The ```isize``` type is a signed 32-bit or 64-bit integer, depending on the comp
 The ```char``` type is an unsigned 32-bit integer, and an alias for the ```u32``` type. It represents a UTF-32 codepoint.
 
 ## ```bool```
-The ```bool``` type is 1-bit value. By convention, it is 1 or 0 (1 for ```true```, 0 for ```false```)
+The ```bool``` type is 1-bit value. By convention, it is 1 or 0 (1 for ```true```, 0 for ```false```).
 
 ## Non-numeric
 
