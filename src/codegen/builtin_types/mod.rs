@@ -14,6 +14,7 @@ pub mod i64type;
 pub mod u64type;
 pub mod i128type;
 pub mod u128type;
+pub mod booltype;
 
 pub mod f32type;
 pub mod f64type;
@@ -81,6 +82,7 @@ pub fn init(codegen: &mut codegen::CodeGen) {
     u64type::init_u64(codegen);
     i128type::init_i128(codegen);
     u128type::init_u128(codegen);
+    booltype::init_bool(codegen);
 
     f32type::init_f32(codegen);
     f64type::init_f64(codegen);

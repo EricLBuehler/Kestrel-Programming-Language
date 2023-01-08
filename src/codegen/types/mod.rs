@@ -21,6 +21,7 @@ pub enum BasicDataType {
     Struct,
     Array,
     WrapperFunc,
+    Bool,
 }
 
 #[derive(Clone)]
@@ -89,6 +90,7 @@ impl std::fmt::Display for BasicDataType {
             BasicDataType::Struct => write!(f, "Struct"),
             BasicDataType::Array => write!(f, "Array"),
             BasicDataType::WrapperFunc => write!(f, "WrapperFn"),
+            BasicDataType::Bool => write!(f, "bool"),
         }
     }    
 }

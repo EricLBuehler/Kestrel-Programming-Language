@@ -29,6 +29,7 @@ pub struct InkwellTypes<'ctx> {
     f32tp: &'ctx inkwell::types::FloatType<'ctx>,
     f64tp: &'ctx inkwell::types::FloatType<'ctx>,
     voidtp: &'ctx inkwell::types::VoidType<'ctx>,
+    booltp: &'ctx inkwell::types::IntType<'ctx>,
 }
 
 #[derive(PartialEq, Clone)]
@@ -146,6 +147,9 @@ impl<'ctx> CodeGen<'ctx> {
             }
             types::BasicDataType::Array => {
                 return Some(inkwell::types::AnyTypeEnum::ArrayType(tp.arrtp.unwrap()));
+            }
+            types::BasicDataType::Bool => {
+                return Some(inkwell::types::AnyTypeEnum::IntType(*types.booltp));
             }
             types::BasicDataType::Unknown => {
                 return None;
@@ -1552,7 +1556,7 @@ impl<'ctx> CodeGen<'ctx> {
             data = builtin_types::functype::fn_call(self, args, &node.pos);
         }
 
-        if data.tp != self.datatypes.get(&types::BasicDataType::I8.to_string()).unwrap().clone() {
+        if data.tp != self.datatypes.get(&types::BasicDataType::Bool.to_string()).unwrap().clone() {
             let fmt: String = format!("Expected 'bool' type, got '{}' type.", data.tp);
             errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
         }
@@ -1994,6 +1998,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
         f32tp: &context.f32_type(),
         f64tp: &context.f64_type(),
         voidtp: &context.void_type(),
+        booltp: &context.bool_type(),
     };
 
     let namespaces: Namespaces = Namespaces {

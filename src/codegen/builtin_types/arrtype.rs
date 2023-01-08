@@ -25,7 +25,7 @@ fn array_bool<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &pa
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::I8.to_string()).unwrap().clone(),
+        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
