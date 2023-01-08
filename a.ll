@@ -35,8 +35,8 @@ entry:
   br label %if, !dbg !8
 
 if:                                               ; preds = %entry
-  %y = alloca i32, !dbg !8
-  store i32 123, i32* %y, !dbg !8
+  %x9 = alloca i32, !dbg !8
+  store i32 123, i32* %x9, !dbg !8
   br label %if_end, !dbg !8
 
 if_end:                                           ; preds = %if

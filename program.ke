@@ -22,7 +22,7 @@ fn main() {
     //This is a comment
     let len: usize = name.length()
     if 1==1 {
-        let y = 123;
+        let x = 123;
     }
 }
 
