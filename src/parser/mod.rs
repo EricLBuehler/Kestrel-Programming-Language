@@ -362,7 +362,7 @@ impl<'life> Parser<'life> {
             return self.parse_if();
         }
         
-        unreachable!("Invalid keyword");
+        self.raise_error("Invalid keyword.", ErrorType::InvalidTok);
     }
     
     fn expr(&mut self, prec: Precedence) -> Node {
@@ -2187,6 +2187,10 @@ impl<'life> Parser<'life> {
 
         self.advance();
 
+        let mut ifs: Vec<(Node, Vec<Node>)> = Vec::new();
+        let mut else_opt: Option<Vec<Node>> = None;
+
+
         let expr: Node = self.expr(Precedence::Lowest);
 
         pos.endcol = expr.pos.endcol;
@@ -2210,9 +2214,67 @@ impl<'life> Parser<'life> {
 
         self.advance();
 
+        self.skip_newline();
+
+        ifs.push((expr, body));
+
+        while self.current_is_type(TokenType::KEYWORD) && self.current.data == "elif" {
+            self.advance(); 
+
+            let expr: Node = self.expr(Precedence::Lowest);    
+        
+            if !self.current_is_type(TokenType::LCURLY) {
+                self.raise_error("Expected left curly bracket.", ErrorType::InvalidTok);
+            }
+            
+            self.advance();
+    
+            self.skip_newline();
+    
+            let body: Vec<Node> = self.block();
+    
+            self.skip_newline();
+            
+            if !self.current_is_type(TokenType::RCURLY) {
+                self.raise_error("Expected right curly bracket.", ErrorType::InvalidTok);
+            }
+    
+            self.advance();
+    
+            self.skip_newline();
+    
+            ifs.push((expr, body));
+        }
+
+        if self.current_is_type(TokenType::KEYWORD) && self.current.data == "else" {
+            self.advance(); 
+        
+            if !self.current_is_type(TokenType::LCURLY) {
+                self.raise_error("Expected left curly bracket.", ErrorType::InvalidTok);
+            }
+            
+            self.advance();
+    
+            self.skip_newline();
+    
+            let body: Vec<Node> = self.block();
+    
+            self.skip_newline();
+            
+            if !self.current_is_type(TokenType::RCURLY) {
+                self.raise_error("Expected right curly bracket.", ErrorType::InvalidTok);
+            }
+    
+            self.advance();
+    
+            self.skip_newline();
+    
+            else_opt = Some(body);
+        }
+
         let ifn: nodes::IfNode = nodes::IfNode{
-            body,
-            expr,
+            ifs,
+            else_opt,
         };
     
         let nodedat: nodes::NodeData = nodes::NodeData {

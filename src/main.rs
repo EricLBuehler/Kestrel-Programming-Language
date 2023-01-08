@@ -104,6 +104,8 @@ fn main() {
                                             String::from("true"),
                                             String::from("false"),
                                             String::from("if"),
+                                            String::from("elif"),
+                                            String::from("else"),
                                             ];
 
     let mut lexer: lexer::Lexer = lexer::Lexer {

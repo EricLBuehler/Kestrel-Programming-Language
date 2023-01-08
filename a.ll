@@ -36,7 +36,7 @@ entry:
 
 if:                                               ; preds = %entry
   %x9 = alloca i32, !dbg !8
-  store i32 123, i32* %x9, !dbg !8
+  store i32 100, i32* %x9, !dbg !8
   br label %if_end, !dbg !8
 
 if_end:                                           ; preds = %if
@@ -114,12 +114,12 @@ attributes #0 = { noinline nounwind optnone }
 !7 = !DIBasicType(name: "void", size: 16, flags: DIFlagPublic)
 !8 = !DILocation(line: 15, scope: !9)
 !9 = distinct !DILexicalBlock(scope: !4, file: !2, line: 15)
-!10 = distinct !DISubprogram(name: "f", linkageName: "f", scope: null, file: !2, line: 28, type: !11, scopeLine: 28, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
+!10 = distinct !DISubprogram(name: "f", linkageName: "f", scope: null, file: !2, line: 34, type: !11, scopeLine: 34, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !11 = !DISubroutineType(flags: DIFlagPublic, types: !12)
 !12 = !{!13, !13}
 !13 = !DIBasicType(name: "float", size: 16, flags: DIFlagPublic)
-!14 = !DILocation(line: 28, scope: !15)
-!15 = distinct !DILexicalBlock(scope: !10, file: !2, line: 28)
+!14 = !DILocation(line: 34, scope: !15)
+!15 = distinct !DILexicalBlock(scope: !10, file: !2, line: 34)
 !16 = distinct !DISubprogram(name: "a", linkageName: "a", scope: null, file: !2, line: 5, type: !17, scopeLine: 5, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !17 = !DISubroutineType(flags: DIFlagPublic, types: !18)
 !18 = !{!13, !19}

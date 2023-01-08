@@ -1523,74 +1523,124 @@ impl<'ctx> CodeGen<'ctx> {
     }
 
     fn build_if(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let right: types::Data = self.compile_expr(&node.data.ifn.as_ref().unwrap().expr, false, false);
+        let end_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "if_end");
+        let else_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "else");
         
-        let mut args: Vec<types::Data> = Vec::new();
+        let mut enclosing_block: inkwell::basic_block::BasicBlock = self.enclosing_block.unwrap();
 
-        let tp: types::Type = Self::get_type_from_data(self.types.clone(), &right);
+        let mut idx: usize = 0;
+        for ifn in &node.data.ifn.as_ref().unwrap().ifs {
+            self.builder.position_at_end(enclosing_block);            
+            let right: types::Data = self.compile_expr(&ifn.0, false, false);
+            
+            let mut args: Vec<types::Data> = Vec::new();
 
-        let tp_str: &String = &right.tp.name.clone();
+            let tp: types::Type = Self::get_type_from_data(self.types.clone(), &right);
 
-        args.push(right);
+            let tp_str: &String = &right.tp.name.clone();
 
-        let traittp: types::TraitType = types::TraitType::Bool;
+            args.push(right);
 
-        let t: &types::Trait = match tp.traits.get(&traittp.to_string()) {
-            Some (v) => {
-                v
+            let traittp: types::TraitType = types::TraitType::Bool;
+
+            let t: &types::Trait = match tp.traits.get(&traittp.to_string()) {
+                Some (v) => {
+                    v
+                }
+                None => {
+                    let fmt: String = format!("Type '{}' has no trait '{}'.", tp_str, &traittp.to_string());
+                    errors::raise_error(&fmt, errors::ErrorType::MissingTrait, &node.pos, self.info);
+                }
+            };
+
+            let data: types::Data;
+
+            if t.function.is_some() {
+                let func = t.function.unwrap();
+
+                data = (func)(&self, args, &node.pos);
             }
-            None => {
-                let fmt: String = format!("Type '{}' has no trait '{}'.", tp_str, &traittp.to_string());
-                errors::raise_error(&fmt, errors::ErrorType::MissingTrait, &node.pos, self.info);
+            else {
+                let func: inkwell::values::PointerValue = t.inkfunc.unwrap();
+
+                args.insert(0, types::Data {
+                    data: Some(inkwell::values::BasicValueEnum::PointerValue(func)),
+                    tp: self.datatypes.get(&types::BasicDataType::Func.to_string()).unwrap().clone(),
+                    owned: true,
+                });
+
+                data = builtin_types::functype::fn_call(self, args, &node.pos);
             }
-        };
 
-        let data: types::Data;
+            if data.tp != self.datatypes.get(&types::BasicDataType::Bool.to_string()).unwrap().clone() {
+                let fmt: String = format!("Expected 'bool' type, got '{}' type.", data.tp);
+                errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+            }
+            
+            let then_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "if");
 
-        if t.function.is_some() {
-            let func = t.function.unwrap();
+            let _ = then_block.move_after(self.enclosing_block.unwrap());
+            
+            let elseif_block: inkwell::basic_block::BasicBlock;
 
-            data = (func)(&self, args, &node.pos);
+            if idx!=node.data.ifn.as_ref().unwrap().ifs.len()-1 {
+                elseif_block = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "else_if");
+
+                let _ = elseif_block.move_after(then_block);
+                
+                enclosing_block = elseif_block;                
+            }
+            else {
+                elseif_block = else_block;
+            }
+
+            self.builder.build_conditional_branch(data.data.unwrap().into_int_value(), then_block, elseif_block);
+
+            self.builder.position_at_end(then_block);
+            
+            self.namespaces.locals.push(std::collections::HashMap::new());
+
+            self.compile(&ifn.1, true);
+
+            self.namespaces.locals.pop();
+
+            self.builder.build_unconditional_branch(end_block);
+
+            self.enclosing_block = Some(then_block);
+
+            idx+=1;
+        }
+        
+        
+        let _ = else_block.move_after(self.enclosing_block.unwrap());
+        let _ = end_block.move_after(else_block); 
+
+        if node.data.ifn.as_ref().unwrap().else_opt.is_some() {
+            self.builder.position_at_end(else_block);
+            
+            self.namespaces.locals.push(std::collections::HashMap::new());
+
+            self.compile(&node.data.ifn.as_ref().unwrap().else_opt.as_ref().unwrap(), true);
+
+            self.builder.build_unconditional_branch(self.enclosing_block.unwrap());
+
+            self.namespaces.locals.pop();
         }
         else {
-            let func: inkwell::values::PointerValue = t.inkfunc.unwrap();
-
-            args.insert(0, types::Data {
-                data: Some(inkwell::values::BasicValueEnum::PointerValue(func)),
-                tp: self.datatypes.get(&types::BasicDataType::Func.to_string()).unwrap().clone(),
-                owned: true,
-            });
-
-            data = builtin_types::functype::fn_call(self, args, &node.pos);
+            self.builder.position_at_end(else_block);
+            self.builder.build_unconditional_branch(end_block);
         }
-
-        if data.tp != self.datatypes.get(&types::BasicDataType::Bool.to_string()).unwrap().clone() {
-            let fmt: String = format!("Expected 'bool' type, got '{}' type.", data.tp);
-            errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
-        }
-
-        let then_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "if");
-        let end_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "if_end");
-
-        self.builder.build_conditional_branch(data.data.unwrap().into_int_value(), then_block, end_block);
-
-        self.builder.position_at_end(then_block);
-        
-        let prev_locals = self.namespaces.locals.to_owned();
-        self.namespaces.locals = Vec::new();
-        self.namespaces.locals.push(std::collections::HashMap::new());
-
-        let res: types::Data = self.compile(&node.data.ifn.as_ref().unwrap().body, true);
-
-        self.namespaces.locals = prev_locals;
-
-        self.builder.build_unconditional_branch(end_block);
-        
-        self.builder.position_at_end(end_block);
 
         self.enclosing_block = Some(end_block);
+
+        self.builder.position_at_end(end_block);
         
-        return res;
+        let data: types::Data = types::Data {
+            data: None,
+            tp: self.datatypes.get(&types::BasicDataType::Void.to_string()).unwrap().clone(),
+            owned: true,
+        };
+        return data;
     }
 
 

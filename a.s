@@ -63,7 +63,7 @@ _main:                                  # @_main
 	movq	%rsp, %rax
 	addq	$-16, %rax
 	movq	%rax, %rsp
-	movl	$123, (%rax)
+	movl	$100, (%rax)
 # %bb.2:                                # %if_end
 	leaq	-24(%rbp), %rsp
 	popq	%rbx

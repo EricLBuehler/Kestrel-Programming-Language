@@ -273,17 +273,13 @@ impl std::fmt::Display for ImplNode {
 
 #[derive(Clone, Debug)]
 pub struct IfNode{
-    pub body: Vec<crate::parser::Node>,
-    pub expr: crate::parser::Node,
+    pub ifs: Vec<(crate::parser::Node, Vec<crate::parser::Node>)>,
+    pub else_opt: Option<Vec<crate::parser::Node>>,
 }
 
 impl std::fmt::Display for IfNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "If '{}' {{", self.expr)?;
-        for node in self.body.clone() {
-            writeln!(f, "    {}", node)?;
-        }
-        write!(f, "    }}")
+        writeln!(f, "If")
     }    
 }
 
