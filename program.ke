@@ -31,7 +31,7 @@ fn main() {
         let y = 300;
     }
 
-    len += 1u64
+    len += 1u
 }
 
 fn f(x: f32) -> f32{
