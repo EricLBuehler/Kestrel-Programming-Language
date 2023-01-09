@@ -12,6 +12,8 @@ The Kestrel Programming Language is a statically and strongly typed, compiled pr
 
 - **Performance** - AOT compilation means that Kestrel programs are compiled directly to machine code, allowing programs to be executed on any target platform natively, with blazing fast performance.
 
+- **Helpful compiler** - Descriptive and detailed error messages improve the debugging experience.
+
 ## Depenendencies
 See [more](https://github.com/EricLBuehler/Kestrel-Programming-Language/blob/master/Cargo.toml) details.
 - ```inkwell``` (using ```llvm10-0```)
