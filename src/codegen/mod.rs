@@ -38,8 +38,14 @@ pub enum ForwardDeclarationType {
     Real,
 }
 
+#[derive(PartialEq, Clone)]
+pub enum InitializationStatus {
+    Initialized,
+    Uninitialized,
+}
+
 pub struct Namespaces<'ctx> {
-    locals: Vec<std::collections::HashMap<String, (Option<inkwell::values::PointerValue<'ctx>>, types::DataType<'ctx>, types::DataMutablility, types::DataOwnership, parser::Position)>>,
+    locals: Vec<std::collections::HashMap<String, (Option<inkwell::values::PointerValue<'ctx>>, types::DataType<'ctx>, types::DataMutablility, types::DataOwnership, parser::Position, InitializationStatus)>>,
     functions: std::collections::HashMap<String, (inkwell::values::FunctionValue<'ctx>, types::DataType<'ctx>, ForwardDeclarationType)>,
     structs: std::collections::HashMap<String, (types::DataType<'ctx>, Option<inkwell::types::AnyTypeEnum<'ctx>>, std::collections::HashMap<String, i32>, ForwardDeclarationType)>,
 }
@@ -62,7 +68,7 @@ pub struct CodeGen<'ctx> {
 
 //Codegen functions
 impl<'ctx> CodeGen<'ctx> {
-    fn get_variable(&self, name: &String) -> (Option<&(Option<inkwell::values::PointerValue<'ctx>>, types::DataType<'ctx>, types::DataMutablility, types::DataOwnership, parser::Position)>, usize){
+    fn get_variable(&self, name: &String) -> (Option<&(Option<inkwell::values::PointerValue<'ctx>>, types::DataType<'ctx>, types::DataMutablility, types::DataOwnership, parser::Position, InitializationStatus)>, usize){
         for index in (0..self.namespaces.locals.len()).rev(){
             if self.namespaces.locals.get(index).unwrap().iter().find(|x| *x.0 == *name) != None {
                 return (self.namespaces.locals.get(index).unwrap().get(name), index);
@@ -423,7 +429,7 @@ impl<'ctx> CodeGen<'ctx> {
             if ptr.is_some() {
                 self.builder.build_store(ptr.unwrap(), data.data.unwrap());
 
-                self.namespaces.locals.last_mut().unwrap().insert(name.to_owned(), (ptr, data.tp.clone(), types::DataMutablility::Mutable, types::DataOwnership {owned: true, transferred: None}, node.pos.clone()));
+                self.namespaces.locals.last_mut().unwrap().insert(name.to_owned(), (ptr, data.tp.clone(), types::DataMutablility::Mutable, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
             }
         }
 
@@ -462,10 +468,10 @@ impl<'ctx> CodeGen<'ctx> {
                     }
                 }
 
-                self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone()));
+                self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
             }
             else {
-                self.namespaces.locals.last_mut().unwrap().insert(name, (None, tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone()));            
+                self.namespaces.locals.last_mut().unwrap().insert(name, (None, tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));            
             }
         }
         else {
@@ -488,10 +494,10 @@ impl<'ctx> CodeGen<'ctx> {
                     }
                 }
 
-                self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone()));
+                self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Uninitialized));
             }
             else {
-                self.namespaces.locals.last_mut().unwrap().insert(name, (None, tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone()));            
+                self.namespaces.locals.last_mut().unwrap().insert(name, (None, tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Uninitialized));            
             }
         }
 
@@ -530,12 +536,17 @@ impl<'ctx> CodeGen<'ctx> {
             }
         };
 
+        if self.get_variable(&name).0.unwrap().5 == InitializationStatus::Uninitialized {
+            let fmt: String = format!("Name '{}' is not necessarily.", name);
+            errors::raise_error(&fmt, errors::ErrorType::NameNotInitialized, &node.pos, self.info);
+        }
+
         let owner: types::DataOwnership = self.get_variable(&name).0.unwrap().3.clone();
 
         if give_ownership {
             let var = self.get_variable(&name);
             let mut locals = self.namespaces.locals.last().unwrap().clone();
-            locals.insert(name.clone(), (var.0.unwrap().0.clone(), var.0.unwrap().1.clone(), var.0.unwrap().2.clone(), types::DataOwnership {owned: false, transferred: Some(node.pos.clone())}, var.0.unwrap().4.clone()));
+            locals.insert(name.clone(), (var.0.unwrap().0.clone(), var.0.unwrap().1.clone(), var.0.unwrap().2.clone(), types::DataOwnership {owned: false, transferred: Some(node.pos.clone())}, var.0.unwrap().4.clone(), var.0.unwrap().5.clone()));
 
             self.namespaces.locals.pop();
             self.namespaces.locals.push(locals);
@@ -805,10 +816,10 @@ impl<'ctx> CodeGen<'ctx> {
             
                 self.builder.build_store(ptr, argv.unwrap());
 
-                self.namespaces.locals.last_mut().unwrap().insert(name.to_string(), (Some(ptr), tp.clone(), mutability.get(idx_mut).unwrap().clone(), types::DataOwnership {owned: true, transferred: None}, node.pos.clone()));
+                self.namespaces.locals.last_mut().unwrap().insert(name.to_string(), (Some(ptr), tp.clone(), mutability.get(idx_mut).unwrap().clone(), types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
             }
             else {
-                self.namespaces.locals.last_mut().unwrap().insert(name.to_string(), (None, tp.clone(), types::DataMutablility::Immutable, types::DataOwnership {owned: true, transferred: None}, node.pos.clone()));
+                self.namespaces.locals.last_mut().unwrap().insert(name.to_string(), (None, tp.clone(), types::DataMutablility::Immutable, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
             }
             idx_mut += 1;
         }
@@ -890,8 +901,10 @@ impl<'ctx> CodeGen<'ctx> {
 
         if ptr.is_some() {
             self.builder.build_store(ptr.unwrap(), right.data.unwrap());
+
+            let idx: usize = self.get_variable(&name).1;
             
-            self.namespaces.locals.last_mut().unwrap().insert(name, (ptr, right.tp.clone(), types::DataMutablility::Mutable, types::DataOwnership {owned: true, transferred: None}, node.pos.clone()));
+            self.namespaces.locals.get_mut(idx).unwrap().insert(name, (ptr, right.tp.clone(), types::DataMutablility::Mutable, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
         }
 
         return right;
