@@ -22,14 +22,16 @@ fn main() {
     //This is a comment
     let len: usize = name.length()
 
-    let uninit = if 1==1 {
-        let x = 100;
+    let uninit: usize
+
+    if 1==1 {
+        let x = 100
     }
     elif 2==3 {
-        let z = 200;
+        let z = 200
     }
     else {
-        let y = 300;
+        let y = 300
     }
 
     len += 1usize

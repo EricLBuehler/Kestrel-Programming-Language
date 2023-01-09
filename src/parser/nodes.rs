@@ -74,7 +74,7 @@ impl std::fmt::Display for NumNode {
 #[derive(Clone, Debug)]
 pub struct LetNode {
     pub name: String,
-    pub expr: crate::parser::Node,
+    pub expr: Option<crate::parser::Node>,
     pub mutability: crate::codegen::types::DataMutablility,
     pub tp: Option<crate::parser::Type>,
 }
