@@ -431,8 +431,6 @@ impl<'ctx> CodeGen<'ctx> {
     }
     
     fn build_let(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let right: types::Data = self.compile_expr(&node.data.letn.as_ref().unwrap().expr.as_ref().unwrap(), true, false);
-
         let name: String = node.data.letn.as_ref().unwrap().name.clone();
         
         if !name.is_snake_case() {
@@ -445,27 +443,46 @@ impl<'ctx> CodeGen<'ctx> {
             errors::raise_error_multi(errors::ErrorType::RedefinitionAttempt, vec![here, fmt], vec![&self.namespaces.locals.last().unwrap().get(&name).unwrap().4, &node.pos], self.info);
         }
 
-        let mut tp: types::DataType = right.tp;
+        if node.data.letn.as_ref().unwrap().expr.is_some() {
+            let right: types::Data = self.compile_expr(&node.data.letn.as_ref().unwrap().expr.as_ref().unwrap(), true, false);
+            let mut tp: types::DataType = right.tp;
 
-        if right.data.is_some(){
-            let ptr: inkwell::values::PointerValue = self.builder.build_alloca(right.data.unwrap().get_type(), name.as_str());
-                
-            self.builder.build_store(ptr, right.data.unwrap());
+            if right.data.is_some(){
+                let ptr: inkwell::values::PointerValue = self.builder.build_alloca(right.data.unwrap().get_type(), name.as_str());
+                    
+                self.builder.build_store(ptr, right.data.unwrap());
 
-            let rt_tp: types::DataType = tp.clone();
-            if node.data.letn.as_ref().unwrap().tp != None {
-                (tp, _) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
-                if tp != rt_tp {
-                    let fmt: String = format!("Expected '{}' type, got '{}' type.", tp.to_string(), rt_tp.to_string());
-                    errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+                let rt_tp: types::DataType = tp.clone();
+                if node.data.letn.as_ref().unwrap().tp != None {
+                    (tp, _) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
+                    if tp != rt_tp {
+                        let fmt: String = format!("Expected '{}' type, got '{}' type.", tp.to_string(), rt_tp.to_string());
+                        errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+                    }
                 }
-            }
 
-            self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone()));
+                self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone()));
+            }
+            else {
+                self.namespaces.locals.last_mut().unwrap().insert(name, (None, tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone()));            
+            }
         }
         else {
-            self.namespaces.locals.last_mut().unwrap().insert(name, (None, tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone()));            
+            if node.data.letn.as_ref().unwrap().tp.is_none() {
+                let fmt: String = format!("Expected specified type for variable declaration.");
+                errors::raise_error(&fmt, errors::ErrorType::ExpectedSpecifiedType, &node.pos, self.info);
+            }
+            let (tp, inktp) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
+
+            if tp.tp == types::BasicDataType::Void {
+                self.namespaces.locals.last_mut().unwrap().insert(name, (None, tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone()));            
+            }
+            else {
+                let ptr: inkwell::values::PointerValue = self.builder.build_alloca(Self::get_basic_from_any(inktp).unwrap(), name.as_str());
+                self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone()));
+            }
         }
+
         let data: types::Data = types::Data {
             data: None,
             tp: self.datatypes.get(&types::BasicDataType::Void.to_string()).unwrap().clone(),
