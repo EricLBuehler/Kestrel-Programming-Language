@@ -14,7 +14,7 @@ The Kestrel Programming Language is a statically and strongly typed, compiled pr
 
 - **Helpful compiler** - Descriptive and detailed error messages improve the debugging experience.
 
-- **Memory safe** - Data ownership and references enforce what are good practices in other languages and eliminate an entire class of errors.
+- **Memory safe** - Data ownership and [references](https://github.com/EricLBuehler/Kestrel-Programming-Language/blob/master/docs/references.md) enforce what are good practices in other languages and eliminate an entire class of errors.
 
 ## Depenendencies
 See [more](https://github.com/EricLBuehler/Kestrel-Programming-Language/blob/master/Cargo.toml) details.
