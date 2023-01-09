@@ -416,6 +416,17 @@ impl<'ctx> CodeGen<'ctx> {
             data = builtin_types::functype::fn_call(self, args, &node.pos);
         }
 
+        if binary.isassign {
+            let name: &String = &binary.left.data.identifier.as_ref().unwrap().name;
+            let ptr: Option<inkwell::values::PointerValue> = self.get_variable(name).0.unwrap().0;
+
+            if ptr.is_some() {
+                self.builder.build_store(ptr.unwrap(), data.data.unwrap());
+
+                self.namespaces.locals.last_mut().unwrap().insert(name.to_owned(), (ptr, data.tp.clone(), types::DataMutablility::Mutable, types::DataOwnership {owned: true, transferred: None}, node.pos.clone()));
+            }
+        }
+
         return data;
     }
     

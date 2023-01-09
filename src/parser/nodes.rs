@@ -51,6 +51,7 @@ pub struct BinaryNode{
     pub left: crate::parser::Node,
     pub op: BinaryOpType,
     pub right: crate::parser::Node,
+    pub isassign: bool,
 }
 
 impl std::fmt::Display for BinaryNode {

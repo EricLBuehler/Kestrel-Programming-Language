@@ -30,8 +30,8 @@ entry:
   store [2 x i32]* %arr4, [2 x i32]** %arr6, !dbg !8
   %arr7 = getelementptr inbounds { [12 x i8] }, { [12 x i8] }* %name, i32 0, i32 0, !dbg !8
   %arr8 = load [12 x i8], [12 x i8]* %arr7, !dbg !8
-  %len = alloca i32, !dbg !8
-  store i32 12, i32* %len, !dbg !8
+  %len = alloca i64, !dbg !8
+  store i64 12, i64* %len, !dbg !8
   br label %if, !dbg !8
 
 if:                                               ; preds = %entry
@@ -40,6 +40,9 @@ if:                                               ; preds = %entry
   br label %if_end, !dbg !8
 
 if_end:                                           ; preds = %if
+  %len11 = load i64, i64* %len, !dbg !8
+  %u64sum = add i64 %len11, 1, !dbg !8
+  store i64 %u64sum, i64* %len, !dbg !8
   ret void, !dbg !8
 }
 
@@ -114,12 +117,12 @@ attributes #0 = { noinline nounwind optnone }
 !7 = !DIBasicType(name: "void", size: 16, flags: DIFlagPublic)
 !8 = !DILocation(line: 15, scope: !9)
 !9 = distinct !DILexicalBlock(scope: !4, file: !2, line: 15)
-!10 = distinct !DISubprogram(name: "f", linkageName: "f", scope: null, file: !2, line: 34, type: !11, scopeLine: 34, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
+!10 = distinct !DISubprogram(name: "f", linkageName: "f", scope: null, file: !2, line: 36, type: !11, scopeLine: 36, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !11 = !DISubroutineType(flags: DIFlagPublic, types: !12)
 !12 = !{!13, !13}
 !13 = !DIBasicType(name: "float", size: 16, flags: DIFlagPublic)
-!14 = !DILocation(line: 34, scope: !15)
-!15 = distinct !DILexicalBlock(scope: !10, file: !2, line: 34)
+!14 = !DILocation(line: 36, scope: !15)
+!15 = distinct !DILexicalBlock(scope: !10, file: !2, line: 36)
 !16 = distinct !DISubprogram(name: "a", linkageName: "a", scope: null, file: !2, line: 5, type: !17, scopeLine: 5, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !17 = !DISubroutineType(flags: DIFlagPublic, types: !18)
 !18 = !{!13, !19}

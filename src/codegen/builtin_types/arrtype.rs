@@ -14,7 +14,12 @@ fn length<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &crate::
     let len: u32 = args.get(0).unwrap().tp.arrtp.unwrap().len();
 
     return Data {
-        data: Some(inkwell::values::BasicValueEnum::IntValue(codegen.inkwell_types.i32tp.const_int(len.into(), false))),
+        data: Some(inkwell::values::BasicValueEnum::IntValue(if std::mem::size_of::<usize>() == std::mem::size_of::<u32>() {
+            codegen.inkwell_types.i32tp.const_int(len.into(), false)
+        }
+        else {
+            codegen.inkwell_types.i64tp.const_int(len.into(), false)
+        })),
         tp: codegen.datatypes.get("usize").unwrap().clone(),
         owned: true,
     };

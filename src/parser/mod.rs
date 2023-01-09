@@ -481,11 +481,22 @@ impl<'life> Parser<'life> {
         };
 
         self.advance();
+
+        let mut isassign: bool = false;
+
+        if self.current_is_type(TokenType::EQUALS) {
+            isassign = true;
+            if left.tp != NodeType::IDENTIFIER {
+                self.raise_error("Expected identifier.", ErrorType::InvalidTok);
+            }
+            self.advance();
+        }
         
         let bin: nodes::BinaryNode = nodes::BinaryNode{
             left,
             op,
             right: self.expr(prec),
+            isassign,
         };
 
         pos.endcol = bin.right.pos.endcol;

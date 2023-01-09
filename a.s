@@ -50,21 +50,24 @@ _main:                                  # @_main
 	movb	%r8b, -54(%rbp)
 	movb	%dil, -55(%rbp)
 	movb	%sil, -56(%rbp)
-	movl	$129413, -76(%rbp)      # imm = 0x1F985
+	movl	$129413, -84(%rbp)      # imm = 0x1F985
 	movss	-60(%rbp), %xmm0        # xmm0 = mem[0],zero,zero,zero
 	mulss	-60(%rbp), %xmm0
 	cvttss2si	%xmm0, %eax
-	movl	%eax, -68(%rbp)
-	movl	$2, -68(%rbp)
-	leaq	-68(%rbp), %rax
-	movq	%rax, -88(%rbp)
-	movl	$12, -72(%rbp)
+	movl	%eax, -80(%rbp)
+	movl	$2, -80(%rbp)
+	leaq	-80(%rbp), %rax
+	movq	%rax, -96(%rbp)
+	movq	$12, -72(%rbp)
 # %bb.1:                                # %if
 	movq	%rsp, %rax
 	addq	$-16, %rax
 	movq	%rax, %rsp
 	movl	$100, (%rax)
 # %bb.2:                                # %if_end
+	movq	-72(%rbp), %rax
+	addq	$1, %rax
+	movq	%rax, -72(%rbp)
 	leaq	-24(%rbp), %rsp
 	popq	%rbx
 	popq	%r14
