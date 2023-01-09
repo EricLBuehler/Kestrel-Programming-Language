@@ -431,7 +431,7 @@ impl<'ctx> CodeGen<'ctx> {
     }
     
     fn build_let(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let right: types::Data = self.compile_expr(&node.data.letn.as_ref().unwrap().expr, true, false);
+        let right: types::Data = self.compile_expr(&node.data.letn.as_ref().unwrap().expr.as_ref().unwrap(), true, false);
 
         let name: String = node.data.letn.as_ref().unwrap().name.clone();
         

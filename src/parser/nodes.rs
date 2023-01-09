@@ -74,14 +74,14 @@ impl std::fmt::Display for NumNode {
 #[derive(Clone, Debug)]
 pub struct LetNode {
     pub name: String,
-    pub expr: crate::parser::Node,
+    pub expr: Option<crate::parser::Node>,
     pub mutability: crate::codegen::types::DataMutablility,
     pub tp: Option<crate::parser::Type>,
 }
 
 impl std::fmt::Display for LetNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Let '{}' = {}", self.name, self.expr)
+        write!(f, "Let '{}' = {:?}", self.name, self.expr)
     }    
 }
 
