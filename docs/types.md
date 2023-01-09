@@ -41,10 +41,10 @@ The ```f32``` type is a 32-bit floating point number. This is the default type f
 The ```f64``` type is a 64-bit floating point number. This is the equivalent of ```double``` in ```C```.
 
 ## ```usize```
-The ```usize``` type is an unsigned 32-bit or 64-bit integer, depending on the compilation platform architecture.
+The ```usize``` type is an unsigned 32-bit or 64-bit integer, depending on the compilation platform architecture. Postfix literal with ```u```.
 
 ## ```isize```
-The ```isize``` type is a signed 32-bit or 64-bit integer, depending on the compilation platform architecture.
+The ```isize``` type is a signed 32-bit or 64-bit integer, depending on the compilation platform architecture. Postfix literal with ```u```.
 
 ## ```char```
 The ```char``` type is an unsigned 32-bit integer, and an alias for the ```u32``` type. It represents a UTF-32 codepoint.

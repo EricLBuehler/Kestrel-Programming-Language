@@ -532,7 +532,7 @@ fn make_number(lexer: &mut Lexer) -> Token {
             else if specified_tp==crate::codegen::types::BasicDataType::U128.to_string() {
                 tp=TokenType::U128;
             }
-            else if specified_tp=="usize" { 
+            else if specified_tp=="u" { 
                 if std::mem::size_of::<usize>() == std::mem::size_of::<u32>() {
                     tp=TokenType::U32;   
                 }
@@ -540,16 +540,13 @@ fn make_number(lexer: &mut Lexer) -> Token {
                     tp=TokenType::U64;
                 }
             }
-            else if specified_tp=="isize" { 
+            else if specified_tp=="i" { 
                 if std::mem::size_of::<isize>() == std::mem::size_of::<i32>() {
                     tp=TokenType::I32;   
                 }
                 else {
                     tp=TokenType::I64;
                 }
-            }
-            else if specified_tp=="bool" { 
-                tp=TokenType::I8;
             }
             else {
                 crate::errors::raise_error(format!("Invalid specified type {}.", specified_tp).as_str(), crate::errors::ErrorType::UnknownType, &crate::parser::Position { line, startcol: start, endcol: end+1 }, lexer.info);
