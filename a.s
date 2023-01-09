@@ -10,7 +10,7 @@ _main:                                  # @_main
 	pushq	%r15
 	pushq	%r14
 	pushq	%rbx
-	subq	$72, %rsp
+	subq	$88, %rsp
 	movl	$1067282596, -60(%rbp)  # imm = 0x3F9D70A4
 	movss	-60(%rbp), %xmm0        # xmm0 = mem[0],zero,zero,zero
 	callq	f

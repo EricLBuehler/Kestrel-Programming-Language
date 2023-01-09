@@ -1606,18 +1606,13 @@ impl<'life> Parser<'life> {
             tp=Some(self.parse_type(mutability).1);
         }
 
-        let mut expr: Option<Node> = None;
+        if !self.current_is_type(TokenType::EQUALS) {
+            self.raise_error("Expected equals.", ErrorType::InvalidTok);
+        }
 
-        if self.current_is_type(TokenType::EQUALS) {
-            self.advance();
-    
-            expr = Some(self.expr(Precedence::Lowest));
-        }
-        else {
-            pos.endcol = self.current.endcol;
-            self.advance()
-        }
-        
+        self.advance();
+
+        let expr: Node = self.expr(Precedence::Lowest);        
 
         let letn: nodes::LetNode = nodes::LetNode{
             name,
@@ -1646,10 +1641,8 @@ impl<'life> Parser<'life> {
             impln: None,
             ifn: None,
         };
-        
-        if nodedat.letn.as_ref().unwrap().expr.is_some() {
-            pos.endcol = nodedat.letn.as_ref().unwrap().expr.as_ref().unwrap().pos.endcol;
-        }
+
+        pos.endcol = nodedat.letn.as_ref().unwrap().expr.pos.endcol;
     
         let n: Node = self.create_node(NodeType::LET, nodedat, pos);
 

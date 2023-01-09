@@ -39,7 +39,6 @@ pub enum ErrorType {
     CannotImplementCallTrait,
     NamespaceAttrNotFound,
     TypeRedefinitionAttempt,
-    ExpectedSpecifiedType,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -87,7 +86,6 @@ pub fn repr_err(tp: ErrorType) -> &'static str {
         ErrorType::CannotImplementCallTrait => "cannot implement call trait",
         ErrorType::NamespaceAttrNotFound => "namespace attribute is not found",
         ErrorType::TypeRedefinitionAttempt => "attempt to redefine type",
-        ErrorType::ExpectedSpecifiedType => "expected specified type",
     }
 }
 
