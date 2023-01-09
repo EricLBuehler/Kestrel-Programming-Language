@@ -1540,6 +1540,8 @@ impl<'ctx> CodeGen<'ctx> {
 
         let mut enclosing_block: inkwell::basic_block::BasicBlock = self.enclosing_block.unwrap();
 
+        let mut expected_tp: Option<types::DataType> = None;
+
         let mut idx: usize = 0;
         for ifn in &node.data.ifn.as_ref().unwrap().ifs {
             self.builder.position_at_end(enclosing_block);            
@@ -1612,7 +1614,16 @@ impl<'ctx> CodeGen<'ctx> {
             
             self.namespaces.locals.push(std::collections::HashMap::new());
 
-            self.compile(&ifn.1, true);
+            let res: types::Data = self.compile(&ifn.1, true);
+
+            if expected_tp.is_none() {
+                expected_tp = Some(res.tp.clone());
+            }
+
+            if res.tp != *expected_tp.as_ref().unwrap() {
+                let fmt: String = format!("Expected '{}' type, got '{}' type.", expected_tp.as_ref().unwrap(), res.tp);
+                errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+            }
 
             self.namespaces.locals.pop();
 
