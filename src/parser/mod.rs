@@ -1958,7 +1958,14 @@ impl<'life> Parser<'life> {
 
         self.advance();
 
-        let expr: Node = self.expr(Precedence::Lowest);
+        let expr: Option<Node>;
+
+        if self.current_is_type(TokenType::NEWLINE) {
+            expr = None;
+        }
+        else {
+            expr = Some(self.expr(Precedence::Lowest));
+        }
 
         let retn: nodes::ReturnNode = nodes::ReturnNode{
             expr,
@@ -1985,7 +1992,12 @@ impl<'life> Parser<'life> {
             ifn: None,
         };
 
-        pos.endcol = nodedat.ret.as_ref().unwrap().expr.pos.endcol;
+        if nodedat.ret.as_ref().unwrap().expr.is_some() {
+            pos.endcol = nodedat.ret.as_ref().unwrap().expr.as_ref().unwrap().pos.endcol;
+        }
+        else {
+            pos.endcol = self.current.endcol;
+        }
     
         let n: Node = self.create_node(NodeType::RETURN, nodedat, pos);
 

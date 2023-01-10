@@ -141,12 +141,12 @@ impl std::fmt::Display for CallNode {
 
 #[derive(Clone, Debug)]
 pub struct ReturnNode {
-    pub expr: crate::parser::Node,
+    pub expr: Option<crate::parser::Node>,
 }
 
 impl std::fmt::Display for ReturnNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Return '{}'", self.expr)
+        write!(f, "Return '{:?}'", self.expr)
     }    
 }
 

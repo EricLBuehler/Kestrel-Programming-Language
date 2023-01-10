@@ -1015,7 +1015,11 @@ impl<'ctx> CodeGen<'ctx> {
     }
 
     fn build_return(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let retv: types::Data = self.compile_expr(&node.data.ret.as_ref().unwrap().expr, true, false);
+        let retv: types::Data = if node.data.ret.as_ref().unwrap().expr.is_some() { self.compile_expr(&node.data.ret.as_ref().unwrap().expr.as_ref().unwrap(), true, false) } else { types::Data {
+            data: None,
+            tp: self.datatypes.get(&types::BasicDataType::Void.to_string()).unwrap().clone(),
+            owned: true,
+        } };
 
         if self.expected_rettp==None {
             let fmt: String = format!("Cannot return outside of function.");
@@ -1030,7 +1034,7 @@ impl<'ctx> CodeGen<'ctx> {
         if retv.data.is_some() {
             if !retv.owned {
                 let fmt: String = format!("Return value is not owned.");
-                errors::raise_error(&fmt, errors::ErrorType::ReturnValueNotOwned, &node.data.ret.as_ref().unwrap().expr.pos, self.info);
+                errors::raise_error(&fmt, errors::ErrorType::ReturnValueNotOwned, if node.data.ret.as_ref().unwrap().expr.is_some() { &node.data.ret.as_ref().unwrap().expr.as_ref().unwrap().pos } else { &node.pos }, self.info);
             }
             self.builder.build_return(Some(&retv.data.unwrap())); 
         }
