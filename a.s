@@ -57,13 +57,14 @@ _main:                                  # @_main
 	movl	%eax, -80(%rbp)
 	movl	$2, -80(%rbp)
 	leaq	-80(%rbp), %rax
-	movq	%rax, -96(%rbp)
+	movq	%rax, -104(%rbp)
 	movq	$12, -72(%rbp)
 # %bb.1:                                # %if
 	movq	%rsp, %rax
 	addq	$-16, %rax
 	movq	%rax, %rsp
 	movl	$100, (%rax)
+	movq	$1, -96(%rbp)
 # %bb.2:                                # %if_end
 	movq	-72(%rbp), %rax
 	addq	$1, %rax

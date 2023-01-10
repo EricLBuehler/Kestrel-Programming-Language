@@ -26,12 +26,15 @@ fn main() {
 
     if 1==1 {
         let x = 100
+        uninit = 1usize
     }
     elif 2==3 {
         let z = 200
+        uninit = 2usize
     }
     else {
         let y = 300
+        uninit = 3usize
     }
 
     len += 1usize

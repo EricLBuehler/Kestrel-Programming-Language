@@ -537,7 +537,7 @@ impl<'ctx> CodeGen<'ctx> {
         };
 
         if self.get_variable(&name).0.unwrap().5 == InitializationStatus::Uninitialized {
-            let fmt: String = format!("Name '{}' is not necessarily.", name);
+            let fmt: String = format!("Name '{}' is not necessarily initialized.", name);
             errors::raise_error(&fmt, errors::ErrorType::NameNotInitialized, &node.pos, self.info);
         }
 
@@ -887,7 +887,8 @@ impl<'ctx> CodeGen<'ctx> {
             errors::raise_error(&fmt, errors::ErrorType::CannotAssign, &node.pos, self.info);
         }
 
-        if self.get_variable(&name).0.unwrap().2 == types::DataMutablility::Immutable {
+        if  self.get_variable(&name).0.unwrap().2 == types::DataMutablility::Immutable &&
+            self.get_variable(&name).0.unwrap().5 == InitializationStatus::Initialized {
             let fmt: String = format!("Cannot assign to immutable variable.");
             errors::raise_error(&fmt, errors::ErrorType::ImmutableAssign, &node.pos, self.info);
         }
@@ -1585,7 +1586,8 @@ impl<'ctx> CodeGen<'ctx> {
 
         let mut enclosing_block: inkwell::basic_block::BasicBlock = self.enclosing_block.unwrap();
 
-        let mut expected_tp: Option<types::DataType> = None;
+        
+        let mut collected_locals: Vec<std::collections::HashMap<String, usize>> = Vec::new();
 
         let mut idx: usize = 0;
         for ifn in &node.data.ifn.as_ref().unwrap().ifs {
@@ -1659,16 +1661,44 @@ impl<'ctx> CodeGen<'ctx> {
             
             self.namespaces.locals.push(std::collections::HashMap::new());
 
-            let res: types::Data = self.compile(&ifn.1, true);
 
-            if expected_tp.is_none() {
-                expected_tp = Some(res.tp.clone());
+            let mut start_locals: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+            let mut end_locals: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+            
+            let mut lvl: usize = 0;
+            for local in &self.namespaces.locals {
+                for item in local {
+                    if item.1.5 == InitializationStatus::Uninitialized {
+                        start_locals.insert(item.0.clone(), lvl);
+                    }
+                }
+                lvl += 1;
             }
 
-            if res.tp != *expected_tp.as_ref().unwrap() {
-                let fmt: String = format!("Expected '{}' type, got '{}' type.", expected_tp.as_ref().unwrap(), res.tp);
-                errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+            self.compile(&ifn.1, true);
+
+            let mut lvl: usize = 0;
+            for local in &self.namespaces.locals {
+                for item in local {
+                    if  item.1.5 == InitializationStatus::Initialized && start_locals.get(item.0).is_some() &&
+                        start_locals.get(item.0).unwrap() == &lvl {
+                        
+                        end_locals.insert(item.0.clone(), lvl);
+
+                    }
+                }
+                lvl += 1;
             }
+
+            for var in &end_locals {
+                let mut var_val = self.namespaces.locals.get_mut(var.1.to_owned()).unwrap().get(&var.0.to_owned()).unwrap().to_owned();
+                var_val.5 = InitializationStatus::Uninitialized;
+
+                self.namespaces.locals.get_mut(var.1.to_owned()).unwrap().insert(var.0.to_owned(), var_val);
+            }
+
+            collected_locals.push(end_locals);
+
 
             self.namespaces.locals.pop();
 
@@ -1688,7 +1718,43 @@ impl<'ctx> CodeGen<'ctx> {
             
             self.namespaces.locals.push(std::collections::HashMap::new());
 
+
+            let mut start_locals: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+            let mut end_locals: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+            
+            let mut lvl: usize = 0;
+            for local in &self.namespaces.locals {
+                for item in local {
+                    if item.1.5 == InitializationStatus::Uninitialized {
+                        start_locals.insert(item.0.clone(), lvl);
+                    }
+                }
+                lvl += 1;
+            }
+
             self.compile(&node.data.ifn.as_ref().unwrap().else_opt.as_ref().unwrap(), true);
+
+            let mut lvl: usize = 0;
+            for local in &self.namespaces.locals {
+                for item in local {
+                    if  item.1.5 == InitializationStatus::Initialized && start_locals.get(item.0).is_some() &&
+                        start_locals.get(item.0).unwrap() == &lvl {
+                        
+                        end_locals.insert(item.0.clone(), lvl);
+                    }
+                }
+                lvl += 1;
+            }
+
+            for var in &end_locals {
+                let mut var_val = self.namespaces.locals.get_mut(var.1.to_owned()).unwrap().get(&var.0.to_owned()).unwrap().to_owned();
+                var_val.5 = InitializationStatus::Uninitialized;
+
+                self.namespaces.locals.get_mut(var.1.to_owned()).unwrap().insert(var.0.to_owned(), var_val);
+            }
+
+            collected_locals.push(end_locals);
+
 
             self.builder.build_unconditional_branch(self.enclosing_block.unwrap());
 
@@ -1698,6 +1764,43 @@ impl<'ctx> CodeGen<'ctx> {
             self.builder.position_at_end(else_block);
             self.builder.build_unconditional_branch(end_block);
         }
+
+        let mut common: Vec<(String, usize)> = Vec::new();
+        let mut common_init: Vec<(String, usize)> = Vec::new();
+
+        //Get all of the initialized variables
+        for local_set in &collected_locals {
+            for item in local_set {
+                if !common.contains(&(item.0.to_owned(), item.1.to_owned())) {
+                    common.push((item.0.to_owned(), item.1.to_owned()));
+                }
+            }
+        }
+
+        //Get all of the initialized variables that all have been commonly init
+        'outer: for var in &common {
+            for local_set in &collected_locals {
+                if local_set.len() == 0 {
+                    continue 'outer;
+                }
+                for local in local_set {
+                    if local != (&var.0, &var.1) {
+                        continue 'outer;
+                    }
+                }
+            }
+            common_init.push((var.0.to_owned(), var.1.to_owned()));
+        }
+
+        for var in common_init {
+            let mut var_val = self.namespaces.locals.get_mut(var.1).unwrap().get(&var.0).unwrap().to_owned();
+            var_val.5 = InitializationStatus::Initialized;
+
+            self.namespaces.locals.get_mut(var.1).unwrap().insert(var.0, var_val);
+        }
+
+
+
 
         self.enclosing_block = Some(end_block);
 
