@@ -20,7 +20,7 @@ fn name(parameter: <mutability> type, ...) {
 }
 ```
 
-Furthermore, the ```fn``` keyword also allows the definition of a method. A method must be tied to a struct: 
+Furthermore, the ```fn``` keyword also allows the definition of an instance method. A method must be tied to a struct: 
 
 ```
 fn struct.name(parameter: <mutability> type, ...) -> tp {
@@ -30,6 +30,19 @@ fn struct.name(parameter: <mutability> type, ...) {
 
 }
 ```
+
+Additionally, the ```fn``` keyword also allows the definition of namespace methods. A method must be tied to a struct: 
+
+```
+fn struct::name(parameter: <mutability> type, ...) -> tp {
+
+}
+fn struct::name(parameter: <mutability> type, ...) {
+
+}
+```
+
+See more documentation on functions [here](functions.md).
 
 
 ## ```mut```

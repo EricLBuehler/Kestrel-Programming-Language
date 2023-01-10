@@ -1553,25 +1553,27 @@ impl<'ctx> CodeGen<'ctx> {
         let method_: Option<&types::Method> = st.0.methods.get(attr);
         if method_.is_some() {
             let method: &types::Method = method_.unwrap();
-            if method.tp == types::MethodType::Fn {
-                let data: types::Data = types::Data {
-                    data: Some(inkwell::values::BasicValueEnum::PointerValue(method.func.unwrap())),
-                    tp: method.functp.clone(),
-                    owned: true,
-                };
+            if !method.isinstance {
+                if method.tp == types::MethodType::Fn {
+                    let data: types::Data = types::Data {
+                        data: Some(inkwell::values::BasicValueEnum::PointerValue(method.func.unwrap())),
+                        tp: method.functp.clone(),
+                        owned: true,
+                    };
 
-                return data;
-            }
-            else {
-                let mut tp_: types::DataType = self.datatypes.get(&types::BasicDataType::WrapperFunc.to_string()).unwrap().clone();
-                tp_.wrapperfn = method.builtin;
-                let data: types::Data = types::Data {
-                    data: None,
-                    tp: tp_,
-                    owned: true,
-                };
+                    return data;
+                }
+                else {
+                    let mut tp_: types::DataType = self.datatypes.get(&types::BasicDataType::WrapperFunc.to_string()).unwrap().clone();
+                    tp_.wrapperfn = method.builtin;
+                    let data: types::Data = types::Data {
+                        data: None,
+                        tp: tp_,
+                        owned: true,
+                    };
 
-                return data;
+                    return data;
+                }
             }
         }
 
