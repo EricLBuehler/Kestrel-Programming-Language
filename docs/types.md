@@ -61,7 +61,7 @@ void
 ```
 
 ## ```fn```
-The ```fn``` type represents a function pointer. Return type specification is optional.
+The ```fn``` type represents a function pointer. Return type specification is optional for ```void``` type.
 ```
 fn(type) -> tp
 fn(type)
