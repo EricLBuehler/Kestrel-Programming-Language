@@ -64,6 +64,9 @@ pub struct CodeGen<'ctx> {
     expected_rettp: Option<types::DataType<'ctx>>,
     traits: std::collections::HashMap<String, types::TraitSignature>,
     enclosing_block: Option<inkwell::basic_block::BasicBlock<'ctx>>,
+    start_block: Option<inkwell::basic_block::BasicBlock<'ctx>>,
+    end_block: Option<inkwell::basic_block::BasicBlock<'ctx>>,
+    loop_flow_broken: bool,
 }
 
 //Codegen functions
@@ -855,7 +858,7 @@ impl<'ctx> CodeGen<'ctx> {
         let manager = inkwell::passes::PassManager::create(&self.module);
         manager.add_cfg_simplification_pass();
         pass_manager_builder.populate_function_pass_manager(&manager);
-        
+
 
         unsafe { func.run_in_pass_manager(&manager); }
         
@@ -1676,8 +1679,12 @@ impl<'ctx> CodeGen<'ctx> {
                 }
                 lvl += 1;
             }
+            
+            let loop_flow_broken_old = self.loop_flow_broken;
 
             self.compile(&ifn.1, true);
+
+            self.loop_flow_broken = loop_flow_broken_old;
 
             let mut lvl: usize = 0;
             for local in &self.namespaces.locals {
@@ -1734,7 +1741,11 @@ impl<'ctx> CodeGen<'ctx> {
                 lvl += 1;
             }
 
+            let loop_flow_broken_old = self.loop_flow_broken;
+
             self.compile(&node.data.ifn.as_ref().unwrap().else_opt.as_ref().unwrap(), true);
+
+            self.loop_flow_broken = loop_flow_broken_old;
 
             let mut lvl: usize = 0;
             for local in &self.namespaces.locals {
@@ -1810,6 +1821,77 @@ impl<'ctx> CodeGen<'ctx> {
         self.enclosing_block = Some(end_block);
 
         self.builder.position_at_end(end_block);
+        
+        let data: types::Data = types::Data {
+            data: None,
+            tp: self.datatypes.get(&types::BasicDataType::Void.to_string()).unwrap().clone(),
+            owned: true,
+        };
+        return data;
+    }
+
+    fn build_loop(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        let loop_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "loop");
+        let end_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "loop_end");
+
+        let start_block_old = self.start_block;
+        let end_block_old = self.end_block;
+        let loop_flow_broken_old = self.loop_flow_broken;
+
+        self.start_block = Some(loop_block);
+        self.end_block = Some(end_block);
+
+        self.builder.build_unconditional_branch(loop_block);
+
+        self.builder.position_at_end(loop_block);
+
+        self.compile(&node.data.loopn.as_ref().unwrap().block, true);
+
+        self.builder.build_unconditional_branch(loop_block);
+
+        self.builder.position_at_end(end_block);
+
+        self.end_block = end_block_old;
+        self.start_block = start_block_old;
+        self.loop_flow_broken = loop_flow_broken_old;
+        
+        let data: types::Data = types::Data {
+            data: None,
+            tp: self.datatypes.get(&types::BasicDataType::Void.to_string()).unwrap().clone(),
+            owned: true,
+        };
+        return data;
+    }
+
+    fn build_break(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        if self.end_block.is_none() {
+            let fmt: String = format!("Cannot break outside of loop.");
+            errors::raise_error(&fmt, errors::ErrorType::BreakOutsideOfLoop, &node.pos, self.info);         
+        }
+
+        if self.loop_flow_broken {
+            self.builder.build_unconditional_branch(self.end_block.unwrap());
+            self.loop_flow_broken = true;
+        }
+        
+        let data: types::Data = types::Data {
+            data: None,
+            tp: self.datatypes.get(&types::BasicDataType::Void.to_string()).unwrap().clone(),
+            owned: true,
+        };
+        return data;
+    }
+
+    fn build_continue(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        if self.start_block.is_none() {
+            let fmt: String = format!("Cannot continue outside of loop.");
+            errors::raise_error(&fmt, errors::ErrorType::ContinueOutsideOfLoop, &node.pos, self.info);         
+        }
+
+        if self.loop_flow_broken {
+            self.builder.build_unconditional_branch(self.start_block.unwrap());
+            self.loop_flow_broken = true;
+        }
         
         let data: types::Data = types::Data {
             data: None,
@@ -2054,6 +2136,15 @@ impl<'ctx> CodeGen<'ctx> {
             parser::NodeType::IF => {
                 self.build_if(node)
             }
+            parser::NodeType::LOOP => {
+                self.build_loop(node)
+            }
+            parser::NodeType::BREAK => {
+                self.build_break(node)
+            }
+            parser::NodeType::CONTINUE => {
+                self.build_continue(node)
+            }
         }
     }
 
@@ -2279,6 +2370,9 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
         expected_rettp: None, 
         traits: std::collections::HashMap::new(),
         enclosing_block: None,
+        start_block: None,
+        end_block: None,
+        loop_flow_broken: false,
     };
     
     //Pass manager (optimizer)

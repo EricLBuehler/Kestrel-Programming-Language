@@ -39,6 +39,8 @@ fn main() {
 
     loop {
         len += 1usize
+        break
+        continue
     }
 }
 

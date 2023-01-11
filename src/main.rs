@@ -107,6 +107,8 @@ fn main() {
                                             String::from("elif"),
                                             String::from("else"),
                                             String::from("loop"),
+                                            String::from("break"),
+                                            String::from("continue"),
                                             ];
 
     let mut lexer: lexer::Lexer = lexer::Lexer {

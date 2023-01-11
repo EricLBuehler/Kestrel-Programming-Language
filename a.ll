@@ -2,7 +2,7 @@
 source_filename = "program.ke"
 target triple = "x86_64-unknown-linux-gnu"
 
-; Function Attrs: noinline nounwind optnone
+; Function Attrs: noinline noreturn nounwind optnone
 define void @_main() local_unnamed_addr #0 !dbg !4 {
 entry:
   %x = alloca float, !dbg !8
@@ -42,14 +42,17 @@ if:                                               ; preds = %entry
   br label %if_end, !dbg !8
 
 if_end:                                           ; preds = %if
+  br label %loop, !dbg !8
+
+loop:                                             ; preds = %loop, %if_end
   %len11 = load i64, i64* %len, !dbg !8
   %u64sum = add i64 %len11, 1, !dbg !8
   store i64 %u64sum, i64* %len, !dbg !8
-  ret void, !dbg !8
+  br label %loop, !dbg !8
 }
 
 ; Function Attrs: noinline nounwind optnone
-define float @f(float %0) local_unnamed_addr #0 !dbg !10 {
+define float @f(float %0) local_unnamed_addr #1 !dbg !10 {
 entry:
   %x = alloca float, !dbg !14
   store float %0, float* %x, !dbg !14
@@ -72,7 +75,7 @@ entry:
 }
 
 ; Function Attrs: noinline nounwind optnone
-define float @s.a({ float, float } %0) local_unnamed_addr #0 !dbg !16 {
+define float @s.a({ float, float } %0) local_unnamed_addr #1 !dbg !16 {
 entry:
   %self = alloca { float, float }, !dbg !20
   store { float, float } %0, { float, float }* %self, !dbg !20
@@ -83,7 +86,7 @@ entry:
 }
 
 ; Function Attrs: noinline nounwind optnone
-define float @s.add({ float, float } %0, { float, float } %1) local_unnamed_addr #0 !dbg !22 {
+define float @s.add({ float, float } %0, { float, float } %1) local_unnamed_addr #1 !dbg !22 {
 entry:
   %self = alloca { float, float }, !dbg !25
   store { float, float } %0, { float, float }* %self, !dbg !25
@@ -97,14 +100,15 @@ entry:
   ret float %f32sum, !dbg !25
 }
 
-; Function Attrs: noinline nounwind optnone
+; Function Attrs: noinline noreturn nounwind optnone
 define i32 @main(i32 %0, i8** %1) local_unnamed_addr #0 {
 entry:
   call void @_main(), !dbg !14
-  ret i32 0, !dbg !14
+  unreachable
 }
 
-attributes #0 = { noinline nounwind optnone }
+attributes #0 = { noinline noreturn nounwind optnone }
+attributes #1 = { noinline nounwind optnone }
 
 !llvm.module.flags = !{!0}
 !llvm.dbg.cu = !{!1}
@@ -119,12 +123,12 @@ attributes #0 = { noinline nounwind optnone }
 !7 = !DIBasicType(name: "void", size: 16, flags: DIFlagPublic)
 !8 = !DILocation(line: 15, scope: !9)
 !9 = distinct !DILexicalBlock(scope: !4, file: !2, line: 15)
-!10 = distinct !DISubprogram(name: "f", linkageName: "f", scope: null, file: !2, line: 42, type: !11, scopeLine: 42, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
+!10 = distinct !DISubprogram(name: "f", linkageName: "f", scope: null, file: !2, line: 46, type: !11, scopeLine: 46, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !11 = !DISubroutineType(flags: DIFlagPublic, types: !12)
 !12 = !{!13, !13}
 !13 = !DIBasicType(name: "float", size: 16, flags: DIFlagPublic)
-!14 = !DILocation(line: 42, scope: !15)
-!15 = distinct !DILexicalBlock(scope: !10, file: !2, line: 42)
+!14 = !DILocation(line: 46, scope: !15)
+!15 = distinct !DILexicalBlock(scope: !10, file: !2, line: 46)
 !16 = distinct !DISubprogram(name: "a", linkageName: "a", scope: null, file: !2, line: 5, type: !17, scopeLine: 5, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !17 = !DISubroutineType(flags: DIFlagPublic, types: !18)
 !18 = !{!13, !19}

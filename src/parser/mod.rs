@@ -52,6 +52,8 @@ pub enum NodeType {
     NAMESPACE,
     IF,
     LOOP,
+    BREAK,
+    CONTINUE,
 }
 
 #[derive(Clone, Debug)]
@@ -121,6 +123,8 @@ impl std::fmt::Display for Node {
             NodeType::IMPL => write!(f, "{}", self.data.impln.as_ref().unwrap() ),
             NodeType::IF => write!(f, "{}", self.data.ifn.as_ref().unwrap() ),
             NodeType::LOOP => write!(f, "{}", self.data.loopn.as_ref().unwrap() ),
+            NodeType::BREAK |
+            NodeType::CONTINUE => Ok(()),
         }
     }    
 }
@@ -362,6 +366,15 @@ impl<'life> Parser<'life> {
         }
         else if self.current.data == String::from("if") {
             return self.parse_if();
+        }
+        else if self.current.data == String::from("loop") {
+            return self.parse_loop();
+        }
+        else if self.current.data == String::from("break") {
+            return self.parse_break();
+        }
+        else if self.current.data == String::from("continue") {
+            return self.parse_continue();
         }
         
         self.raise_error("Invalid keyword.", ErrorType::InvalidTok);
@@ -2383,7 +2396,7 @@ impl<'life> Parser<'life> {
         self.advance();
 
         self.skip_newline();
-
+        
         let block: Vec<Node> = self.block();
 
         self.skip_newline();
@@ -2424,6 +2437,86 @@ impl<'life> Parser<'life> {
         let n: Node = self.create_node(NodeType::LOOP, nodedat, pos);
 
         return n;        
+    }
+    
+    fn parse_break(&mut self) -> Node{
+        let int: nodes::NumNode = nodes::NumNode{
+            left: String::from("")
+        };
+    
+        let nodedat: nodes::NodeData = nodes::NodeData {
+            binary: None,
+            num: Some(int),
+            letn: None,
+            identifier: None,
+            func: None,
+            assign: None,
+            call: None,
+            ret: None,
+            to: None,
+            unary: None,
+            st: None,
+            initst: None,
+            attr: None,
+            attrassign: None,
+            str: None,
+            arr: None,
+            impln: None,
+            ifn: None,
+            loopn: None,
+        };
+
+        let pos = Position {
+            line: self.current.line,
+            startcol: self.current.startcol,
+            endcol: self.current.endcol,
+        };
+    
+        let n: Node = self.create_node(NodeType::BREAK, nodedat, pos);
+
+        self.advance();
+    
+        return n;
+    }
+    
+    fn parse_continue(&mut self) -> Node{
+        let int: nodes::NumNode = nodes::NumNode{
+            left: String::from("")
+        };
+    
+        let nodedat: nodes::NodeData = nodes::NodeData {
+            binary: None,
+            num: Some(int),
+            letn: None,
+            identifier: None,
+            func: None,
+            assign: None,
+            call: None,
+            ret: None,
+            to: None,
+            unary: None,
+            st: None,
+            initst: None,
+            attr: None,
+            attrassign: None,
+            str: None,
+            arr: None,
+            impln: None,
+            ifn: None,
+            loopn: None,
+        };
+
+        let pos = Position {
+            line: self.current.line,
+            startcol: self.current.startcol,
+            endcol: self.current.endcol,
+        };
+    
+        let n: Node = self.create_node(NodeType::CONTINUE, nodedat, pos);
+
+        self.advance();
+    
+        return n;
     }
 
 }
