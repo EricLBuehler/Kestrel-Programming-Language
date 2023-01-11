@@ -1767,38 +1767,41 @@ impl<'ctx> CodeGen<'ctx> {
             self.builder.build_unconditional_branch(end_block);
         }
 
-        let mut common: Vec<(String, usize)> = Vec::new();
-        let mut common_init: Vec<(String, usize)> = Vec::new();
+        //Only if there is an else clause to catch all other cases
+        if node.data.ifn.as_ref().unwrap().else_opt.is_some() {
+            let mut common: Vec<(String, usize)> = Vec::new();
+            let mut common_init: Vec<(String, usize)> = Vec::new();
 
-        //Get all of the initialized variables
-        for local_set in &collected_locals {
-            for item in local_set {
-                if !common.contains(&(item.0.to_owned(), item.1.to_owned())) {
-                    common.push((item.0.to_owned(), item.1.to_owned()));
-                }
-            }
-        }
-
-        //Get all of the initialized variables that all have been commonly init
-        'outer: for var in &common {
+            //Get all of the initialized variables
             for local_set in &collected_locals {
-                if local_set.len() == 0 {
-                    continue 'outer;
-                }
-                for local in local_set {
-                    if local != (&var.0, &var.1) {
-                        continue 'outer;
+                for item in local_set {
+                    if !common.contains(&(item.0.to_owned(), item.1.to_owned())) {
+                        common.push((item.0.to_owned(), item.1.to_owned()));
                     }
                 }
             }
-            common_init.push((var.0.to_owned(), var.1.to_owned()));
-        }
 
-        for var in common_init {
-            let mut var_val = self.namespaces.locals.get_mut(var.1).unwrap().get(&var.0).unwrap().to_owned();
-            var_val.5 = InitializationStatus::Initialized;
+            //Get all of the initialized variables that all have been commonly init
+            'outer: for var in &common {
+                for local_set in &collected_locals {
+                    if local_set.len() == 0 {
+                        continue 'outer;
+                    }
+                    for local in local_set {
+                        if local != (&var.0, &var.1) {
+                            continue 'outer;
+                        }
+                    }
+                }
+                common_init.push((var.0.to_owned(), var.1.to_owned()));
+            }
 
-            self.namespaces.locals.get_mut(var.1).unwrap().insert(var.0, var_val);
+            for var in common_init {
+                let mut var_val = self.namespaces.locals.get_mut(var.1).unwrap().get(&var.0).unwrap().to_owned();
+                var_val.5 = InitializationStatus::Initialized;
+
+                self.namespaces.locals.get_mut(var.1).unwrap().insert(var.0, var_val);
+            }
         }
 
 
