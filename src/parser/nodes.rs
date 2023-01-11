@@ -285,6 +285,21 @@ impl std::fmt::Display for IfNode {
 }
 
 #[derive(Clone, Debug)]
+pub struct LoopNode{
+    pub block: Vec<crate::parser::Node>,
+}
+
+impl std::fmt::Display for LoopNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Loop {{")?;
+        for node in self.block.clone() {
+            writeln!(f, "    {}", node)?;
+        }
+        write!(f, "    }}")
+    }    
+}
+
+#[derive(Clone, Debug)]
 pub struct NodeData {
     pub binary: Option<BinaryNode>,
     pub num: Option<NumNode>,
@@ -304,4 +319,5 @@ pub struct NodeData {
     pub arr: Option<ArrayNode>,
     pub impln: Option<ImplNode>,
     pub ifn: Option<IfNode>,
+    pub loopn: Option<LoopNode>,
 }

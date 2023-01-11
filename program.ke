@@ -37,7 +37,9 @@ fn main() {
         uninit = 3usize
     }
 
-    len += 1usize
+    loop {
+        len += 1usize
+    }
 }
 
 fn f(x: f32) -> f32{
