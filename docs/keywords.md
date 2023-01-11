@@ -117,3 +117,18 @@ else {
 ```
 
 All conditions must be of type [```bool```](types.md#bool).
+
+## ```loop```
+The loop keyword executes the given code infinitely.
+
+```
+loop {
+    ...
+}
+```
+
+## ```break```
+The break keyword moves the control flow out of the loop.
+
+## ```continue```
+The continue keyword moves the control flow to the beginning of the loop.
