@@ -140,7 +140,7 @@ fn i64_lt<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
     let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();  
     let otherv: inkwell::values::IntValue = args.get(0).unwrap().data.unwrap().into_int_value();
 
-    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::SGE, selfv, otherv, "i64lt");
+    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::SLT, selfv, otherv, "i64lt");
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
@@ -158,7 +158,7 @@ fn i64_gt<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
     let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();  
     let otherv: inkwell::values::IntValue = args.get(0).unwrap().data.unwrap().into_int_value();
 
-    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::SGE, selfv, otherv, "i64gt");
+    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::SGT, selfv, otherv, "i64gt");
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
@@ -176,7 +176,7 @@ fn i64_le<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
     let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();  
     let otherv: inkwell::values::IntValue = args.get(0).unwrap().data.unwrap().into_int_value();
 
-    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::SGE, selfv, otherv, "i64lt");
+    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::SLE, selfv, otherv, "i64lt");
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),

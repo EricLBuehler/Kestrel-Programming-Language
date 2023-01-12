@@ -72,7 +72,6 @@ _main:                                  # @_main
 .LBB0_3:                                # %loop_head
                                         # =>This Inner Loop Header: Depth=1
 	movb	$1, %al
-	xorl	%eax, %eax
 	testb	%al, %al
 	jne	.LBB0_5
 	jmp	.LBB0_4

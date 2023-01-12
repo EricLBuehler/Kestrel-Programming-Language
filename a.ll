@@ -51,7 +51,7 @@ if_end:                                           ; preds = %if
 
 loop_head:                                        ; preds = %loop_then, %if_end
   %len13 = load i64, i64* %len, !dbg !8
-  %u64lt = icmp uge i64 %len13, %len13, !dbg !8
+  %u64lt = icmp ult i64 %len13, %len13, !dbg !8
   %bool = icmp ne i1 %u64lt, false, !dbg !8
   br i1 %bool, label %loop_then, label %loop_end, !dbg !8
 

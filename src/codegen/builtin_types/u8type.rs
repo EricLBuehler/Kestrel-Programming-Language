@@ -128,7 +128,7 @@ fn u8_lt<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::
     let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();  
     let otherv: inkwell::values::IntValue = args.get(0).unwrap().data.unwrap().into_int_value();
 
-    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::UGE, selfv, otherv, "u8lt");
+    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::ULT, selfv, otherv, "u8lt");
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
@@ -146,7 +146,7 @@ fn u8_gt<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::
     let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();  
     let otherv: inkwell::values::IntValue = args.get(0).unwrap().data.unwrap().into_int_value();
 
-    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::UGE, selfv, otherv, "u8gt");
+    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::UGT, selfv, otherv, "u8gt");
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
@@ -164,7 +164,7 @@ fn u8_le<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::
     let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();  
     let otherv: inkwell::values::IntValue = args.get(0).unwrap().data.unwrap().into_int_value();
 
-    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::UGE, selfv, otherv, "u8lt");
+    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::ULE, selfv, otherv, "u8lt");
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
