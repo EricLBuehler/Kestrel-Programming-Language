@@ -54,7 +54,7 @@ fn string_get<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &cra
     } 
 
     if &args.get(1).unwrap().tp != codegen.datatypes.get(&String::from("usize")).unwrap() {
-        let fmt: String = format!("invalid types for String.get, got '{}'.", args.get(1).unwrap().tp);
+        let fmt: String = format!("invalid types for String.get, expected 'usize', got '{}'.", args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
     }
     

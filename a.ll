@@ -33,7 +33,7 @@ entry:
   %len = alloca i64, !dbg !8
   store i64 12, i64* %len, !dbg !8
   %arr9 = getelementptr inbounds { [12 x i8] }, { [12 x i8] }* %name, i32 0, i32 0, !dbg !8
-  %itmptr = getelementptr inbounds [12 x i8], [12 x i8]* %arr9, i32 0, i64 1, !dbg !8
+  %itmptr = getelementptr inbounds [12 x i8], [12 x i8]* %arr9, i32 0, i64 10000000, !dbg !8
   %item = load i8, i8* %itmptr, !dbg !8
   %item10 = alloca i8, !dbg !8
   store i8 %item, i8* %item10, !dbg !8
