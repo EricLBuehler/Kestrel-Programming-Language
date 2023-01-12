@@ -147,9 +147,7 @@ impl<'ctx> CodeGen<'ctx> {
             types::BasicDataType::Void => {
                 return Some(inkwell::types::AnyTypeEnum::VoidType(*types.voidtp));
             }
-            types::BasicDataType::Func => {
-                return None;
-            }
+            types::BasicDataType::Func |
             types::BasicDataType::WrapperFunc => {
                 return None;
             }
@@ -161,6 +159,9 @@ impl<'ctx> CodeGen<'ctx> {
             }
             types::BasicDataType::Bool => {
                 return Some(inkwell::types::AnyTypeEnum::IntType(*types.booltp));
+            }
+            types::BasicDataType::Enum => {
+                return Some(inkwell::types::AnyTypeEnum::IntType(*types.i32tp));
             }
             types::BasicDataType::Unknown => {
                 return None;
@@ -837,7 +838,6 @@ impl<'ctx> CodeGen<'ctx> {
         /////// End
         
         //Check if last stmt. is a return
-
         if node.data.func.as_ref().unwrap().blocks.len()==0 || node.data.func.as_ref().unwrap().blocks.last().unwrap().tp != parser::NodeType::RETURN {
             if retv.tp != rettp_full.0.tp && name!="main"{
                 let fmt: String = format!("Expected '{}' return type, got '{}'.", &rettp_full.0.name, retv.tp.name);
@@ -1197,7 +1197,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         let mut idx = 0;
         for member in &node.data.st.as_ref().unwrap().names {
-            if !member.is_camel_case() {
+            if !member.is_snake_case() {
                 errors::show_warning(errors::WarningType::ExpectedSnakeCase, vec![String::from(""), member.to_camel_case()], vec![String::from("Expected snake case"), String::from("Convert to this: ")], &node.pos, self.info)
             }
             if names.contains(&member.clone()) {
@@ -1544,6 +1544,25 @@ impl<'ctx> CodeGen<'ctx> {
 
     fn build_namespaceload(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         let attr: &String = &node.data.attr.as_ref().unwrap().attr;
+
+        //Check for enums
+        if  self.datatypes.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).is_some() &&
+            self.datatypes.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().tp == types::BasicDataType::Enum{
+            let tp: types::DataType = self.datatypes.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().clone();
+            let name: String = node.data.attr.as_ref().unwrap().attr.clone();
+            
+            if !tp.names.as_ref().unwrap().contains(&name) {
+                let fmt: String = format!("Type '{}' has no namespace attribute '{}'.", node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name, attr);
+                errors::raise_error(&fmt, errors::ErrorType::NamespaceAttrNotFound, &node.pos, self.info);
+            }
+
+            let int: inkwell::values::IntValue = self.inkwell_types.i32tp.const_int(tp.names.as_ref().unwrap().iter().position(|x| x == &name).unwrap() as u64, false);
+            return types::Data {
+                data: Some(inkwell::values::BasicValueEnum::IntValue(int)),
+                tp: tp.clone(),
+                owned: true
+            };
+        }
 
         if self.namespaces.structs.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).is_none() {
             let fmt: String = format!("Struct '{}' is not defined.", &node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name);
@@ -1986,6 +2005,38 @@ impl<'ctx> CodeGen<'ctx> {
         return data;
     }
 
+    fn build_enum(&mut self, node: &parser::Node) -> types::Data<'ctx> {        
+        if !node.data.enumn.as_ref().unwrap().name.is_camel_case() {
+            errors::show_warning(errors::WarningType::ExpectedCamelCase, vec![String::from(""), node.data.st.as_ref().unwrap().name.to_camel_case()], vec![String::from("Expected camel case"), String::from("Convert to this: ")], &node.pos, self.info)
+        }
+
+        let mut names: Vec<String> = Vec::new();
+        
+        for member in &node.data.enumn.as_ref().unwrap().variants {
+            if !member.is_camel_case() {
+                errors::show_warning(errors::WarningType::ExpectedCamelCase, vec![String::from(""), member.to_camel_case()], vec![String::from("Expected camel case"), String::from("Convert to this: ")], &node.pos, self.info)
+            }
+            if names.contains(&member.clone()) {
+                let fmt: String = format!("Variant '{}' is already declared.", member.clone());
+                errors::raise_error(&fmt, errors::ErrorType::VariantRedeclaration, &node.pos, self.info);
+            }
+            names.push(member.clone());
+        }
+
+        let mut tp: types::DataType = self.datatypes.get(&types::BasicDataType::Enum.to_string()).unwrap().clone();
+        tp.name = node.data.enumn.as_ref().unwrap().name.clone();
+        tp.names = Some(names);
+
+        self.datatypes.insert(node.data.enumn.as_ref().unwrap().name.clone(), tp.clone());
+        builtin_types::add_simple_type(self, std::collections::HashMap::new(), types::BasicDataType::Enum, &node.data.enumn.as_ref().unwrap().name.clone());
+
+        let data: types::Data = types::Data {
+            data: None,
+            tp: self.datatypes.get(&types::BasicDataType::Void.to_string()).unwrap().clone(),
+            owned: true,
+        };
+        return data;
+    }
 
     fn compile_expr(&mut self, node: &parser::Node, give_ownership: bool, get_ptr: bool) -> types::Data<'ctx> {
         match node.tp {
@@ -2234,7 +2285,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.build_while(node)
             }
             parser::NodeType::ENUM => {
-                unimplemented!()
+                self.build_enum(node)
             }
         }
     }
@@ -2254,7 +2305,8 @@ impl<'ctx> CodeGen<'ctx> {
 
             if  !infn && node.tp != parser::NodeType::FUNC &&
                 node.tp != parser::NodeType::STRUCT &&
-                node.tp != parser::NodeType::IMPL {
+                node.tp != parser::NodeType::IMPL &&
+                node.tp != parser::NodeType::ENUM {
                 let fmt: String = format!("Invalid global scope statement.");
                 errors::raise_error(&fmt, errors::ErrorType::GlobalScopeStmt, &node.pos, self.info);
             }
@@ -2408,6 +2460,37 @@ impl<'ctx> CodeGen<'ctx> {
                 
                 self.datatypes.insert(node.data.st.as_ref().unwrap().name.clone(), tp.clone());
                 self.namespaces.structs.insert(node.data.st.as_ref().unwrap().name.clone(), (tp, Some(Self::build_struct_tp_from_types(self.context, &self.inkwell_types, &simpletypes)), idxmapping, ForwardDeclarationType::Forward));
+                builtin_types::add_simple_type(self, std::collections::HashMap::new(), types::BasicDataType::Struct, &node.data.st.as_ref().unwrap().name.clone());
+            }
+            else if node.tp == parser::NodeType::ENUM {
+                if self.datatypes.get(&node.data.enumn.as_ref().unwrap().name.clone()).is_some() {
+                    let fmt: String = format!("Type '{}' is already defined.", node.data.st.as_ref().unwrap().name.clone());
+                    errors::raise_error(&fmt, errors::ErrorType::TypeRedefinitionAttempt, &node.pos, self.info);
+                }
+                
+                if !node.data.enumn.as_ref().unwrap().name.is_camel_case() {
+                    errors::show_warning(errors::WarningType::ExpectedCamelCase, vec![String::from(""), node.data.st.as_ref().unwrap().name.to_camel_case()], vec![String::from("Expected camel case"), String::from("Convert to this: ")], &node.pos, self.info)
+                }
+        
+                let mut names: Vec<String> = Vec::new();        
+                
+                for member in &node.data.enumn.as_ref().unwrap().variants {
+                    if !member.is_camel_case() {
+                        errors::show_warning(errors::WarningType::ExpectedCamelCase, vec![String::from(""), member.to_camel_case()], vec![String::from("Expected camel case"), String::from("Convert to this: ")], &node.pos, self.info)
+                    }
+                    if names.contains(&member.clone()) {
+                        let fmt: String = format!("Variant '{}' is already declared.", member.clone());
+                        errors::raise_error(&fmt, errors::ErrorType::VariantRedeclaration, &node.pos, self.info);
+                    }
+                    names.push(member.clone());
+                }
+        
+                let mut tp: types::DataType = self.datatypes.get(&types::BasicDataType::Enum.to_string()).unwrap().clone();
+                tp.name = node.data.enumn.as_ref().unwrap().name.clone();
+                tp.names = Some(names);
+        
+                self.datatypes.insert(node.data.enumn.as_ref().unwrap().name.clone(), tp.clone());
+                builtin_types::add_simple_type(self, std::collections::HashMap::new(), types::BasicDataType::Enum, &node.data.enumn.as_ref().unwrap().name.clone()); 
             }
         }
     }

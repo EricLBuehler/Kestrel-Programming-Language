@@ -24,6 +24,7 @@ pub mod functype;
 pub mod arrtype;
 pub mod structtype;
 pub mod wrapperfntype;
+pub mod enumtype;
 
 pub mod structs;
 
@@ -92,6 +93,7 @@ pub fn init(codegen: &mut codegen::CodeGen) {
     arrtype::init_array(codegen);
     structtype::init_struct(codegen);
     wrapperfntype::init_wrapperfn(codegen);
+    enumtype::init_enum(codegen);
 }
 
 pub fn init_traits(codegen: &mut codegen::CodeGen) {

@@ -796,10 +796,6 @@ impl<'life> Parser<'life> {
             };
         
             n = self.create_node(NodeType::NAMESPACE, nodedat, pos.clone());
-
-            self.advance();
-
-            n = self.generate_call(n);
         }
     
         return n;
@@ -2655,22 +2651,13 @@ impl<'life> Parser<'life> {
 
         self.skip_newline();
 
-        let mut variants: std::collections::HashMap<String, Option<Type>> = std::collections::HashMap::new();
+        let mut variants: Vec<String> = Vec::new();
 
         while self.current_is_type(TokenType::IDENTIFIER) {
             let name: String = self.current.data.clone();
             self.advance();
 
-            let mut tp: Option<Type> = None;
-            if self.current_is_type(TokenType::LT) {
-                tp = Some(self.parse_type(types::DataMutablility::Immutable).1);
-                if !self.current_is_type(TokenType::GT) {
-                    self.raise_error("Expected right angle bracket.", ErrorType::InvalidTok);
-                }
-                self.advance();
-        
-            }
-            variants.insert(name, tp);
+            variants.push(name);
         
             if !self.current_is_type(TokenType::COMMA) {
                 self.raise_error("Expected comma.", ErrorType::InvalidTok);

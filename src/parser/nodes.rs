@@ -302,7 +302,7 @@ impl std::fmt::Display for LoopNode {
 
 #[derive(Clone, Debug)]
 pub struct EnumNode{
-    pub variants: std::collections::HashMap<String, Option<crate::parser::Type>>,
+    pub variants: Vec<String>,
     pub name: String,
 }
 

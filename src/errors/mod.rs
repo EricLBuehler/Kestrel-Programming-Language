@@ -43,6 +43,7 @@ pub enum ErrorType {
     NameNotInitialized,
     BreakOutsideOfLoop,
     ContinueOutsideOfLoop,
+    VariantRedeclaration,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -94,6 +95,7 @@ pub fn repr_err(tp: ErrorType) -> &'static str {
         ErrorType::NameNotInitialized => "name is not necessarily initialized",
         ErrorType::BreakOutsideOfLoop => "cannot break outside of loop",
         ErrorType::ContinueOutsideOfLoop => "cannot continue outside of loop",
+        ErrorType::VariantRedeclaration => "variant is refedined in enum",
     }
 }
 
