@@ -72,7 +72,7 @@ _main:                                  # @_main
 	leaq	-80(%rbp), %rax
 	movq	%rax, -104(%rbp)
 	movq	$12, -72(%rbp)
-	movb	9999944(%rbp), %al
+	movb	-55(%rbp), %al
 	movb	%al, -61(%rbp)
 # %bb.1:                                # %if
 	movq	%rsp, %rax
