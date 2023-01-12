@@ -119,7 +119,7 @@ else {
 All conditions must be of type [```bool```](types.md#bool).
 
 ## ```loop```
-The loop keyword executes the given code infinitely.
+The ```loop``` keyword executes the given code infinitely.
 
 ```
 loop {
@@ -128,7 +128,16 @@ loop {
 ```
 
 ## ```break```
-The break keyword moves the control flow out of the loop.
+The ```break``` keyword moves the control flow out of the loop.
 
 ## ```continue```
-The continue keyword moves the control flow to the beginning of the loop.
+The ```continue``` keyword moves the control flow to the beginning of the loop.
+
+## ```while```
+The ```while``` keyword executes the given code while a specified expression is true.
+
+```
+while expression {
+    ...
+}
+```
