@@ -2233,6 +2233,9 @@ impl<'ctx> CodeGen<'ctx> {
             parser::NodeType::WHILE => {
                 self.build_while(node)
             }
+            parser::NodeType::ENUM => {
+                unimplemented!()
+            }
         }
     }
 

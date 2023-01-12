@@ -3,6 +3,11 @@ struct s {
     b: f32
 }
 
+enum e {
+    OptA,
+    OptB,
+}
+
 fn s.a(self: s) -> f32{
     return self.a * 100f32
 }

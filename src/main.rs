@@ -110,6 +110,7 @@ fn main() {
                                             String::from("break"),
                                             String::from("continue"),
                                             String::from("while"),
+                                            String::from("enum"),
                                             ];
 
     let mut lexer: lexer::Lexer = lexer::Lexer {

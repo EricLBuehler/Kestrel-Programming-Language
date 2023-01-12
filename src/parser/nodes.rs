@@ -301,6 +301,18 @@ impl std::fmt::Display for LoopNode {
 }
 
 #[derive(Clone, Debug)]
+pub struct EnumNode{
+    pub variants: std::collections::HashMap<String, Option<crate::parser::Type>>,
+    pub name: String,
+}
+
+impl std::fmt::Display for EnumNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Enum '{}'", self.name)
+    }    
+}
+
+#[derive(Clone, Debug)]
 pub struct NodeData {
     pub binary: Option<BinaryNode>,
     pub num: Option<NumNode>,
@@ -321,4 +333,5 @@ pub struct NodeData {
     pub impln: Option<ImplNode>,
     pub ifn: Option<IfNode>,
     pub loopn: Option<LoopNode>,
+    pub enumn: Option<EnumNode>,
 }
