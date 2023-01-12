@@ -102,6 +102,7 @@ pub fn repr_err(tp: ErrorType) -> &'static str {
 pub enum WarningType {
     ExpectedCamelCase,
     ExpectedSnakeCase,
+    UnreachableCode,
 }
 
 impl std::fmt::Display for WarningType {
@@ -114,6 +115,7 @@ pub fn repr_warn(tp: WarningType) -> &'static str {
     match tp {
         WarningType::ExpectedCamelCase => "expected camel case",
         WarningType::ExpectedSnakeCase => "expected snake case",
+        WarningType::UnreachableCode => "unreachable code",
     }
 }
 

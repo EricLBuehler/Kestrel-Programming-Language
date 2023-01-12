@@ -829,7 +829,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         /////// Code generation start:
 
-        let retv: types::Data = self.compile(&node.data.func.as_ref().unwrap().blocks, true);
+        let retv: types::Data = self.compile(&node.data.func.as_ref().unwrap().blocks, true, true);
         
         //Reset locals
         self.namespaces.locals = prev_locals;
@@ -1682,7 +1682,7 @@ impl<'ctx> CodeGen<'ctx> {
             
             let loop_flow_broken_old = self.loop_flow_broken;
 
-            self.compile(&ifn.1, true);
+            self.compile(&ifn.1, true, false);
 
             self.loop_flow_broken = loop_flow_broken_old;
 
@@ -1743,7 +1743,7 @@ impl<'ctx> CodeGen<'ctx> {
 
             let loop_flow_broken_old = self.loop_flow_broken;
 
-            self.compile(&node.data.ifn.as_ref().unwrap().else_opt.as_ref().unwrap(), true);
+            self.compile(&node.data.ifn.as_ref().unwrap().else_opt.as_ref().unwrap(), true, false);
 
             self.loop_flow_broken = loop_flow_broken_old;
 
@@ -1845,7 +1845,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         self.builder.position_at_end(loop_block);
 
-        self.compile(&node.data.loopn.as_ref().unwrap().block, true);
+        self.compile(&node.data.loopn.as_ref().unwrap().block, true, true);
 
         self.builder.build_unconditional_branch(loop_block);
 
@@ -1968,7 +1968,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         self.builder.position_at_end(loop_then_block);
 
-        self.compile(&node.data.loopn.as_ref().unwrap().block, true);
+        self.compile(&node.data.loopn.as_ref().unwrap().block, true, true);
 
         self.builder.build_unconditional_branch(loop_block);
 
@@ -2236,13 +2236,13 @@ impl<'ctx> CodeGen<'ctx> {
         }
     }
 
-    fn compile(&mut self, nodes: &Vec<parser::Node>, infn: bool) -> types::Data<'ctx>{
+    fn compile(&mut self, nodes: &Vec<parser::Node>, infn: bool, toplvl: bool) -> types::Data<'ctx>{
         let mut retv: types::Data = types::Data {
             data: None,
             tp: self.datatypes.get(&types::BasicDataType::Void.to_string()).unwrap().clone(),
             owned: true
         };
-
+        let mut idx: usize = 0;
         for node in nodes {
             if infn && node.tp == parser::NodeType::FUNC {
                 let fmt: String = format!("Cannot define nested functions.");
@@ -2255,6 +2255,14 @@ impl<'ctx> CodeGen<'ctx> {
                 errors::raise_error(&fmt, errors::ErrorType::GlobalScopeStmt, &node.pos, self.info);
             }
             retv = self.compile_expr(node, false, false);
+            if idx != nodes.len()-1 && toplvl {
+                if  node.tp == parser::NodeType::CONTINUE ||
+                    node.tp == parser::NodeType::BREAK ||
+                    node.tp == parser::NodeType::RETURN {
+                    errors::show_warning(errors::WarningType::UnreachableCode, vec![String::from("")], vec![String::from("Any code following this expression in this block is unreachable.")], &node.pos, self.info);
+                }
+            }
+            idx += 1;
         }
         return retv;
     }
@@ -2478,7 +2486,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
     codegen.forward_declare(&nodes);
 
     //Compile code
-    codegen.compile(&nodes, false);
+    codegen.compile(&nodes, false, false);
 
     //Make the real main function
     if codegen.get_function(&String::from("main")) == None {
