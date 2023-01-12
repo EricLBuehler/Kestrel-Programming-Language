@@ -27,7 +27,7 @@ fn main() {
     //This is a comment
     let len: usize = name.length()
 
-    name.get(1usize)
+    let item: char = name.get(1usize)
 
     let uninit: usize
 

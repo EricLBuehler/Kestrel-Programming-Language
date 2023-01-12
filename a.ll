@@ -33,14 +33,16 @@ entry:
   %len = alloca i64, !dbg !8
   store i64 12, i64* %len, !dbg !8
   %arr9 = getelementptr inbounds { [12 x i8] }, { [12 x i8] }* %name, i32 0, i32 0, !dbg !8
-  %itmptr = getelementptr inbounds [12 x i8], [12 x i8]* %arr9, i32 0, i64 100, !dbg !8
+  %itmptr = getelementptr inbounds [12 x i8], [12 x i8]* %arr9, i32 0, i64 1, !dbg !8
   %item = load i8, i8* %itmptr, !dbg !8
+  %item10 = alloca i8, !dbg !8
+  store i8 %item, i8* %item10, !dbg !8
   %uninit = alloca i64, !dbg !8
   br label %if, !dbg !8
 
 if:                                               ; preds = %entry
-  %x10 = alloca i32, !dbg !8
-  store i32 100, i32* %x10, !dbg !8
+  %x11 = alloca i32, !dbg !8
+  store i32 100, i32* %x11, !dbg !8
   store i64 1, i64* %uninit, !dbg !8
   br label %if_end, !dbg !8
 
@@ -48,14 +50,14 @@ if_end:                                           ; preds = %if
   br label %loop_head, !dbg !8
 
 loop_head:                                        ; preds = %loop_then, %if_end
-  %len12 = load i64, i64* %len, !dbg !8
-  %u64lt = icmp uge i64 %len12, %len12, !dbg !8
+  %len13 = load i64, i64* %len, !dbg !8
+  %u64lt = icmp uge i64 %len13, %len13, !dbg !8
   %bool = icmp ne i1 %u64lt, false, !dbg !8
   br i1 %bool, label %loop_then, label %loop_end, !dbg !8
 
 loop_then:                                        ; preds = %loop_head
-  %len13 = load i64, i64* %len, !dbg !8
-  %u64sum = add i64 %len13, 1, !dbg !8
+  %len14 = load i64, i64* %len, !dbg !8
+  %u64sum = add i64 %len14, 1, !dbg !8
   store i64 %u64sum, i64* %len, !dbg !8
   br label %loop_head, !dbg !8
 
