@@ -52,3 +52,7 @@ Comment out the rest of the line
 ## Inplace operations
 Any binary operator may be postfixed with ```=``` to preform an inplace operation. See the syntax below.
 ```name operator= value```
+
+## ```::```: Namespace attribute access / assignment
+Traits:
+None, internal implementation

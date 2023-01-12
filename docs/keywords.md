@@ -141,3 +141,15 @@ while expression {
     ...
 }
 ```
+
+## ```enum```
+The ```enum``` keyword creates an ```enum``` type.
+
+```
+enum {
+    ...
+}
+```
+
+Each line contains a name for a variant of the ```enum```.
+Access each variant using the [```::```](symbols.md#namespace-attribute-access--assignment).
