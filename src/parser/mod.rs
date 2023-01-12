@@ -54,6 +54,7 @@ pub enum NodeType {
     LOOP,
     BREAK,
     CONTINUE,
+    WHILE,
 }
 
 #[derive(Clone, Debug)]
@@ -122,7 +123,8 @@ impl std::fmt::Display for Node {
             NodeType::ARRAY => write!(f, "{}", self.data.arr.as_ref().unwrap() ),
             NodeType::IMPL => write!(f, "{}", self.data.impln.as_ref().unwrap() ),
             NodeType::IF => write!(f, "{}", self.data.ifn.as_ref().unwrap() ),
-            NodeType::LOOP => write!(f, "{}", self.data.loopn.as_ref().unwrap() ),
+            NodeType::LOOP |
+            NodeType::WHILE => write!(f, "{}", self.data.loopn.as_ref().unwrap() ),
             NodeType::BREAK |
             NodeType::CONTINUE => Ok(()),
         }
@@ -375,6 +377,9 @@ impl<'life> Parser<'life> {
         }
         else if self.current.data == String::from("continue") {
             return self.parse_continue();
+        }
+        else if self.current.data == String::from("while") {
+            return self.parse_while();
         }
         
         self.raise_error("Invalid keyword.", ErrorType::InvalidTok);
@@ -2409,6 +2414,7 @@ impl<'life> Parser<'life> {
 
         let loopn: nodes::LoopNode = nodes::LoopNode{
             block,
+            expr: None,
         };
     
         let nodedat: nodes::NodeData = nodes::NodeData {
@@ -2517,6 +2523,70 @@ impl<'life> Parser<'life> {
         self.advance();
     
         return n;
+    }
+
+    fn parse_while(&mut self) -> Node{
+        let mut pos = Position {
+            line: self.current.line,
+            startcol: self.current.startcol,
+            endcol: 0,
+        };
+
+        self.advance();
+
+        let expr: Node = self.expr(Precedence::Lowest);
+        
+        pos.endcol = expr.pos.endcol;
+    
+        if !self.current_is_type(TokenType::LCURLY) {
+            self.raise_error("Expected left curly bracket.", ErrorType::InvalidTok);
+        }
+        
+        self.advance();
+
+        self.skip_newline();
+        
+        let block: Vec<Node> = self.block();
+
+        self.skip_newline();
+        
+        if !self.current_is_type(TokenType::RCURLY) {
+            self.raise_error("Expected right curly bracket.", ErrorType::InvalidTok);
+        }
+
+        self.advance();
+
+        let loopn: nodes::LoopNode = nodes::LoopNode{
+            block,
+            expr: Some(expr),
+        };
+    
+        let nodedat: nodes::NodeData = nodes::NodeData {
+            binary: None,
+            num: None,
+            letn: None,
+            identifier: None,
+            func: None,
+            assign: None,
+            call: None,
+            ret: None,
+            to: None,
+            unary: None,
+            st: None,
+            initst: None,
+            attr: None,
+            attrassign: None,
+            str: None,
+            arr: None,
+            impln: None,
+            ifn: None,
+            loopn: Some(loopn),
+        };
+
+    
+        let n: Node = self.create_node(NodeType::WHILE, nodedat, pos);
+
+        return n;        
     }
 
 }

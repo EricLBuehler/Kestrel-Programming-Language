@@ -97,7 +97,7 @@ fn bool_neg<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &pars
 fn bool_bool<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {    
     let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();
 
-    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::NE, selfv, codegen.inkwell_types.i32tp.const_zero(), "i8bool");
+    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::NE, selfv, codegen.inkwell_types.booltp.const_zero(), "bool");
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),

@@ -109,6 +109,7 @@ fn main() {
                                             String::from("loop"),
                                             String::from("break"),
                                             String::from("continue"),
+                                            String::from("while"),
                                             ];
 
     let mut lexer: lexer::Lexer = lexer::Lexer {

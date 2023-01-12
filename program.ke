@@ -37,10 +37,8 @@ fn main() {
         uninit = 3usize
     }
 
-    loop {
+    while len < 10usize {
         len += 1usize
-        break
-        continue
     }
 }
 

@@ -287,11 +287,12 @@ impl std::fmt::Display for IfNode {
 #[derive(Clone, Debug)]
 pub struct LoopNode{
     pub block: Vec<crate::parser::Node>,
+    pub expr: Option<crate::parser::Node>,
 }
 
 impl std::fmt::Display for LoopNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Loop {{")?;
+        writeln!(f, "Loop (expr={:?}) {{", self.expr)?;
         for node in self.block.clone() {
             writeln!(f, "    {}", node)?;
         }

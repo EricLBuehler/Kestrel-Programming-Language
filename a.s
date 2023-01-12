@@ -67,12 +67,26 @@ _main:                                  # @_main
 	movq	$1, -96(%rbp)
 # %bb.2:                                # %if_end
 	jmp	.LBB0_3
-.LBB0_3:                                # %loop
+.LBB0_3:                                # %loop_head
                                         # =>This Inner Loop Header: Depth=1
+	movb	$1, %al
+	xorl	%eax, %eax
+	testb	%al, %al
+	jne	.LBB0_5
+	jmp	.LBB0_4
+.LBB0_4:                                # %loop_then
+                                        #   in Loop: Header=BB0_3 Depth=1
 	movq	-72(%rbp), %rax
 	addq	$1, %rax
 	movq	%rax, -72(%rbp)
 	jmp	.LBB0_3
+.LBB0_5:                                # %loop_end
+	leaq	-24(%rbp), %rsp
+	popq	%rbx
+	popq	%r14
+	popq	%r15
+	popq	%rbp
+	retq
 .Lfunc_end0:
 	.size	_main, .Lfunc_end0-_main
                                         # -- End function
@@ -150,6 +164,9 @@ main:                                   # @main
                                         # kill: killed $rsi
                                         # kill: killed $edi
 	callq	_main
+	xorl	%eax, %eax
+	popq	%rcx
+	retq
 .Lfunc_end4:
 	.size	main, .Lfunc_end4-main
                                         # -- End function

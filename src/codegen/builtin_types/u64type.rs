@@ -110,11 +110,11 @@ fn u64_eq<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
     let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();  
     let otherv: inkwell::values::IntValue = args.get(0).unwrap().data.unwrap().into_int_value();
 
-    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::EQ, selfv, otherv, "i8eq");
+    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::EQ, selfv, otherv, "u64eq");
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::I8.to_string()).unwrap().clone(),
+        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -128,11 +128,11 @@ fn u64_lt<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
     let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();  
     let otherv: inkwell::values::IntValue = args.get(0).unwrap().data.unwrap().into_int_value();
 
-    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::UGE, selfv, otherv, "i8lt");
+    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::UGE, selfv, otherv, "u64lt");
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::I8.to_string()).unwrap().clone(),
+        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -146,11 +146,11 @@ fn u64_gt<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
     let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();  
     let otherv: inkwell::values::IntValue = args.get(0).unwrap().data.unwrap().into_int_value();
 
-    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::UGE, selfv, otherv, "i8gt");
+    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::UGE, selfv, otherv, "u64gt");
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::I8.to_string()).unwrap().clone(),
+        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -164,11 +164,11 @@ fn u64_le<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
     let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();  
     let otherv: inkwell::values::IntValue = args.get(0).unwrap().data.unwrap().into_int_value();
 
-    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::UGE, selfv, otherv, "i8lt");
+    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::UGE, selfv, otherv, "u64lt");
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::I8.to_string()).unwrap().clone(),
+        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -182,11 +182,11 @@ fn u64_ge<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
     let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();  
     let otherv: inkwell::values::IntValue = args.get(0).unwrap().data.unwrap().into_int_value();
 
-    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::UGE, selfv, otherv, "i8gt");
+    let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::UGE, selfv, otherv, "u64gt");
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::I8.to_string()).unwrap().clone(),
+        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -204,7 +204,7 @@ fn u64_ne<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::I8.to_string()).unwrap().clone(),
+        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }

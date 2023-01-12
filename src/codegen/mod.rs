@@ -1901,6 +1901,91 @@ impl<'ctx> CodeGen<'ctx> {
         return data;
     }
 
+    fn build_while(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        let loop_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "loop_head");
+        let loop_then_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "loop_then");
+        let end_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "loop_end");
+
+        let start_block_old = self.start_block;
+        let end_block_old = self.end_block;
+        let loop_flow_broken_old = self.loop_flow_broken;
+
+        self.start_block = Some(loop_block);
+        self.end_block = Some(end_block);
+
+        self.builder.build_unconditional_branch(loop_block);
+
+        self.builder.position_at_end(loop_block);            
+
+        let right: types::Data = self.compile_expr(&node.data.loopn.as_ref().unwrap().expr.as_ref().unwrap(), false, false);
+      
+        
+        let mut args: Vec<types::Data> = Vec::new();
+
+        let tp: types::Type = Self::get_type_from_data(self.types.clone(), &right);
+
+        let tp_str: &String = &right.tp.name.clone();
+
+        args.push(right);
+
+        let traittp: types::TraitType = types::TraitType::Bool;
+
+        let t: &types::Trait = match tp.traits.get(&traittp.to_string()) {
+            Some (v) => {
+                v
+            }
+            None => {
+                let fmt: String = format!("Type '{}' has no trait '{}'.", tp_str, &traittp.to_string());
+                errors::raise_error(&fmt, errors::ErrorType::MissingTrait, &node.pos, self.info);
+            }
+        };
+
+        let data: types::Data;
+
+        if t.function.is_some() {
+            let func = t.function.unwrap();
+
+            data = (func)(&self, args, &node.pos);
+        }
+        else {
+            let func: inkwell::values::PointerValue = t.inkfunc.unwrap();
+
+            args.insert(0, types::Data {
+                data: Some(inkwell::values::BasicValueEnum::PointerValue(func)),
+                tp: self.datatypes.get(&types::BasicDataType::Func.to_string()).unwrap().clone(),
+                owned: true,
+            });
+
+            data = builtin_types::functype::fn_call(self, args, &node.pos);
+        }
+
+        if data.tp != self.datatypes.get(&types::BasicDataType::Bool.to_string()).unwrap().clone() {
+            let fmt: String = format!("Expected 'bool' type, got '{}' type.", data.tp);
+            errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+        }
+
+        self.builder.build_conditional_branch(data.data.unwrap().into_int_value(), loop_then_block, end_block);
+
+        self.builder.position_at_end(loop_then_block);
+
+        self.compile(&node.data.loopn.as_ref().unwrap().block, true);
+
+        self.builder.build_unconditional_branch(loop_block);
+
+        self.builder.position_at_end(end_block);
+
+        self.end_block = end_block_old;
+        self.start_block = start_block_old;
+        self.loop_flow_broken = loop_flow_broken_old;
+        
+        let data: types::Data = types::Data {
+            data: None,
+            tp: self.datatypes.get(&types::BasicDataType::Void.to_string()).unwrap().clone(),
+            owned: true,
+        };
+        return data;
+    }
+
 
     fn compile_expr(&mut self, node: &parser::Node, give_ownership: bool, get_ptr: bool) -> types::Data<'ctx> {
         match node.tp {
@@ -2144,6 +2229,9 @@ impl<'ctx> CodeGen<'ctx> {
             }
             parser::NodeType::CONTINUE => {
                 self.build_continue(node)
+            }
+            parser::NodeType::WHILE => {
+                self.build_while(node)
             }
         }
     }
