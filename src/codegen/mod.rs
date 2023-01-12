@@ -2259,7 +2259,8 @@ impl<'ctx> CodeGen<'ctx> {
                 if  node.tp == parser::NodeType::CONTINUE ||
                     node.tp == parser::NodeType::BREAK ||
                     node.tp == parser::NodeType::RETURN {
-                    errors::show_warning(errors::WarningType::UnreachableCode, vec![String::from("")], vec![String::from("Any code following this expression in this block is unreachable.")], &node.pos, self.info);
+                    errors::show_warning(errors::WarningType::UnreachableCode, vec![String::from("")], vec![String::from("Any code following this expression in this block is unreachable.")], &node.pos, self.info);    
+                    break;
                 }
             }
             idx += 1;
