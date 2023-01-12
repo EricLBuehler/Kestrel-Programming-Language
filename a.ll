@@ -132,7 +132,7 @@ attributes #0 = { noinline nounwind optnone }
 !llvm.module.flags = !{!0}
 !llvm.dbg.cu = !{!1}
 
-!0 = !{i32 1, !"Debug Info Version", i32 1}
+!0 = !{i32 1, !"Debug Info Version", i32 3}
 !1 = distinct !DICompileUnit(language: DW_LANG_C, file: !2, producer: "Kestrel", isOptimized: true, runtimeVersion: 0, emissionKind: FullDebug, enums: !3, splitDebugInlining: false)
 !2 = !DIFile(filename: "program.ke", directory: ".")
 !3 = !{}

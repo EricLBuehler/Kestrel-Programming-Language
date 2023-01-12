@@ -2528,7 +2528,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
 
     
     //Setup debug info
-    module.add_basic_value_flag("Debug Info Version", inkwell::module::FlagBehavior::Error, inkwelltypes.i32tp.const_int(1, false));
+    module.add_basic_value_flag("Debug Info Version", inkwell::module::FlagBehavior::Error, inkwelltypes.i32tp.const_int(3, false));
     let (dibuilder, compile_unit) = module.create_debug_info_builder(
         true,
         inkwell::debug_info::DWARFSourceLanguage::C,
