@@ -32,12 +32,15 @@ entry:
   %arr8 = load [12 x i8], [12 x i8]* %arr7, !dbg !8
   %len = alloca i64, !dbg !8
   store i64 12, i64* %len, !dbg !8
+  %arr9 = getelementptr inbounds { [12 x i8] }, { [12 x i8] }* %name, i32 0, i32 0, !dbg !8
+  %itmptr = getelementptr inbounds [12 x i8], [12 x i8]* %arr9, i32 0, i64 100, !dbg !8
+  %item = load i8, i8* %itmptr, !dbg !8
   %uninit = alloca i64, !dbg !8
   br label %if, !dbg !8
 
 if:                                               ; preds = %entry
-  %x9 = alloca i32, !dbg !8
-  store i32 100, i32* %x9, !dbg !8
+  %x10 = alloca i32, !dbg !8
+  store i32 100, i32* %x10, !dbg !8
   store i64 1, i64* %uninit, !dbg !8
   br label %if_end, !dbg !8
 
@@ -45,14 +48,14 @@ if_end:                                           ; preds = %if
   br label %loop_head, !dbg !8
 
 loop_head:                                        ; preds = %loop_then, %if_end
-  %len11 = load i64, i64* %len, !dbg !8
-  %u64lt = icmp uge i64 %len11, %len11, !dbg !8
+  %len12 = load i64, i64* %len, !dbg !8
+  %u64lt = icmp uge i64 %len12, %len12, !dbg !8
   %bool = icmp ne i1 %u64lt, false, !dbg !8
   br i1 %bool, label %loop_then, label %loop_end, !dbg !8
 
 loop_then:                                        ; preds = %loop_head
-  %len12 = load i64, i64* %len, !dbg !8
-  %u64sum = add i64 %len12, 1, !dbg !8
+  %len13 = load i64, i64* %len, !dbg !8
+  %u64sum = add i64 %len13, 1, !dbg !8
   store i64 %u64sum, i64* %len, !dbg !8
   br label %loop_head, !dbg !8
 
@@ -137,18 +140,18 @@ attributes #0 = { noinline nounwind optnone }
 !7 = !DIBasicType(name: "void", size: 16, flags: DIFlagPublic)
 !8 = !DILocation(line: 20, scope: !9)
 !9 = distinct !DILexicalBlock(scope: !4, file: !2, line: 20)
-!10 = distinct !DISubprogram(name: "f", linkageName: "f", scope: null, file: !2, line: 49, type: !11, scopeLine: 49, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
+!10 = distinct !DISubprogram(name: "f", linkageName: "f", scope: null, file: !2, line: 51, type: !11, scopeLine: 51, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !11 = !DISubroutineType(flags: DIFlagPublic, types: !12)
 !12 = !{!13, !13}
 !13 = !DIBasicType(name: "float", size: 16, flags: DIFlagPublic)
-!14 = !DILocation(line: 49, scope: !15)
-!15 = distinct !DILexicalBlock(scope: !10, file: !2, line: 49)
-!16 = distinct !DISubprogram(name: "g", linkageName: "g", scope: null, file: !2, line: 60, type: !17, scopeLine: 60, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
+!14 = !DILocation(line: 51, scope: !15)
+!15 = distinct !DILexicalBlock(scope: !10, file: !2, line: 51)
+!16 = distinct !DISubprogram(name: "g", linkageName: "g", scope: null, file: !2, line: 62, type: !17, scopeLine: 62, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !17 = !DISubroutineType(flags: DIFlagPublic, types: !18)
 !18 = !{!19}
 !19 = !DIBasicType(name: "i32", size: 16, flags: DIFlagPublic)
-!20 = !DILocation(line: 60, scope: !21)
-!21 = distinct !DILexicalBlock(scope: !16, file: !2, line: 60)
+!20 = !DILocation(line: 62, scope: !21)
+!21 = distinct !DILexicalBlock(scope: !16, file: !2, line: 62)
 !22 = distinct !DISubprogram(name: "a", linkageName: "a", scope: null, file: !2, line: 10, type: !23, scopeLine: 10, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !23 = !DISubroutineType(flags: DIFlagPublic, types: !24)
 !24 = !{!13, !25}
