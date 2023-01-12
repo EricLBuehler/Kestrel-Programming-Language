@@ -58,7 +58,7 @@ fn func_bool<'a>(codegen: &codegen::CodeGen<'a>, _args: Vec<Data<'a>>, _pos: &pa
 
 pub fn init_func(codegen: &mut codegen::CodeGen) {
     let mut traits: HashMap<String, Trait> = HashMap::new();
-    traits.insert(TraitType::Call.to_string(), builtin_types::create_trait_func(fn_call, 0, TraitType::Call, new_datatype(BasicDataType::Unknown, BasicDataType::Unknown.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new())));
+    traits.insert(TraitType::Call.to_string(), builtin_types::create_trait_func(fn_call, 0, TraitType::Call, codegen.datatypes.get(&BasicDataType::Unknown.to_string()).unwrap().clone()));
 
     let tp: DataType = new_datatype(BasicDataType::Func, BasicDataType::Func.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new());
     

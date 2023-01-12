@@ -73,6 +73,8 @@ pub fn int_issigned(val: DataType) -> bool {
 }
 
 pub fn init(codegen: &mut codegen::CodeGen) {
+    codegen.datatypes.insert(String::from(types::BasicDataType::Unknown.to_string()), types::new_datatype(BasicDataType::Unknown, BasicDataType::Unknown.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new()));
+
     i32type::init_i32(codegen);
     u32type::init_u32(codegen);
     i8type::init_i8(codegen);

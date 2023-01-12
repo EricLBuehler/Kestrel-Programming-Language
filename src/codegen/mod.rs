@@ -107,7 +107,7 @@ impl<'ctx> CodeGen<'ctx> {
         return inkwell::types::AnyTypeEnum::StructType(ctx.struct_type(&basictypes[..], false));
     }
 
-    fn array_repr(arrtp: inkwell::types::ArrayType) -> String {
+    pub fn array_repr(arrtp: inkwell::types::ArrayType) -> String {
         let mut res: String = String::from("");
         res+=arrtp.get_element_type().print_to_string().to_str().unwrap();
         res+="[";
