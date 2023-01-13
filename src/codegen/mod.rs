@@ -48,6 +48,8 @@ pub struct Namespaces<'ctx> {
     locals: Vec<std::collections::HashMap<String, (Option<inkwell::values::PointerValue<'ctx>>, types::DataType<'ctx>, types::DataMutablility, types::DataOwnership, parser::Position, InitializationStatus)>>,
     functions: std::collections::HashMap<String, (inkwell::values::FunctionValue<'ctx>, types::DataType<'ctx>, ForwardDeclarationType)>,
     structs: std::collections::HashMap<String, (types::DataType<'ctx>, Option<inkwell::types::AnyTypeEnum<'ctx>>, std::collections::HashMap<String, i32>, ForwardDeclarationType)>,
+    template_functions_sig: std::collections::HashMap<String, parser::Node>,
+    template_functions: Vec<(String, types::DataType<'ctx>, inkwell::values::FunctionValue<'ctx>)>,
 }
 
 pub struct CodeGen<'ctx> {
@@ -581,7 +583,7 @@ impl<'ctx> CodeGen<'ctx> {
         return data;
     }
     
-    fn build_func(&mut self, node: &parser::Node, altnm: Option<String>) -> types::Data<'ctx> {
+    fn build_func(&mut self, node: &parser::Node, altnm: Option<String>, template_types: Option<Vec<types::DataType<'ctx>>>) -> types::Data<'ctx> {
         let mut name: String = if altnm.is_none() { node.data.func.as_ref().unwrap().name.clone() } else { altnm.as_ref().unwrap().clone() };
 
         if altnm.is_none(){
@@ -602,6 +604,17 @@ impl<'ctx> CodeGen<'ctx> {
             errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
         }
 
+        if node.data.func.as_ref().unwrap().template_types.len() > 0 && template_types.is_none() {
+            self.namespaces.template_functions_sig.insert(name.to_owned(), node.clone());
+                
+            let data: types::Data = types::Data {
+                data: None,
+                tp: self.datatypes.get(&types::BasicDataType::Void.to_string()).unwrap().clone(),
+                owned: true,
+            };
+            return data;
+        }
+
         // Argument and return types
         let args = &node.data.func.as_ref().unwrap().args;
 
@@ -609,16 +622,34 @@ impl<'ctx> CodeGen<'ctx> {
         let mut mutability: Vec<types::DataMutablility> = Vec::new();
         let mut inktypes: Vec<inkwell::types::BasicMetadataTypeEnum> = Vec::new();
 
-        for arg in &args.args {
-            let (data, tp) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.info, &arg, node);
-            datatypes.push(data);
-            mutability.push(arg.mutability);
+        if template_types.is_none() {
+            for arg in &args.args {
+                let (data, tp) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.info, &arg, node);
+                datatypes.push(data);
+                mutability.push(arg.mutability);
 
 
-            let res: Option<inkwell::types::BasicMetadataTypeEnum> = Self::get_basicmeta_from_any(tp);
+                let res: Option<inkwell::types::BasicMetadataTypeEnum> = Self::get_basicmeta_from_any(tp);
 
-            if res.is_some() {
-                inktypes.push(res.unwrap());
+                if res.is_some() {
+                    inktypes.push(res.unwrap());
+                }
+            }
+        }
+        else {
+            for tp in izip![template_types.as_ref().unwrap(), &args.args] {
+                mutability.push(tp.1.mutability);
+
+                datatypes.push(tp.0.clone());
+                let any = Self::get_anytp_from_tp(self.context, &self.inkwell_types, tp.0.clone());
+                if any.is_none() {
+                    unimplemented!();
+                }
+                let res: Option<inkwell::types::BasicMetadataTypeEnum> = Self::get_basicmeta_from_any(any.unwrap().clone());
+
+                if res.is_some() {
+                    inktypes.push(res.unwrap());
+                }
             }
         }
         
@@ -720,6 +751,15 @@ impl<'ctx> CodeGen<'ctx> {
             });
 
             self.namespaces.structs.insert(structnm.to_owned(), (s.0, s.1, s.2, s.3));
+        }
+        else if template_types.is_some() {
+            if self.module.get_function(mangled_name.as_str()).is_some() {
+                func = self.module.get_function(mangled_name.as_str()).replace(self.module.add_function(mangled_name.as_str(), fn_type, None)).unwrap();
+            }
+            else {
+                func = self.module.add_function(mangled_name.as_str(), fn_type, None);
+            }
+            self.namespaces.template_functions.push((name.clone(), dtp.clone(), func.clone()));
         }
         else {
             if self.module.get_function(mangled_name.as_str()).is_some() {
@@ -844,7 +884,6 @@ impl<'ctx> CodeGen<'ctx> {
                 errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
             }
 
-
             if rettp_full.0.tp != types::BasicDataType::Void {
                 self.builder.build_return(Some(&retv.data.unwrap())); 
             }
@@ -866,10 +905,10 @@ impl<'ctx> CodeGen<'ctx> {
             let fmt: String = format!("Return value is not owned.");
             errors::raise_error(&fmt, errors::ErrorType::ReturnValueNotOwned, &node.data.func.as_ref().unwrap().blocks.last().unwrap().pos, self.info);
         }
-        
+
         let data: types::Data = types::Data {
-            data: Some(inkwell::values::BasicValueEnum::PointerValue(func.as_global_value().as_pointer_value())),
-            tp: dtp,
+            data: None,
+            tp: self.datatypes.get(&types::BasicDataType::Void.to_string()).unwrap().clone(),
             owned: true,
         };
         return data;
@@ -916,8 +955,8 @@ impl<'ctx> CodeGen<'ctx> {
     
     fn build_call(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         let mut args: Vec<types::Data> = Vec::new();
-        let tp_name: String;
-        let tp: types::Type;
+        let mut tp_name: String = String::from("");
+        let mut tp: Option<types::Type> = None;
 
         if node.data.call.as_ref().unwrap().name.tp == parser::NodeType::ATTR {
             let attr: &String = &node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().attr;
@@ -942,7 +981,7 @@ impl<'ctx> CodeGen<'ctx> {
 
                     tp_name = method.functp.name.clone();
                     
-                    tp = Self::get_type_from_data(self.types.clone(), &data);
+                    tp = Some(Self::get_type_from_data(self.types.clone(), &data));
                 }
                 else {
                     let mut tp_: types::DataType = self.datatypes.get(&types::BasicDataType::WrapperFunc.to_string()).unwrap().clone();
@@ -954,7 +993,7 @@ impl<'ctx> CodeGen<'ctx> {
                         owned: true,
                     };
 
-                    tp = Self::get_type_from_data(self.types.clone(), &data.clone());
+                    tp = Some(Self::get_type_from_data(self.types.clone(), &data.clone()));
 
                     args.push(data);
                     args.push(base.clone());
@@ -965,11 +1004,15 @@ impl<'ctx> CodeGen<'ctx> {
                 errors::raise_error(&fmt, errors::ErrorType::StructAttrNotFound, &node.pos, self.info);
             }
         }
+        else if node.data.call.as_ref().unwrap().name.tp == parser::NodeType::IDENTIFIER &&
+                self.namespaces.template_functions_sig.contains_key(&node.data.call.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name) {
+            // Do nothing yet
+        }
         else {
             let callable: types::Data = self.compile_expr(&node.data.call.as_ref().unwrap().name, false, false);
             tp_name = callable.tp.name.clone();
             args.push(callable);
-            tp = Self::get_type_from_data(self.types.clone(), &args.first().unwrap());
+            tp = Some(Self::get_type_from_data(self.types.clone(), &args.first().unwrap()));
         }
 
         for arg in &node.data.call.as_ref().unwrap().args{
@@ -986,7 +1029,49 @@ impl<'ctx> CodeGen<'ctx> {
             }
         }
 
-        let t: &types::Trait = match tp.traits.get(&types::TraitType::Call.to_string()) {
+        if  node.data.call.as_ref().unwrap().name.tp == parser::NodeType::IDENTIFIER &&
+            self.namespaces.template_functions_sig.contains_key(&node.data.call.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name) {
+            let func: parser::Node = self.namespaces.template_functions_sig.get(&node.data.call.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().to_owned();
+            let mut fn_types: Vec<types::DataType> = Vec::new();
+            let mut templates: std::collections::HashMap<String, types::DataType> = std::collections::HashMap::new();
+            
+            for (data, arg) in izip![&args, &func.data.func.as_ref().unwrap().args.args] {
+                if  !arg.isarr &&
+                    !arg.isfn && !self.datatypes.contains_key(&arg.data.as_ref().unwrap().clone()) {
+                    if !templates.contains_key(&arg.data.as_ref().unwrap().clone()) {
+                        templates.insert(arg.data.as_ref().unwrap().clone(), data.tp.clone());
+                    }
+                    fn_types.push(templates.get(&arg.data.as_ref().unwrap().clone()).unwrap().to_owned());
+                }
+                else {
+                    fn_types.push(Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, arg, node).0.to_owned());
+                }
+            }
+            
+            let enclosing_block: inkwell::basic_block::BasicBlock = self.enclosing_block.unwrap();
+            self.build_func(&func, None, Some(fn_types));
+            self.enclosing_block = Some(enclosing_block);
+
+            let func_v = self.namespaces.template_functions.last().unwrap().to_owned();
+            self.namespaces.template_functions.pop();
+            if !self.namespaces.template_functions.contains(&func_v) {
+                self.namespaces.template_functions.push(func_v.to_owned());
+            }
+            
+            tp_name = func_v.1.name.clone();
+            let callable: types::Data = types::Data {
+                data: Some(inkwell::values::BasicValueEnum::PointerValue(func_v.2.as_global_value().as_pointer_value())),
+                tp: func_v.1.clone(),
+                owned: true,
+            };
+
+            args.insert(0usize, callable);
+            tp = Some(Self::get_type_from_data(self.types.clone(), &args.first().unwrap()));
+            self.builder.position_at_end(self.enclosing_block.unwrap());
+        }
+
+
+        let t: &types::Trait = match tp.as_ref().unwrap().traits.get(&types::TraitType::Call.to_string()) {
             Some (v) => {
                 v
             }
@@ -1513,7 +1598,7 @@ impl<'ctx> CodeGen<'ctx> {
             errors::raise_error(&fmt, errors::ErrorType::ArgumentCountMismatch, &node.pos, self.info);
         }
 
-        let func: types::Data = self.build_func(&node.data.impln.as_ref().unwrap().func, Some(structnm.to_owned() + "." + node.data.impln.as_ref().unwrap().func.data.func.as_ref().unwrap().name.as_str()));
+        let func: types::Data = self.build_func(&node.data.impln.as_ref().unwrap().func, Some(structnm.to_owned() + "." + node.data.impln.as_ref().unwrap().func.data.func.as_ref().unwrap().name.as_str()), None);
 
         if !self.namespaces.structs.contains_key(structnm) {
             let fmt: String = format!("Struct '{}' is not defined.", structnm);
@@ -2066,7 +2151,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.build_loadname(node, give_ownership, get_ptr)
             }
             parser::NodeType::FUNC => {
-                self.build_func(node, None)
+                self.build_func(node, None, None)
             }
             parser::NodeType::ASSIGN => {
                 self.build_assign(node)
@@ -2346,6 +2431,11 @@ impl<'ctx> CodeGen<'ctx> {
                     errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
                 }
 
+                if node.data.func.as_ref().unwrap().template_types.len() > 0 {
+                    self.namespaces.template_functions_sig.insert(name.to_owned(), node.clone());
+                    continue;
+                }
+
                 // Argument and return types
                 let args = &node.data.func.as_ref().unwrap().args;
 
@@ -2524,6 +2614,8 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
         locals: Vec::new(),
         functions: std::collections::HashMap::new(),
         structs: std::collections::HashMap::new(),
+        template_functions_sig: std::collections::HashMap::new(),
+        template_functions: Vec::new(),
     };
 
     

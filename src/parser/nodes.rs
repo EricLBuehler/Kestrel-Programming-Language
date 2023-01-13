@@ -103,6 +103,7 @@ pub struct FuncNode {
     pub args: crate::parser::Args,
     pub methodname: Option<String>,
     pub namespacename: Option<String>,
+    pub template_types: Vec<String>,
 }
 
 impl std::fmt::Display for FuncNode {

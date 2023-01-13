@@ -1,7 +1,7 @@
-fn f<A,B,C>(a: T, b: X) -> C{
-    
+fn f<T>(a: T, b: T){
+
 }
 
 fn main() {
-    
+    f(10,3)
 }

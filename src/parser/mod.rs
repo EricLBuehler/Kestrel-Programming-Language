@@ -2016,6 +2016,7 @@ impl<'life> Parser<'life> {
             args,
             methodname,
             namespacename,
+            template_types,
         };
 
         let nodedat: nodes::NodeData = nodes::NodeData {
