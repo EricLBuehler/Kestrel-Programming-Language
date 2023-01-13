@@ -1,65 +1,7 @@
-struct s {
-    mut a: f32,
-    b: f32
-}
-
-enum e {
-    optA,
-    optB,
-}
-
-fn s.a(self: s) -> f32{
-    return self.a * 100f32
-}
-
-impl Add for s {
-    fn add(self: s, other: s) -> f32 {
-        return self.a + other.b
-    }
+fn f<A,B,C>(a: T, b: X) -> C{
+    
 }
 
 fn main() {
-    let x = 1.23
-    f(&x)
-    let name: String = String::new("Kestrel 🦅")
-    let char: char = '🦅'
-    let arr: i32[2] = [x*x as i32,2]
-    //This is a comment
-    let len: usize = name.length()
-
-    let item: char = name.get(1usize)
-
-    let uninit: usize
-
-    if 1==1 {
-        let x = 100
-        uninit = 1usize
-    }
-    elif 2==3 {
-        let z = 200
-        uninit = 2usize
-    }
-    else {
-        let y = 300
-        uninit = 3usize
-    }
-
-    while len < 10usize {
-        len += 1usize
-    }
-}
-
-fn f(x: f32) -> f32{
-    let y = s {
-        a=x+1f32,
-        b=x
-    }
     
-    y.a=12f32
-
-    return y.a()
-}
-
-fn g() -> e {
-    return e::optA
 }

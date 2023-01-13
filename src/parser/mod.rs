@@ -1870,8 +1870,28 @@ impl<'life> Parser<'life> {
         let name: String = self.current.data.clone();
         let mut methodname: Option<String> = None;
         let mut namespacename: Option<String> = None;
+        let mut template_types: Vec<String> = Vec::new();
 
-        self.advance();
+        self.advance();        
+
+        if self.current_is_type(TokenType::LT) {
+            self.advance();
+            while self.current_is_type(TokenType::IDENTIFIER) {
+                template_types.push(self.current.data.clone());
+
+                self.advance();
+
+                if !self.current_is_type(TokenType::COMMA) && !self.current_is_type(TokenType::GT) {
+                    self.raise_error("Expected comma.", ErrorType::InvalidTok);
+                }
+                self.advance();
+
+                if self.current_is_type(TokenType::GT) {
+                    self.advance();
+                    break;
+                }
+            }
+        }
 
         if self.current_is_type(TokenType::DOT) {
             self.advance();
