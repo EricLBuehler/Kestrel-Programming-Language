@@ -590,7 +590,7 @@ impl<'ctx> CodeGen<'ctx> {
         return data;
     }
     
-    fn build_func(&mut self, node: &parser::Node, altnm: Option<String>, template_types: Option<Vec<types::DataType<'ctx>>>) -> types::Data<'ctx> {
+    fn build_func(&mut self, node: &parser::Node, altnm: Option<String>, template_types: Option<Vec<types::DataType<'ctx>>>, rettp_opt: Option<types::DataType<'ctx>>) -> types::Data<'ctx> {
         let mut name: String = if altnm.is_none() { node.data.func.as_ref().unwrap().name.clone() } else { altnm.as_ref().unwrap().clone() };
 
         if altnm.is_none(){
@@ -672,12 +672,27 @@ impl<'ctx> CodeGen<'ctx> {
                 }
             }
         }
-        
-        let rettp_full: (types::DataType, inkwell::types::AnyTypeEnum) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.info, &args.rettp.last().unwrap(), node);
 
-        self.expected_rettp = Some(rettp_full.0.clone());
+        let rettp_tp: types::DataType;
+        let rettp_any: inkwell::types::AnyTypeEnum;
         
-        let tp: inkwell::types::AnyTypeEnum = rettp_full.1;
+        if rettp_opt.is_none() {
+            let rettp_full: (types::DataType, inkwell::types::AnyTypeEnum) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.info, &args.rettp.last().unwrap(), node);
+            rettp_tp = rettp_full.0;
+            rettp_any = rettp_full.1;
+        }
+        else {
+            rettp_tp = rettp_opt.unwrap().to_owned();
+            let any_opt: Option<inkwell::types::AnyTypeEnum> = Self::get_anytp_from_tp(self.context, &self.inkwell_types, rettp_tp.clone());
+            if any_opt.is_none() {
+                unimplemented!();
+            }
+            rettp_any = any_opt.unwrap().to_owned();
+        }
+
+        self.expected_rettp = Some(rettp_tp.clone());
+        
+        let tp: inkwell::types::AnyTypeEnum = rettp_any;
         let fn_type: inkwell::types::FunctionType;
         
         if tp.is_int_type() {
@@ -716,7 +731,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
 
             if fn_type.get_return_type() != None {
-                let fmt: String = format!("Expected 'void' return type, got '{}'.", &rettp_full.0.name);
+                let fmt: String = format!("Expected 'void' return type, got '{}'.", &rettp_tp.name);
                 errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
             }
         }
@@ -728,7 +743,7 @@ impl<'ctx> CodeGen<'ctx> {
         dtp.names = Some(node.data.func.as_ref().unwrap().args.name.clone());
         dtp.types = datatypes.clone();
         dtp.mutability =mutability.clone();
-        dtp.rettp =  Some(Box::new(rettp_full.0.clone()));
+        dtp.rettp =  Some(Box::new(rettp_tp.clone()));
 
         if template_types.is_some() {
             if self.module.get_function(mangled_name.as_str()).is_some() {
@@ -883,12 +898,12 @@ impl<'ctx> CodeGen<'ctx> {
         
         //Check if last stmt. is a return
         if node.data.func.as_ref().unwrap().blocks.len()==0 || node.data.func.as_ref().unwrap().blocks.last().unwrap().tp != parser::NodeType::RETURN {
-            if retv.tp != rettp_full.0.tp && name!="main"{
-                let fmt: String = format!("Expected '{}' return type, got '{}'.", &rettp_full.0.name, retv.tp.name);
+            if retv.tp != rettp_tp.tp && name!="main"{
+                let fmt: String = format!("Expected '{}' return type, got '{}'.", &rettp_tp.name, retv.tp.name);
                 errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
             }
 
-            if rettp_full.0.tp != types::BasicDataType::Void {
+            if rettp_tp.tp != types::BasicDataType::Void {
                 self.builder.build_return(Some(&retv.data.unwrap())); 
             }
             else {
@@ -1052,6 +1067,10 @@ impl<'ctx> CodeGen<'ctx> {
                 if  !arg.isarr &&
                     !arg.isfn && !self.datatypes.contains_key(&arg.data.as_ref().unwrap().clone()) {
                     if !templates.contains_key(&arg.data.as_ref().unwrap().clone()) {
+                        if !func.data.func.as_ref().unwrap().template_types.contains(&arg.data.as_ref().unwrap().clone()) {
+                            let fmt: String = format!("Unknown type '{}'.", arg.data.as_ref().unwrap().clone());
+                            errors::raise_error(&fmt, errors::ErrorType::UnknownTemplateType, &node.pos, self.info);    
+                        }
                         templates.insert(arg.data.as_ref().unwrap().clone(), data.tp.clone());
                     }
                     fn_types.push(templates.get(&arg.data.as_ref().unwrap().clone()).unwrap().to_owned());
@@ -1060,9 +1079,24 @@ impl<'ctx> CodeGen<'ctx> {
                     fn_types.push(Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, arg, node).0.to_owned());
                 }
             }
+
+            let rettp: &parser::Type = func.data.func.as_ref().unwrap().args.rettp.last().unwrap();
+            let rettp_tp: types::DataType;
+            if  !rettp.isarr &&
+                !rettp.isfn &&
+                !self.datatypes.contains_key(&rettp.data.as_ref().unwrap().clone()) {
+                if !templates.contains_key(&rettp.data.as_ref().unwrap().clone()) {
+                    let fmt: String = format!("Unknown type '{}'.", rettp.data.as_ref().unwrap().clone());
+                    errors::raise_error(&fmt, errors::ErrorType::UnknownTemplateType, &node.pos, self.info); 
+                }
+                rettp_tp = templates.get(&rettp.data.as_ref().unwrap().clone()).unwrap().to_owned();
+            }
+            else {
+                rettp_tp = Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, rettp, node).0.to_owned();
+            }
             
             let enclosing_block: inkwell::basic_block::BasicBlock = self.enclosing_block.unwrap();
-            self.build_func(&func, None, Some(fn_types));
+            self.build_func(&func, None, Some(fn_types), Some(rettp_tp));
             self.enclosing_block = Some(enclosing_block);
 
             let func_v = self.namespaces.template_functions.last().unwrap().to_owned();
@@ -1098,6 +1132,10 @@ impl<'ctx> CodeGen<'ctx> {
                     if  !arg.isarr &&
                         !arg.isfn && !self.datatypes.contains_key(&arg.data.as_ref().unwrap().clone()) && idx > 0 {
                         if !templates.contains_key(&arg.data.as_ref().unwrap().clone()) {
+                            if !func.data.func.as_ref().unwrap().template_types.contains(&arg.data.as_ref().unwrap().clone()) {
+                                let fmt: String = format!("Unknown type '{}'.", arg.data.as_ref().unwrap().clone());
+                                errors::raise_error(&fmt, errors::ErrorType::UnknownTemplateType, &node.pos, self.info);    
+                            }
                             templates.insert(arg.data.as_ref().unwrap().clone(), args.get((idx-1) as usize).unwrap().tp.clone());
                         }
                         fn_types.push(templates.get(&arg.data.as_ref().unwrap().clone()).unwrap().to_owned());
@@ -1107,6 +1145,10 @@ impl<'ctx> CodeGen<'ctx> {
                             idx == 0 &&
                             !self.datatypes.contains_key(&arg.data.as_ref().unwrap().clone()) && instance_meth != TemplateFunctionInstance::Instance {
                         if !templates.contains_key(&arg.data.as_ref().unwrap().clone()) {
+                            if !func.data.func.as_ref().unwrap().template_types.contains(&arg.data.as_ref().unwrap().clone()) {
+                                let fmt: String = format!("Unknown type '{}'.", arg.data.as_ref().unwrap().clone());
+                                errors::raise_error(&fmt, errors::ErrorType::UnknownTemplateType, &node.pos, self.info);    
+                            }
                             templates.insert(arg.data.as_ref().unwrap().clone(), args.get(0).unwrap().tp.clone());
                         }
                         fn_types.push(templates.get(&arg.data.as_ref().unwrap().clone()).unwrap().to_owned());
@@ -1120,9 +1162,24 @@ impl<'ctx> CodeGen<'ctx> {
                     }
                     idx += 1;
                 }
+
+                let rettp: &parser::Type = func.data.func.as_ref().unwrap().args.rettp.last().unwrap();
+                let rettp_tp: types::DataType;
+                if  !rettp.isarr &&
+                    !rettp.isfn &&
+                    !self.datatypes.contains_key(&rettp.data.as_ref().unwrap().clone()) {
+                    if !templates.contains_key(&rettp.data.as_ref().unwrap().clone()) {
+                        let fmt: String = format!("Unknown type '{}'.", rettp.data.as_ref().unwrap().clone());
+                        errors::raise_error(&fmt, errors::ErrorType::UnknownTemplateType, &node.pos, self.info); 
+                    }
+                    rettp_tp = templates.get(&rettp.data.as_ref().unwrap().clone()).unwrap().to_owned();
+                }
+                else {
+                    rettp_tp = Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, rettp, node).0.to_owned();
+                }
                 
                 let enclosing_block: inkwell::basic_block::BasicBlock = self.enclosing_block.unwrap();
-                self.build_func(&func, None, Some(fn_types));
+                self.build_func(&func, None, Some(fn_types), Some(rettp_tp));
                 self.enclosing_block = Some(enclosing_block);
 
                 let func_v = self.namespaces.template_functions.last().unwrap().to_owned();
@@ -1679,7 +1736,7 @@ impl<'ctx> CodeGen<'ctx> {
             errors::raise_error(&fmt, errors::ErrorType::ArgumentCountMismatch, &node.pos, self.info);
         }
 
-        let func: types::Data = self.build_func(&node.data.impln.as_ref().unwrap().func, Some(structnm.to_owned() + "." + node.data.impln.as_ref().unwrap().func.data.func.as_ref().unwrap().name.as_str()), None);
+        let func: types::Data = self.build_func(&node.data.impln.as_ref().unwrap().func, Some(structnm.to_owned() + "." + node.data.impln.as_ref().unwrap().func.data.func.as_ref().unwrap().name.as_str()), None, None);
 
         if !self.namespaces.structs.contains_key(structnm) {
             let fmt: String = format!("Struct '{}' is not defined.", structnm);
@@ -2232,7 +2289,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.build_loadname(node, give_ownership, get_ptr)
             }
             parser::NodeType::FUNC => {
-                self.build_func(node, None, None)
+                self.build_func(node, None, None, None)
             }
             parser::NodeType::ASSIGN => {
                 self.build_assign(node)
