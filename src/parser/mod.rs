@@ -274,6 +274,7 @@ impl<'life> Parser<'life> {
     
     fn block(&mut self) -> Vec<Node> {
         let mut nodes: Vec<Node> = Vec::new();
+        self.skip_newline();
         
         while !self.current_is_type(TokenType::EOF) && !self.current_is_type(TokenType::RCURLY) {
             nodes.push(self.statement());
@@ -1872,7 +1873,25 @@ impl<'life> Parser<'life> {
         let mut namespacename: Option<String> = None;
         let mut template_types: Vec<String> = Vec::new();
 
-        self.advance();        
+        self.advance();
+
+        if self.current_is_type(TokenType::DOT) {
+            self.advance();
+            if !self.current_is_type(TokenType::IDENTIFIER) {
+                self.raise_error("Expected identifier.", ErrorType::InvalidTok);
+            }
+            methodname = Some(self.current.data.clone());
+            self.advance();
+        }
+
+        if self.current_is_type(TokenType::DOUBLECOLON) {
+            self.advance();
+            if !self.current_is_type(TokenType::IDENTIFIER) {
+                self.raise_error("Expected identifier.", ErrorType::InvalidTok);
+            }
+            namespacename = Some(self.current.data.clone());
+            self.advance();
+        }        
 
         if self.current_is_type(TokenType::LT) {
             self.advance();
@@ -1891,24 +1910,6 @@ impl<'life> Parser<'life> {
                     break;
                 }
             }
-        }
-
-        if self.current_is_type(TokenType::DOT) {
-            self.advance();
-            if !self.current_is_type(TokenType::IDENTIFIER) {
-                self.raise_error("Expected identifier.", ErrorType::InvalidTok);
-            }
-            methodname = Some(self.current.data.clone());
-            self.advance();
-        }
-
-        if self.current_is_type(TokenType::DOUBLECOLON) {
-            self.advance();
-            if !self.current_is_type(TokenType::IDENTIFIER) {
-                self.raise_error("Expected identifier.", ErrorType::InvalidTok);
-            }
-            namespacename = Some(self.current.data.clone());
-            self.advance();
         }
 
         if !self.current_is_type(TokenType::LPAREN) {

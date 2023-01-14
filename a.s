@@ -5,11 +5,10 @@
 	.type	_main,@function
 _main:                                  # @_main
 # %bb.0:                                # %entry
-	pushq	%rax
-	movl	$10, %edi
-	movl	$3, %esi
+	subq	$24, %rsp
+	movl	$1, %edi
 	callq	f
-	popq	%rax
+	addq	$24, %rsp
 	retq
 .Lfunc_end0:
 	.size	_main, .Lfunc_end0-_main
@@ -19,8 +18,7 @@ _main:                                  # @_main
 	.type	f,@function
 f:                                      # @f
 # %bb.0:                                # %entry
-	movl	%edi, -4(%rsp)
-	movl	%esi, -8(%rsp)
+	movl	%edi, -12(%rsp)
 	retq
 .Lfunc_end1:
 	.size	f, .Lfunc_end1-f

@@ -1,7 +1,12 @@
-fn f<T>(a: T, b: T){
+struct s {
+
+}
+
+fn s.f<T>(a: s, b: T){
 
 }
 
 fn main() {
-    f(10,3)
+    let st = s{}
+    st.f(1)
 }

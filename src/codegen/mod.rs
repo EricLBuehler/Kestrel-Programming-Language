@@ -605,6 +605,15 @@ impl<'ctx> CodeGen<'ctx> {
         }
 
         if node.data.func.as_ref().unwrap().template_types.len() > 0 && template_types.is_none() {
+            let mut name: String = node.data.func.as_ref().unwrap().name.clone();
+        
+            if node.data.func.as_ref().unwrap().methodname.is_some() {
+                name += (String::from(".")+node.data.func.as_ref().unwrap().methodname.as_ref().unwrap().as_str()).as_str();
+            }
+            if node.data.func.as_ref().unwrap().namespacename.is_some() {
+                name += (String::from(".")+node.data.func.as_ref().unwrap().namespacename.as_ref().unwrap().as_str()).as_str();
+            }
+            
             self.namespaces.template_functions_sig.insert(name.to_owned(), node.clone());
                 
             let data: types::Data = types::Data {
@@ -710,49 +719,7 @@ impl<'ctx> CodeGen<'ctx> {
         dtp.mutability =mutability.clone();
         dtp.rettp =  Some(Box::new(rettp_full.0.clone()));
 
-        if node.data.func.as_ref().unwrap().methodname.is_some() {
-            let structnm: &String = &node.data.func.as_ref().unwrap().name;
-
-            if self.namespaces.structs.get(structnm).is_none() {
-                let fmt: String = format!("Struct '{}' is not defined.", structnm);
-                errors::raise_error(&fmt, errors::ErrorType::StructNotDefined, &node.pos, self.info);
-            }
-
-            func = self.module.add_function(&(structnm.to_owned()+"."+mangled_name.as_str()), fn_type, None);
-    
-            let mut s: (types::DataType, Option<AnyTypeEnum>, std::collections::HashMap<String, i32>, ForwardDeclarationType) = self.namespaces.structs.get(structnm).unwrap().clone();
-            s.0.methods.insert(name.clone(), types::Method {
-                tp: types::MethodType::Fn,
-                builtin: None,
-                func: Some(func.as_global_value().as_pointer_value()),
-                functp: dtp.clone(),
-                isinstance: true,
-            });
-
-            self.namespaces.structs.insert(structnm.to_owned(), (s.0, s.1, s.2, s.3));
-        }
-        else if node.data.func.as_ref().unwrap().namespacename.is_some() {
-            let structnm: &String = &node.data.func.as_ref().unwrap().name;
-
-            if self.namespaces.structs.get(structnm).is_none() {
-                let fmt: String = format!("Struct '{}' is not defined.", structnm);
-                errors::raise_error(&fmt, errors::ErrorType::StructNotDefined, &node.pos, self.info);
-            }
-
-            func = self.module.add_function(&(structnm.to_owned()+"."+mangled_name.as_str()), fn_type, None);
-    
-            let mut s: (types::DataType, Option<AnyTypeEnum>, std::collections::HashMap<String, i32>, ForwardDeclarationType) = self.namespaces.structs.get(structnm).unwrap().clone();
-            s.0.methods.insert(name.clone(), types::Method {
-                tp: types::MethodType::Fn,
-                builtin: None,
-                func: Some(func.as_global_value().as_pointer_value()),
-                functp: dtp.clone(),
-                isinstance: false,
-            });
-
-            self.namespaces.structs.insert(structnm.to_owned(), (s.0, s.1, s.2, s.3));
-        }
-        else if template_types.is_some() {
+        if template_types.is_some() {
             if self.module.get_function(mangled_name.as_str()).is_some() {
                 func = self.module.get_function(mangled_name.as_str()).replace(self.module.add_function(mangled_name.as_str(), fn_type, None)).unwrap();
             }
@@ -760,6 +727,32 @@ impl<'ctx> CodeGen<'ctx> {
                 func = self.module.add_function(mangled_name.as_str(), fn_type, None);
             }
             self.namespaces.template_functions.push((name.clone(), dtp.clone(), func.clone()));
+        }
+        else if  node.data.func.as_ref().unwrap().methodname.is_some() ||
+            node.data.func.as_ref().unwrap().namespacename.is_some() {
+            let structnm: &String = &node.data.func.as_ref().unwrap().name;
+
+            if self.namespaces.structs.get(structnm).is_none() {
+                let fmt: String = format!("Struct '{}' is not defined.", structnm);
+                errors::raise_error(&fmt, errors::ErrorType::StructNotDefined, &node.pos, self.info);
+            }
+
+            func = self.module.add_function(&(structnm.to_owned()+"."+mangled_name.as_str()), fn_type, None);
+    
+            let mut s: (types::DataType, Option<AnyTypeEnum>, std::collections::HashMap<String, i32>, ForwardDeclarationType) = self.namespaces.structs.get(structnm).unwrap().clone();
+            let mut isinstance: bool = true;
+            if node.data.func.as_ref().unwrap().namespacename.is_some() {
+                isinstance = false;
+            }
+            s.0.methods.insert(name.clone(), types::Method {
+                tp: types::MethodType::Fn,
+                builtin: None,
+                func: Some(func.as_global_value().as_pointer_value()),
+                functp: dtp.clone(),
+                isinstance: isinstance,
+            });
+
+            self.namespaces.structs.insert(structnm.to_owned(), (s.0, s.1, s.2, s.3));
         }
         else {
             if self.module.get_function(mangled_name.as_str()).is_some() {
@@ -958,10 +951,12 @@ impl<'ctx> CodeGen<'ctx> {
         let mut tp_name: String = String::from("");
         let mut tp: Option<types::Type> = None;
 
+        let mut have_template_method: bool = false;
+
         if node.data.call.as_ref().unwrap().name.tp == parser::NodeType::ATTR {
             let attr: &String = &node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().attr;
 
-            let base: types::Data = self.compile_expr(&node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().name, false, true); 
+            let base: types::Data = self.compile_expr(&node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().name, false, true);
             
             if base.tp.methods.get(attr).is_some() {
                 let method: &types::Method = base.tp.methods.get(attr).unwrap();
@@ -998,6 +993,9 @@ impl<'ctx> CodeGen<'ctx> {
                     args.push(data);
                     args.push(base.clone());
                 }
+            }
+            else if self.namespaces.template_functions_sig.contains_key(&(base.tp.name.clone()+"."+node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().attr.to_owned().as_str()).to_owned()) {
+                have_template_method = true;
             }
             else{
                 let fmt: String = format!("Type '{}' has no method '{}'.", base.tp.name, attr);
@@ -1068,6 +1066,63 @@ impl<'ctx> CodeGen<'ctx> {
             args.insert(0usize, callable);
             tp = Some(Self::get_type_from_data(self.types.clone(), &args.first().unwrap()));
             self.builder.position_at_end(self.enclosing_block.unwrap());
+        }
+
+        if have_template_method {
+            let base: types::Data = self.compile_expr(&node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().name, false, true);
+
+            if  self.namespaces.template_functions_sig.contains_key(&(base.tp.name.clone()+"."+node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().attr.to_owned().as_str()).to_owned()) {
+                let func: parser::Node = self.namespaces.template_functions_sig.get(&(base.tp.name.clone()+"."+node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().attr.to_owned().as_str()).to_owned()).unwrap().clone();
+                
+                let mut fn_types: Vec<types::DataType> = Vec::new();
+                let mut templates: std::collections::HashMap<String, types::DataType> = std::collections::HashMap::new();
+                
+                let mut idx: i32 = 0;
+                for arg in &func.data.func.as_ref().unwrap().args.args {
+                    if  !arg.isarr &&
+                        !arg.isfn && !self.datatypes.contains_key(&arg.data.as_ref().unwrap().clone()) && idx > 0 {
+                        if !templates.contains_key(&arg.data.as_ref().unwrap().clone()) {
+                            templates.insert(arg.data.as_ref().unwrap().clone(), args.get((idx-1) as usize).unwrap().tp.clone());
+                        }
+                        fn_types.push(templates.get(&arg.data.as_ref().unwrap().clone()).unwrap().to_owned());
+                    }
+                    else if idx == 0 && !self.datatypes.contains_key(&arg.data.as_ref().unwrap().clone())  {
+                        let fmt: String = format!("First argument for template method may not be template.");
+                        errors::raise_error(&fmt, errors::ErrorType::MethodTemplateFunctionHasFirstTemplate, &node.pos, self.info);
+                    }
+                    else {
+                        fn_types.push(Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, arg, node).0.to_owned());
+                    }
+                    idx += 1;
+                }
+                
+                let enclosing_block: inkwell::basic_block::BasicBlock = self.enclosing_block.unwrap();
+                self.build_func(&func, None, Some(fn_types));
+                self.enclosing_block = Some(enclosing_block);
+
+                let func_v = self.namespaces.template_functions.last().unwrap().to_owned();
+                self.namespaces.template_functions.pop();
+                if !self.namespaces.template_functions.contains(&func_v) {
+                    self.namespaces.template_functions.push(func_v.to_owned());
+                }
+                
+                tp_name = func_v.1.name.clone();
+                let callable: types::Data = types::Data {
+                    data: Some(inkwell::values::BasicValueEnum::PointerValue(func_v.2.as_global_value().as_pointer_value())),
+                    tp: func_v.1.clone(),
+                    owned: true,
+                };
+
+                args.insert(0usize, callable.clone());
+                tp = Some(Self::get_type_from_data(self.types.clone(), &callable));
+                self.builder.position_at_end(self.enclosing_block.unwrap());
+                
+                args.insert(1usize, types::Data {
+                    data: Some(self.builder.build_load(base.data.unwrap().into_pointer_value(), &base.tp.name)),
+                    tp: base.tp.clone(),
+                    owned: base.owned,
+                });
+            }
         }
 
 
@@ -2416,10 +2471,12 @@ impl<'ctx> CodeGen<'ctx> {
     fn forward_declare(&mut self, nodes: &Vec<parser::Node>){
         for node in nodes {
             if node.tp == parser::NodeType::FUNC {
-                if  node.data.func.as_ref().unwrap().methodname.is_some() ||
-                    node.data.func.as_ref().unwrap().namespacename.is_some() {
+                if  (node.data.func.as_ref().unwrap().methodname.is_some() ||
+                    node.data.func.as_ref().unwrap().namespacename.is_some()) &&
+                    node.data.func.as_ref().unwrap().template_types.len() == 0 {
                     continue;
                 }
+
                 let name: &String = &node.data.func.as_ref().unwrap().name;
 
                 if !name.is_snake_case() {
@@ -2432,6 +2489,15 @@ impl<'ctx> CodeGen<'ctx> {
                 }
 
                 if node.data.func.as_ref().unwrap().template_types.len() > 0 {
+                    let mut name: String = node.data.func.as_ref().unwrap().name.clone();
+                
+                    if node.data.func.as_ref().unwrap().methodname.is_some() {
+                        name += (String::from(".")+node.data.func.as_ref().unwrap().methodname.as_ref().unwrap().as_str()).as_str();
+                    }
+                    if node.data.func.as_ref().unwrap().namespacename.is_some() {
+                        name += (String::from(".")+node.data.func.as_ref().unwrap().namespacename.as_ref().unwrap().as_str()).as_str();
+                    }
+                    
                     self.namespaces.template_functions_sig.insert(name.to_owned(), node.clone());
                     continue;
                 }

@@ -44,6 +44,7 @@ pub enum ErrorType {
     BreakOutsideOfLoop,
     ContinueOutsideOfLoop,
     VariantRedeclaration,
+    MethodTemplateFunctionHasFirstTemplate,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -96,6 +97,7 @@ pub fn repr_err(tp: ErrorType) -> &'static str {
         ErrorType::BreakOutsideOfLoop => "cannot break outside of loop",
         ErrorType::ContinueOutsideOfLoop => "cannot continue outside of loop",
         ErrorType::VariantRedeclaration => "variant is refedined in enum",
+        ErrorType::MethodTemplateFunctionHasFirstTemplate => "template method cannot have template first argument",
     }
 }
 
