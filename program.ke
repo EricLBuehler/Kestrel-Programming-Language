@@ -2,6 +2,10 @@ struct s {
 
 }
 
+trait t {
+    fn func<T>(a:T)
+}
+
 fn s::f<T>(a: T, b: T){
 
 }

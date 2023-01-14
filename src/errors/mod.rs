@@ -46,6 +46,7 @@ pub enum ErrorType {
     VariantRedeclaration,
     MethodTemplateFunctionHasFirstTemplate,
     UnknownTemplateType,
+    LocalScopeStmt,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -100,6 +101,7 @@ pub fn repr_err(tp: ErrorType) -> &'static str {
         ErrorType::VariantRedeclaration => "variant is refedined in enum",
         ErrorType::MethodTemplateFunctionHasFirstTemplate => "template method cannot have template first argument",
         ErrorType::UnknownTemplateType => "unknown template type",
+        ErrorType::LocalScopeStmt => "invalic local scope statement",
     }
 }
 

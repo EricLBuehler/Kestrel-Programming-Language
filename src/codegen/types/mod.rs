@@ -217,6 +217,15 @@ pub struct TraitSignature {
     pub name: String,
 }
 
+#[derive(Clone, Debug)]
+pub struct TemplateTraitSignature {
+    pub name: String,
+    pub methodname: Option<String>,
+    pub namespacename: Option<String>,
+    pub template_types: Vec<String>,
+    pub args: crate::parser::Args,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum DataMutablility{
     Immutable,

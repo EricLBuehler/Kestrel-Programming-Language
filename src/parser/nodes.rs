@@ -314,6 +314,18 @@ impl std::fmt::Display for EnumNode {
 }
 
 #[derive(Clone, Debug)]
+pub struct TraitNode{
+    pub traitname: String,
+    pub functions: Vec<crate::codegen::types::TemplateTraitSignature>,
+}
+
+impl std::fmt::Display for TraitNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Trait '{}'", self.traitname)
+    }    
+}
+
+#[derive(Clone, Debug)]
 pub struct NodeData {
     pub binary: Option<BinaryNode>,
     pub num: Option<NumNode>,
@@ -335,4 +347,5 @@ pub struct NodeData {
     pub ifn: Option<IfNode>,
     pub loopn: Option<LoopNode>,
     pub enumn: Option<EnumNode>,
+    pub traitn: Option<TraitNode>,
 }

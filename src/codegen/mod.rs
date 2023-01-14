@@ -2510,6 +2510,9 @@ impl<'ctx> CodeGen<'ctx> {
             parser::NodeType::ENUM => {
                 self.build_enum(node)
             }
+            parser::NodeType::TRAIT => {
+                unimplemented!()
+            }
         }
     }
 
@@ -2529,9 +2532,19 @@ impl<'ctx> CodeGen<'ctx> {
             if  !infn && node.tp != parser::NodeType::FUNC &&
                 node.tp != parser::NodeType::STRUCT &&
                 node.tp != parser::NodeType::IMPL &&
-                node.tp != parser::NodeType::ENUM {
+                node.tp != parser::NodeType::ENUM &&
+                node.tp != parser::NodeType::TRAIT {
                 let fmt: String = format!("Invalid global scope statement.");
                 errors::raise_error(&fmt, errors::ErrorType::GlobalScopeStmt, &node.pos, self.info);
+            }
+
+            if  infn && (node.tp == parser::NodeType::FUNC ||
+                node.tp == parser::NodeType::STRUCT ||
+                node.tp == parser::NodeType::IMPL ||
+                node.tp == parser::NodeType::ENUM ||
+                node.tp == parser::NodeType::TRAIT) {
+                let fmt: String = format!("Invalid local scope statement.");
+                errors::raise_error(&fmt, errors::ErrorType::LocalScopeStmt, &node.pos, self.info);
             }
 
             retv = self.compile_expr(node, false, false);

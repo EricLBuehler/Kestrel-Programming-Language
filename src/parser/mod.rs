@@ -56,6 +56,7 @@ pub enum NodeType {
     CONTINUE,
     WHILE,
     ENUM,
+    TRAIT,
 }
 
 #[derive(Clone, Debug)]
@@ -129,6 +130,7 @@ impl std::fmt::Display for Node {
             NodeType::BREAK |
             NodeType::CONTINUE => Ok(()),
             NodeType::ENUM => write!(f, "{}", self.data.enumn.as_ref().unwrap() ),
+            NodeType::TRAIT => write!(f, "{}", self.data.traitn.as_ref().unwrap() ),
         }
     }    
 }
@@ -387,6 +389,9 @@ impl<'life> Parser<'life> {
         else if self.current.data == String::from("enum") {
             return self.parse_enum();
         }
+        else if self.current.data == String::from("trait") {
+            return self.parse_trait();
+        }
         
         self.raise_error("Invalid keyword.", ErrorType::InvalidTok);
     }
@@ -473,6 +478,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
 
         let pos = Position {
@@ -550,6 +556,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
     
         let n: Node = self.create_node(NodeType::BINARY, nodedat, pos);
@@ -583,6 +590,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
 
         let pos = Position {
@@ -670,6 +678,7 @@ impl<'life> Parser<'life> {
                 ifn: None,
                 loopn: None,
                 enumn: None,
+                traitn: None,
             };
         
             n = self.create_node(NodeType::INITSTRUCT, nodedat, pos);
@@ -718,6 +727,7 @@ impl<'life> Parser<'life> {
                     ifn: None,
                     loopn: None,
                     enumn: None,
+                    traitn: None,
                 };
             
                 n = self.create_node(NodeType::ATTRASSIGN, nodedat, pos.clone());
@@ -751,6 +761,7 @@ impl<'life> Parser<'life> {
                     ifn: None,
                     loopn: None,
                     enumn: None,
+                    traitn: None,
                 };
             
                 n = self.create_node(NodeType::ATTR, nodedat, pos.clone());
@@ -794,6 +805,7 @@ impl<'life> Parser<'life> {
                 ifn: None,
                 loopn: None,
                 enumn: None,
+                traitn: None,
             };
         
             n = self.create_node(NodeType::NAMESPACE, nodedat, pos.clone());
@@ -843,6 +855,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
     
         let n: Node = self.create_node(NodeType::ASSIGN, nodedat, pos);
@@ -876,7 +889,7 @@ impl<'life> Parser<'life> {
 
         let mut args: Vec<Node> = Vec::new();
 
-        while !self.current_is_type(TokenType::RPAREN) {            
+        while !self.current_is_type(TokenType::RPAREN) && !self.current_is_type(TokenType::EOF) {            
             self.advance();
             
             self.skip_newline();
@@ -923,6 +936,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
     
         let n: Node = self.create_node(NodeType::CALL, nodedat, pos);
@@ -955,6 +969,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
 
         let pos = Position {
@@ -994,6 +1009,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
 
         let pos = Position {
@@ -1033,6 +1049,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
 
         let pos = Position {
@@ -1072,6 +1089,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
 
         let pos = Position {
@@ -1111,6 +1129,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
 
         let pos = Position {
@@ -1150,6 +1169,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
 
         let pos = Position {
@@ -1189,6 +1209,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
 
         let pos = Position {
@@ -1228,6 +1249,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
 
         let pos = Position {
@@ -1267,6 +1289,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
 
         let pos = Position {
@@ -1319,6 +1342,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
     
         let n: Node = self.create_node(NodeType::AS, nodedat, pos);
@@ -1352,6 +1376,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
 
         let pos = Position {
@@ -1391,6 +1416,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
 
         let pos = Position {
@@ -1439,6 +1465,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
 
         self.backadvance();
@@ -1494,6 +1521,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
     
         let n: Node = self.create_node(NodeType::UNARY, nodedat, pos);
@@ -1533,6 +1561,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
     
         let n: Node = self.create_node(NodeType::STRING, nodedat, pos);
@@ -1574,6 +1603,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
 
         let pos = Position {
@@ -1641,6 +1671,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
     
         let n: Node = self.create_node(NodeType::ARRAY, nodedat, pos);
@@ -1721,6 +1752,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
         
         if nodedat.letn.as_ref().unwrap().expr.is_some() {
@@ -1924,7 +1956,7 @@ impl<'life> Parser<'life> {
             args: Vec::new(),
             rettp: Vec::new(),
         };
-        while !self.current_is_type(TokenType::RPAREN) {
+        while !self.current_is_type(TokenType::RPAREN) && !self.current_is_type(TokenType::EOF) {
             let mut mutability: DataMutablility = DataMutablility::Immutable;
             if self.current_is_type(TokenType::KEYWORD) && self.current.data == "mut" {
                 self.advance();
@@ -2041,6 +2073,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
 
         let n: Node = self.create_node(NodeType::FUNC, nodedat, pos);
@@ -2091,6 +2124,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
 
         if nodedat.ret.as_ref().unwrap().expr.is_some() {
@@ -2137,7 +2171,7 @@ impl<'life> Parser<'life> {
         
         self.skip_newline();
 
-        while !self.current_is_type(TokenType::RCURLY) {
+        while !self.current_is_type(TokenType::RCURLY) && !self.current_is_type(TokenType::EOF) {
             if self.current_is_type(TokenType::RCURLY) {
                 break;
             }
@@ -2213,6 +2247,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
 
     
@@ -2304,6 +2339,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
 
     
@@ -2432,6 +2468,7 @@ impl<'life> Parser<'life> {
             ifn: Some(ifn),
             loopn: None,
             enumn: None,
+            traitn: None,
         };
 
     
@@ -2493,6 +2530,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: Some(loopn),
             enumn: None,
+            traitn: None,
         };
 
     
@@ -2527,6 +2565,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
 
         let pos = Position {
@@ -2568,6 +2607,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: None,
+            traitn: None,
         };
 
         let pos = Position {
@@ -2640,6 +2680,7 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: Some(loopn),
             enumn: None,
+            traitn: None,
         };
 
     
@@ -2724,12 +2765,236 @@ impl<'life> Parser<'life> {
             ifn: None,
             loopn: None,
             enumn: Some(enumn),
+            traitn: None,
         };
 
     
         let n: Node = self.create_node(NodeType::ENUM, nodedat, pos);
 
         return n;        
+    }
+
+    fn parse_trait(&mut self) -> Node {
+        let mut pos = Position {
+            line: self.current.line,
+            startcol: self.current.startcol,
+            endcol: 0,
+        };
+
+        self.advance();
+    
+        if !self.current_is_type(TokenType::IDENTIFIER) {
+            self.raise_error("Expected name.", ErrorType::InvalidTok);
+        }
+
+        let traitname = self.current.data.clone();
+
+        pos.endcol = self.current.endcol;
+
+        self.advance();
+    
+        if !self.current_is_type(TokenType::LCURLY) {
+            self.raise_error("Expected left curly bracket.", ErrorType::InvalidTok);
+        }
+        
+        self.advance();
+
+        self.skip_newline();
+
+        let mut functions: Vec<types::TemplateTraitSignature> = Vec::new();
+
+        while !self.current_is_type(TokenType::RCURLY) && !self.current_is_type(TokenType::EOF) {
+            if !self.current_is_type(TokenType::KEYWORD) && self.current.data == "fn" {
+                self.raise_error("Expected fn.", ErrorType::InvalidTok);
+            }
+
+
+            self.advance();
+
+            if !self.current_is_type(TokenType::IDENTIFIER) {
+                self.raise_error("Expected identifier.", ErrorType::InvalidTok);
+            }
+
+            let name: String = self.current.data.clone();
+            let mut methodname: Option<String> = None;
+            let mut namespacename: Option<String> = None;
+            let mut template_types: Vec<String> = Vec::new();
+
+            self.advance();
+
+            if self.current_is_type(TokenType::DOT) {
+                self.advance();
+                if !self.current_is_type(TokenType::IDENTIFIER) {
+                    self.raise_error("Expected identifier.", ErrorType::InvalidTok);
+                }
+                methodname = Some(self.current.data.clone());
+                self.advance();
+            }
+
+            if self.current_is_type(TokenType::DOUBLECOLON) {
+                self.advance();
+                if !self.current_is_type(TokenType::IDENTIFIER) {
+                    self.raise_error("Expected identifier.", ErrorType::InvalidTok);
+                }
+                namespacename = Some(self.current.data.clone());
+                self.advance();
+            }        
+
+            if self.current_is_type(TokenType::LT) {
+                self.advance();
+                while self.current_is_type(TokenType::IDENTIFIER) {
+                    template_types.push(self.current.data.clone());
+
+                    self.advance();
+
+                    if !self.current_is_type(TokenType::COMMA) && !self.current_is_type(TokenType::GT) {
+                        self.raise_error("Expected comma.", ErrorType::InvalidTok);
+                    }
+                    self.advance();
+
+                    if self.current_is_type(TokenType::GT) {
+                        self.advance();
+                        break;
+                    }
+                }
+            }
+
+            if !self.current_is_type(TokenType::LPAREN) {
+                self.raise_error("Expected left parenthesis.", ErrorType::InvalidTok);
+            }
+            
+            self.advance();
+
+            // Parse Arguments
+            let mut args: Args = Args {
+                name: Vec::new(),
+                args: Vec::new(),
+                rettp: Vec::new(),
+            };
+            while !self.current_is_type(TokenType::RPAREN) && !self.current_is_type(TokenType::EOF) {
+                let mut mutability: DataMutablility = DataMutablility::Immutable;
+                if self.current_is_type(TokenType::KEYWORD) && self.current.data == "mut" {
+                    self.advance();
+                    mutability = DataMutablility::Mutable;
+                }
+
+                if !self.current_is_type(TokenType::IDENTIFIER) {
+                    self.raise_error("Expected identifier.", ErrorType::InvalidTok);
+                }
+        
+                let name: String = self.current.data.clone();
+                
+                self.advance();
+
+                if !self.current_is_type(TokenType::COLON) {
+                    self.raise_error("Expected colon.", ErrorType::InvalidTok);
+                }
+
+                self.advance();
+
+                args.args.push(self.parse_type(mutability).1);
+                if !self.current_is_type(TokenType::COMMA) && !self.current_is_type(TokenType::RPAREN) {
+                    self.raise_error("Expected comma.", ErrorType::InvalidTok);
+                }
+                
+                args.name.push(name);
+
+                if self.current_is_type(TokenType::RPAREN) {
+                    break;
+                }
+
+                self.advance();
+
+            }
+
+            //
+
+
+
+            if !self.current_is_type(TokenType::RPAREN) {
+                self.raise_error("Expected right parenthesis.", ErrorType::InvalidTok);
+            }
+
+            self.advance();
+
+            if self.current_is_type(TokenType::SMALLARROW) {
+                self.advance();
+
+                args.rettp.push(self.parse_type(DataMutablility::Immutable).1);
+
+                self.backadvance();
+                
+                self.advance();
+            }
+            else {
+                args.rettp.push(Type {
+                    isfn: false,
+                    isarr: false,
+                    arrtp: None,
+                    arrlen: None,
+                    data: Some(String::from("void")),
+                    args: None,
+                    mutability: DataMutablility::Immutable,
+                });
+            }
+
+            functions.push(types::TemplateTraitSignature {
+                name,
+                namespacename,
+                methodname,
+                template_types,
+                args,
+            });
+
+            self.skip_newline();
+            
+        
+            if self.current_is_type(TokenType::RCURLY) {
+                break;
+            }
+        }
+
+        self.skip_newline();
+        
+        if !self.current_is_type(TokenType::RCURLY) {
+            self.raise_error("Expected right curly bracket.", ErrorType::InvalidTok);
+        }
+
+        self.advance();
+
+        let traitn: nodes::TraitNode = nodes::TraitNode{
+            traitname,
+            functions,
+        };
+    
+        let nodedat: nodes::NodeData = nodes::NodeData {
+            binary: None,
+            num: None,
+            letn: None,
+            identifier: None,
+            func: None,
+            assign: None,
+            call: None,
+            ret: None,
+            to: None,
+            unary: None,
+            st: None,
+            initst: None,
+            attr: None,
+            attrassign: None,
+            str: None,
+            arr: None,
+            impln: None,
+            ifn: None,
+            loopn: None,
+            enumn: None,
+            traitn: Some(traitn),
+        };
+
+    
+        let n: Node = self.create_node(NodeType::TRAIT, nodedat, pos);
+
+        return n;     
     }
 
 }
