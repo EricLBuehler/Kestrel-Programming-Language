@@ -44,11 +44,18 @@ pub enum InitializationStatus {
     Uninitialized,
 }
 
+#[derive(PartialEq, Clone)]
+pub enum TemplateFunctionInstance {
+    Unrelated,
+    Instance,
+    Namespace,
+}
+
 pub struct Namespaces<'ctx> {
     locals: Vec<std::collections::HashMap<String, (Option<inkwell::values::PointerValue<'ctx>>, types::DataType<'ctx>, types::DataMutablility, types::DataOwnership, parser::Position, InitializationStatus)>>,
     functions: std::collections::HashMap<String, (inkwell::values::FunctionValue<'ctx>, types::DataType<'ctx>, ForwardDeclarationType)>,
     structs: std::collections::HashMap<String, (types::DataType<'ctx>, Option<inkwell::types::AnyTypeEnum<'ctx>>, std::collections::HashMap<String, i32>, ForwardDeclarationType)>,
-    template_functions_sig: std::collections::HashMap<String, parser::Node>,
+    template_functions_sig: std::collections::HashMap<String, (parser::Node, TemplateFunctionInstance)>,
     template_functions: Vec<(String, types::DataType<'ctx>, inkwell::values::FunctionValue<'ctx>)>,
 }
 
@@ -606,15 +613,19 @@ impl<'ctx> CodeGen<'ctx> {
 
         if node.data.func.as_ref().unwrap().template_types.len() > 0 && template_types.is_none() {
             let mut name: String = node.data.func.as_ref().unwrap().name.clone();
+
+            let mut instance: TemplateFunctionInstance = TemplateFunctionInstance::Unrelated;
         
             if node.data.func.as_ref().unwrap().methodname.is_some() {
                 name += (String::from(".")+node.data.func.as_ref().unwrap().methodname.as_ref().unwrap().as_str()).as_str();
+                instance = TemplateFunctionInstance::Instance;
             }
             if node.data.func.as_ref().unwrap().namespacename.is_some() {
                 name += (String::from(".")+node.data.func.as_ref().unwrap().namespacename.as_ref().unwrap().as_str()).as_str();
+                instance = TemplateFunctionInstance::Namespace;
             }
             
-            self.namespaces.template_functions_sig.insert(name.to_owned(), node.clone());
+            self.namespaces.template_functions_sig.insert(name.to_owned(), (node.clone(), instance));
                 
             let data: types::Data = types::Data {
                 data: None,
@@ -968,11 +979,13 @@ impl<'ctx> CodeGen<'ctx> {
                     };
 
                     args.push(data.clone());
-                    args.push(types::Data {
-                        data: Some(self.builder.build_load(base.data.unwrap().into_pointer_value(), &base.tp.name)),
-                        tp: base.tp.clone(),
-                        owned: base.owned,
-                    });
+                    if method.isinstance {
+                        args.push(types::Data {
+                            data: Some(self.builder.build_load(base.data.unwrap().into_pointer_value(), &base.tp.name)),
+                            tp: base.tp.clone(),
+                            owned: base.owned,
+                        });
+                    }
 
                     tp_name = method.functp.name.clone();
                     
@@ -991,7 +1004,9 @@ impl<'ctx> CodeGen<'ctx> {
                     tp = Some(Self::get_type_from_data(self.types.clone(), &data.clone()));
 
                     args.push(data);
-                    args.push(base.clone());
+                    if method.isinstance {
+                        args.push(base.clone());
+                    }
                 }
             }
             else if self.namespaces.template_functions_sig.contains_key(&(base.tp.name.clone()+"."+node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().attr.to_owned().as_str()).to_owned()) {
@@ -1029,7 +1044,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         if  node.data.call.as_ref().unwrap().name.tp == parser::NodeType::IDENTIFIER &&
             self.namespaces.template_functions_sig.contains_key(&node.data.call.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name) {
-            let func: parser::Node = self.namespaces.template_functions_sig.get(&node.data.call.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().to_owned();
+            let func: parser::Node = self.namespaces.template_functions_sig.get(&node.data.call.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().0.to_owned();
             let mut fn_types: Vec<types::DataType> = Vec::new();
             let mut templates: std::collections::HashMap<String, types::DataType> = std::collections::HashMap::new();
             
@@ -1072,7 +1087,8 @@ impl<'ctx> CodeGen<'ctx> {
             let base: types::Data = self.compile_expr(&node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().name, false, true);
 
             if  self.namespaces.template_functions_sig.contains_key(&(base.tp.name.clone()+"."+node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().attr.to_owned().as_str()).to_owned()) {
-                let func: parser::Node = self.namespaces.template_functions_sig.get(&(base.tp.name.clone()+"."+node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().attr.to_owned().as_str()).to_owned()).unwrap().clone();
+                let func: parser::Node = self.namespaces.template_functions_sig.get(&(base.tp.name.clone()+"."+node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().attr.to_owned().as_str()).to_owned()).unwrap().0.to_owned();
+                let instance_meth: TemplateFunctionInstance = self.namespaces.template_functions_sig.get(&(base.tp.name.clone()+"."+node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().attr.to_owned().as_str()).to_owned()).unwrap().1.to_owned();
                 
                 let mut fn_types: Vec<types::DataType> = Vec::new();
                 let mut templates: std::collections::HashMap<String, types::DataType> = std::collections::HashMap::new();
@@ -1086,7 +1102,16 @@ impl<'ctx> CodeGen<'ctx> {
                         }
                         fn_types.push(templates.get(&arg.data.as_ref().unwrap().clone()).unwrap().to_owned());
                     }
-                    else if idx == 0 && !self.datatypes.contains_key(&arg.data.as_ref().unwrap().clone())  {
+                    else if !arg.isarr &&
+                            !arg.isfn &&
+                            idx == 0 &&
+                            !self.datatypes.contains_key(&arg.data.as_ref().unwrap().clone()) && instance_meth != TemplateFunctionInstance::Instance {
+                        if !templates.contains_key(&arg.data.as_ref().unwrap().clone()) {
+                            templates.insert(arg.data.as_ref().unwrap().clone(), args.get(0).unwrap().tp.clone());
+                        }
+                        fn_types.push(templates.get(&arg.data.as_ref().unwrap().clone()).unwrap().to_owned());
+                    }
+                    else if idx == 0 && !self.datatypes.contains_key(&arg.data.as_ref().unwrap().clone()) && instance_meth == TemplateFunctionInstance::Instance  {
                         let fmt: String = format!("First argument for template method may not be template.");
                         errors::raise_error(&fmt, errors::ErrorType::MethodTemplateFunctionHasFirstTemplate, &node.pos, self.info);
                     }
@@ -1116,12 +1141,13 @@ impl<'ctx> CodeGen<'ctx> {
                 args.insert(0usize, callable.clone());
                 tp = Some(Self::get_type_from_data(self.types.clone(), &callable));
                 self.builder.position_at_end(self.enclosing_block.unwrap());
-                
-                args.insert(1usize, types::Data {
-                    data: Some(self.builder.build_load(base.data.unwrap().into_pointer_value(), &base.tp.name)),
-                    tp: base.tp.clone(),
-                    owned: base.owned,
-                });
+                if instance_meth == TemplateFunctionInstance::Instance {
+                    args.insert(1usize, types::Data {
+                        data: Some(self.builder.build_load(base.data.unwrap().into_pointer_value(), &base.tp.name)),
+                        tp: base.tp.clone(),
+                        owned: base.owned,
+                    });
+                }
             }
         }
 
@@ -2490,15 +2516,19 @@ impl<'ctx> CodeGen<'ctx> {
 
                 if node.data.func.as_ref().unwrap().template_types.len() > 0 {
                     let mut name: String = node.data.func.as_ref().unwrap().name.clone();
+
+                    let mut instance: TemplateFunctionInstance = TemplateFunctionInstance::Unrelated;
                 
                     if node.data.func.as_ref().unwrap().methodname.is_some() {
                         name += (String::from(".")+node.data.func.as_ref().unwrap().methodname.as_ref().unwrap().as_str()).as_str();
+                        instance = TemplateFunctionInstance::Instance;
                     }
                     if node.data.func.as_ref().unwrap().namespacename.is_some() {
                         name += (String::from(".")+node.data.func.as_ref().unwrap().namespacename.as_ref().unwrap().as_str()).as_str();
+                        instance = TemplateFunctionInstance::Namespace;
                     }
                     
-                    self.namespaces.template_functions_sig.insert(name.to_owned(), node.clone());
+                    self.namespaces.template_functions_sig.insert(name.to_owned(), (node.clone(), instance));
                     continue;
                 }
 

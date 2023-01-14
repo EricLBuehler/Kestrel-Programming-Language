@@ -2,11 +2,11 @@ struct s {
 
 }
 
-fn s.f<T>(a: s, b: T){
+fn s::f<T>(a: T, b: T){
 
 }
 
 fn main() {
     let st = s{}
-    st.f(1)
+    st.f(1,2)
 }

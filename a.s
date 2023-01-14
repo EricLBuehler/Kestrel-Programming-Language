@@ -7,6 +7,7 @@ _main:                                  # @_main
 # %bb.0:                                # %entry
 	subq	$24, %rsp
 	movl	$1, %edi
+	movl	$2, %esi
 	callq	f
 	addq	$24, %rsp
 	retq
@@ -18,7 +19,8 @@ _main:                                  # @_main
 	.type	f,@function
 f:                                      # @f
 # %bb.0:                                # %entry
-	movl	%edi, -12(%rsp)
+	movl	%edi, -4(%rsp)
+	movl	%esi, -8(%rsp)
 	retq
 .Lfunc_end1:
 	.size	f, .Lfunc_end1-f

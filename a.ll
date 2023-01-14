@@ -8,15 +8,15 @@ entry:
   %s = alloca {}, !dbg !8
   %st = alloca {}, !dbg !8
   store {} zeroinitializer, {}* %st, !dbg !8
-  call void @f({} undef, i32 1), !dbg !10
+  call void @f(i32 1, i32 2), !dbg !10
   ret void, !dbg !10
 }
 
 ; Function Attrs: noinline nounwind optnone
-define void @f({} %0, i32 %1) local_unnamed_addr #0 !dbg !12 {
+define void @f(i32 %0, i32 %1) local_unnamed_addr #0 !dbg !12 {
 entry:
-  %a = alloca {}, !dbg !10
-  store {} zeroinitializer, {}* %a, !dbg !10
+  %a = alloca i32, !dbg !10
+  store i32 %0, i32* %a, !dbg !10
   %b = alloca i32, !dbg !10
   store i32 %1, i32* %b, !dbg !10
   ret void, !dbg !10
@@ -48,6 +48,5 @@ attributes #0 = { noinline nounwind optnone }
 !11 = distinct !DILexicalBlock(scope: !12, file: !2, line: 4)
 !12 = distinct !DISubprogram(name: "f", linkageName: "f", scope: null, file: !2, line: 4, type: !13, scopeLine: 4, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !13 = !DISubroutineType(flags: DIFlagPublic, types: !14)
-!14 = !{!7, !15, !16}
-!15 = !DIBasicType(name: "{}", size: 16, flags: DIFlagPublic)
-!16 = !DIBasicType(name: "i32", size: 16, flags: DIFlagPublic)
+!14 = !{!7, !15, !15}
+!15 = !DIBasicType(name: "i32", size: 16, flags: DIFlagPublic)
