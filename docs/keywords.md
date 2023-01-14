@@ -42,6 +42,18 @@ fn struct::name(parameter: <mutability> type, ...) {
 }
 ```
 
+Functions may be templated. Specify template types using angle brackets after the name. The template types may be used like any other type in the function signature.
+
+```
+fn name<T>(parameter: <mutability> type, ...) -> T {
+
+}
+fn name<T>(parameter: <mutability> type, ...) {
+
+}
+```
+
+
 See more documentation on functions [here](functions.md).
 
 
