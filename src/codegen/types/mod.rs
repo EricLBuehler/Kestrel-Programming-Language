@@ -61,6 +61,7 @@ pub enum TraitType {
     Lt,
     Ge,
     Le,
+    User,
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -192,6 +193,7 @@ impl std::fmt::Display for TraitType {
             TraitType::Le => write!(f, "Le"),
             TraitType::Ge => write!(f, "Ge"),
             TraitType::Ne => write!(f, "Ne"),
+            TraitType::User => write!(f, "User"),
         }
     }    
 }

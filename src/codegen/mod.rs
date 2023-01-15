@@ -285,6 +285,8 @@ impl<'ctx> CodeGen<'ctx> {
             return (tp.clone(), inkwell::types::AnyTypeEnum::ArrayType(arrtp));
         }
         else if arg.isdyn {
+            let traitnm: String = arg.data.as_ref().unwrap().to_owned();
+
             unimplemented!();
         }
         else {
@@ -1763,6 +1765,10 @@ impl<'ctx> CodeGen<'ctx> {
                 let fmt: String = format!("Cannot implement builtin trait '{}'.", traittp.unwrap().to_string());
                 errors::raise_error(&fmt, errors::ErrorType::CannotImplementBuiltinTrait, &node.pos, self.info);
             }
+            
+            let mut tp: types::Type = self.types.get(structnm).unwrap().clone();
+            tp.traits.insert(traitnm.to_owned(), builtin_types::create_empty_trait());  
+            self.types.insert(structnm.to_owned(), tp);
 
             for var in traitsig.vars.as_ref().unwrap() {
                 if !self.namespaces.structs.get(structnm).unwrap().0.names.as_ref().unwrap().contains(var.0) {

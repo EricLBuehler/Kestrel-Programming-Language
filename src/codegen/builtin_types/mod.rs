@@ -57,6 +57,16 @@ pub fn create_trait_ink<'a>(ink: inkwell::values::PointerValue<'a>, nargs: usize
     }
 }
 
+pub fn create_empty_trait<'a>() -> Trait<'a>{
+    Trait {
+        nargs: 0usize,
+        function: None,
+        inkfunc: None,
+        traittype: TraitType::User,
+        rettp: None,
+    }
+}
+
 pub fn int_issigned(val: DataType) -> bool {
     match val.tp {
         BasicDataType::I8 |
