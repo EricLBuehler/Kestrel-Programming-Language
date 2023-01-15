@@ -288,8 +288,8 @@ impl<'ctx> CodeGen<'ctx> {
         else if arg.isdyn {
             let traitnm: String = arg.data.as_ref().unwrap().to_owned();
             let tp: types::DataType = types::new_dyn_datatype(traitnm, arg.mutability);
-            println!("{:?}", tp);
-            unimplemented!();
+            
+            return (tp, inkwell::types::AnyTypeEnum::VoidType(*types.voidtp));
         }
         else {
             let tp: Option<&types::DataType> = datatypes.get(arg.data.as_ref().unwrap());
