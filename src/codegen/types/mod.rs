@@ -103,7 +103,14 @@ impl std::fmt::Display for BasicDataType {
 
 impl<'a> std::fmt::Display for DataType<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.name)
+        let prefix: String;
+        if self.is_dyn {
+            prefix = String::from("dyn ");
+        }
+        else {
+            prefix = String::from("");
+        }
+        write!(f, "{}{}", prefix, self.name)
     }    
 }
 
