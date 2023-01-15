@@ -284,6 +284,9 @@ impl<'ctx> CodeGen<'ctx> {
             tp.arrtp = Some(arrtp);
             return (tp.clone(), inkwell::types::AnyTypeEnum::ArrayType(arrtp));
         }
+        else if arg.isdyn {
+            unimplemented!();
+        }
         else {
             let tp: Option<&types::DataType> = datatypes.get(arg.data.as_ref().unwrap());
             if tp.is_none() {
@@ -1079,7 +1082,8 @@ impl<'ctx> CodeGen<'ctx> {
             
             for (data, arg) in izip![&args, &func.data.func.as_ref().unwrap().args.args] {
                 if  !arg.isarr &&
-                    !arg.isfn && !self.datatypes.contains_key(&arg.data.as_ref().unwrap().clone()) {
+                    !arg.isfn &&
+                    !arg.isdyn && !self.datatypes.contains_key(&arg.data.as_ref().unwrap().clone()) {
                     if !templates.contains_key(&arg.data.as_ref().unwrap().clone()) {
                         if !func.data.func.as_ref().unwrap().template_types.contains(&arg.data.as_ref().unwrap().clone()) {
                             let fmt: String = format!("Unknown type '{}'.", arg.data.as_ref().unwrap().clone());
@@ -1098,6 +1102,7 @@ impl<'ctx> CodeGen<'ctx> {
             let rettp_tp: types::DataType;
             if  !rettp.isarr &&
                 !rettp.isfn &&
+                !rettp.isdyn &&
                 !self.datatypes.contains_key(&rettp.data.as_ref().unwrap().clone()) {
                 if !templates.contains_key(&rettp.data.as_ref().unwrap().clone()) {
                     let fmt: String = format!("Unknown type '{}'.", rettp.data.as_ref().unwrap().clone());
@@ -1144,7 +1149,8 @@ impl<'ctx> CodeGen<'ctx> {
                 let mut idx: i32 = 0;
                 for arg in &func.data.func.as_ref().unwrap().args.args {
                     if  !arg.isarr &&
-                        !arg.isfn && !self.datatypes.contains_key(&arg.data.as_ref().unwrap().clone()) && idx > 0 {
+                        !arg.isfn &&
+                        !arg.isdyn && !self.datatypes.contains_key(&arg.data.as_ref().unwrap().clone()) && idx > 0 {
                         if !templates.contains_key(&arg.data.as_ref().unwrap().clone()) {
                             if !func.data.func.as_ref().unwrap().template_types.contains(&arg.data.as_ref().unwrap().clone()) {
                                 let fmt: String = format!("Unknown type '{}'.", arg.data.as_ref().unwrap().clone());
@@ -1156,6 +1162,7 @@ impl<'ctx> CodeGen<'ctx> {
                     }
                     else if !arg.isarr &&
                             !arg.isfn &&
+                            !arg.isdyn &&
                             idx == 0 &&
                             !self.datatypes.contains_key(&arg.data.as_ref().unwrap().clone()) && instance_meth != TemplateFunctionInstance::Instance {
                         if !templates.contains_key(&arg.data.as_ref().unwrap().clone()) {
@@ -1181,6 +1188,7 @@ impl<'ctx> CodeGen<'ctx> {
                 let rettp_tp: types::DataType;
                 if  !rettp.isarr &&
                     !rettp.isfn &&
+                    !rettp.isdyn &&
                     !self.datatypes.contains_key(&rettp.data.as_ref().unwrap().clone()) {
                     if !templates.contains_key(&rettp.data.as_ref().unwrap().clone()) {
                         let fmt: String = format!("Unknown type '{}'.", rettp.data.as_ref().unwrap().clone());
@@ -1819,6 +1827,7 @@ impl<'ctx> CodeGen<'ctx> {
                     for arg in &sig.args.args {
                         if  !arg.isarr &&
                             !arg.isfn &&
+                            !arg.isdyn &&
                             !self.datatypes.contains_key(arg.data.as_ref().unwrap()) &&
                             sig.template_types.contains(arg.data.as_ref().unwrap()) &&
                             arg.data.as_ref().unwrap() == template {
@@ -1863,6 +1872,7 @@ impl<'ctx> CodeGen<'ctx> {
 
                 if  !sig.args.rettp.first().unwrap().isarr &&
                     !sig.args.rettp.first().unwrap().isfn &&
+                    !sig.args.rettp.first().unwrap().isdyn &&
                     !self.datatypes.contains_key(sig.args.rettp.first().unwrap().data.as_ref().unwrap()) &&
                     sig.template_types.contains(sig.args.rettp.first().unwrap().data.as_ref().unwrap()) {
                     let tp: types::DataType = functp.types.get(template_indices.get(sig.args.rettp.first().unwrap().data.as_ref().unwrap()).unwrap().get(0).unwrap().to_owned()).unwrap().to_owned();
