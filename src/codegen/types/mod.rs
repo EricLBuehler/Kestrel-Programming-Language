@@ -217,6 +217,7 @@ pub struct TraitSignature {
     pub name: String,
     pub nargs: Option<usize>,
     pub trait_sig: Option<Vec<TemplateTraitSignature>>,
+    pub vars: Option<std::collections::HashMap<String, crate::parser::Type>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

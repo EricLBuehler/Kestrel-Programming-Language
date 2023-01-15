@@ -317,6 +317,7 @@ impl std::fmt::Display for EnumNode {
 pub struct TraitNode{
     pub traitname: String,
     pub functions: Vec<crate::codegen::types::TemplateTraitSignature>,
+    pub vars: std::collections::HashMap<String, crate::parser::Type>,
 }
 
 impl std::fmt::Display for TraitNode {

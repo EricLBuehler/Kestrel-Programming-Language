@@ -165,3 +165,14 @@ enum {
 
 Each line contains a name for a variant of the ```enum```.
 Access each variant using the [```::```](symbols.md#namespace-attribute-access--assignment).
+
+## ```trait```
+The ```trait``` keyword creates a new trait.
+A trait defines functions (may be template), and may define required members for each struct.
+
+```
+trait t{
+    var: tp
+    fn name()
+}
+```

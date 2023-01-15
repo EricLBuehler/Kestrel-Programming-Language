@@ -1739,6 +1739,18 @@ impl<'ctx> CodeGen<'ctx> {
                 let fmt: String = format!("Cannot implement builtin trait '{}'.", traittp.unwrap().to_string());
                 errors::raise_error(&fmt, errors::ErrorType::CannotImplementBuiltinTrait, &node.pos, self.info);
             }
+
+            for var in &traitsig.vars.unwrap() {
+                if !self.namespaces.structs.get(structnm).unwrap().0.names.as_ref().unwrap().contains(var.0) {
+                    let fmt: String = format!("Struct '{}' does not implement required member '{}'.", structnm, var.0);
+                    errors::raise_error(&fmt, errors::ErrorType::CannotImplementBuiltinTrait, &node.pos, self.info);                    
+                }
+                let idx = self.namespaces.structs.get(structnm).unwrap().0.names.as_ref().unwrap().iter().position(|x| x==var.0).unwrap();
+                if self.namespaces.structs.get(structnm).unwrap().0.types.get(idx).unwrap() != &Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, var.1, node).0 {
+                    let fmt: String = format!("Struct '{}' does not implement required member '{}' of type '{}'.", structnm, var.0, self.namespaces.structs.get(structnm).unwrap().0.types.get(idx).unwrap());
+                    errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);     
+                }
+            }
             
             if node.data.impln.as_ref().unwrap().functions.len() != traitsig.trait_sig.as_ref().unwrap().len() {
                 let fmt: String = format!("Trait '{}' expected {} functions.", traitnm.to_string(), traitsig.trait_sig.unwrap().len());
@@ -2333,6 +2345,7 @@ impl<'ctx> CodeGen<'ctx> {
     fn build_trait(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         self.traits.insert(node.data.traitn.as_ref().unwrap().traitname.clone(), types::TraitSignature {
                 nargs: None, trait_sig: Some(node.data.traitn.as_ref().unwrap().functions.clone()), name: node.data.traitn.as_ref().unwrap().traitname.clone(), traittp: types::TraitMetatype::User,
+                vars: Some(node.data.traitn.as_ref().unwrap().vars.clone()),
             });
 
         let data: types::Data = types::Data {

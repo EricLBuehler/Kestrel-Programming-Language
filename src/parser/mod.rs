@@ -2814,8 +2814,32 @@ impl<'life> Parser<'life> {
         self.skip_newline();
 
         let mut functions: Vec<types::TemplateTraitSignature> = Vec::new();
+        let mut vars: std::collections::HashMap<String, Type> = std::collections::HashMap::new();
 
         while !self.current_is_type(TokenType::RCURLY) && !self.current_is_type(TokenType::EOF) {
+            if self.current_is_type(TokenType::IDENTIFIER) {
+                let name: String = self.current.data.clone();
+
+                self.advance();
+    
+                if !self.current_is_type(TokenType::COLON) {
+                    self.raise_error("Expected colon.", ErrorType::InvalidTok);
+                }
+
+                self.advance();
+
+                let tp: Type = self.parse_type(DataMutablility::Immutable).1;
+
+                vars.insert(name, tp);
+
+                self.skip_newline();
+                
+                if self.current_is_type(TokenType::RCURLY) {
+                    break;
+                }
+                continue;
+            }
+
             if !self.current_is_type(TokenType::KEYWORD) && self.current.data == "fn" {
                 self.raise_error("Expected fn.", ErrorType::InvalidStatement);
             }
@@ -2936,6 +2960,7 @@ impl<'life> Parser<'life> {
         let traitn: nodes::TraitNode = nodes::TraitNode{
             traitname,
             functions,
+            vars,
         };
     
         let nodedat: nodes::NodeData = nodes::NodeData {

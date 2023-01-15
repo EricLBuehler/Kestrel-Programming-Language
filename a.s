@@ -6,11 +6,14 @@
 _main:                                  # @_main
 .Lfunc_begin0:
 	.file	1 "./program.ke"
-	.loc	1 14 0                  # program.ke:14:0
+	.loc	1 15 0                  # program.ke:15:0
 	.cfi_sections .debug_frame
 	.cfi_startproc
 # %bb.0:                                # %entry
-	.loc	1 14 0 prologue_end     # program.ke:14:0
+	.loc	1 15 0 prologue_end     # program.ke:15:0
+	movl	$10, -16(%rsp)
+	movl	-16(%rsp), %eax
+	movl	%eax, -8(%rsp)
 	retq
 .Ltmp0:
 .Lfunc_end0:
@@ -22,10 +25,10 @@ _main:                                  # @_main
 	.type	s.func,@function
 s.func:                                 # @s.func
 .Lfunc_begin1:
-	.loc	1 9 0                   # program.ke:9:0
+	.loc	1 10 0                  # program.ke:10:0
 	.cfi_startproc
 # %bb.0:                                # %entry
-	.loc	1 9 4 prologue_end      # program.ke:9:4
+	.loc	1 10 4 prologue_end     # program.ke:10:4
 	movq	%rdi, -8(%rsp)
 	movl	%esi, -12(%rsp)
 	retq
@@ -150,7 +153,7 @@ main:                                   # @main
 	.long	.Linfo_string3          # DW_AT_linkage_name
 	.long	.Linfo_string4          # DW_AT_name
 	.byte	1                       # DW_AT_decl_file
-	.byte	14                      # DW_AT_decl_line
+	.byte	15                      # DW_AT_decl_line
 	.long	102                     # DW_AT_type
 	.byte	1                       # DW_AT_accessibility
                                         # DW_ACCESS_public
@@ -162,7 +165,7 @@ main:                                   # @main
 	.long	.Linfo_string6          # DW_AT_linkage_name
 	.long	.Linfo_string6          # DW_AT_name
 	.byte	1                       # DW_AT_decl_file
-	.byte	9                       # DW_AT_decl_line
+	.byte	10                      # DW_AT_decl_line
 	.long	102                     # DW_AT_type
 	.byte	1                       # DW_AT_accessibility
                                         # DW_ACCESS_public

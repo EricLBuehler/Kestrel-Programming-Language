@@ -1,8 +1,9 @@
 struct s {
-
+    x: u32,
 }
 
 trait t {
+    x: u32
     fn func<T>(T, i32)
 }
 
@@ -13,5 +14,5 @@ impl t for s {
 }
 
 fn main() {
-    let st = s{}
+    let st = s{x = 10u32}
 }
