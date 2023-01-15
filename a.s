@@ -28,9 +28,9 @@ s.func:                                 # @s.func
 	.loc	1 10 0                  # program.ke:10:0
 	.cfi_startproc
 # %bb.0:                                # %entry
+                                        # kill: killed $esi
+                                        # kill: killed $rdi
 	.loc	1 10 4 prologue_end     # program.ke:10:4
-	movq	%rdi, -8(%rsp)
-	movl	%esi, -12(%rsp)
 	retq
 .Ltmp1:
 .Lfunc_end1:

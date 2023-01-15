@@ -458,6 +458,15 @@ impl<'ctx> CodeGen<'ctx> {
             errors::show_warning(errors::WarningType::ExpectedSnakeCase, vec![String::from(""), name.to_snake_case()], vec![String::from("Expected snake case"), String::from("Convert to this: ")], &node.pos, self.info)
         }
 
+        if name.get(0..1).unwrap() == "_" {
+            let data: types::Data = types::Data {
+                data: None,
+                tp: self.datatypes.get(&types::BasicDataType::Void.to_string()).unwrap().clone(),
+                owned: true,
+            };
+            return data;
+        }
+
         if self.namespaces.locals.last().unwrap().get(&name).is_some() {
             let fmt: String = format!("Name '{}' is already defined in namespace.", &name);
             let here: String = format!("'{}' defined here.", name);
@@ -869,6 +878,9 @@ impl<'ctx> CodeGen<'ctx> {
         let mut idx: u32 = 0;
         let mut idx_mut: usize = 0;
         for (name, tp) in std::iter::zip(&args.name, &datatypes) { 
+            if name.get(0..1).unwrap() == "_" {
+                continue;
+            }
             let mut argv: Option<inkwell::values::BasicValueEnum> = None;
             if *tp != types::BasicDataType::Void {
                 argv = func.get_nth_param(idx);

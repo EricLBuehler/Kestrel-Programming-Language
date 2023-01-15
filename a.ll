@@ -17,10 +17,6 @@ entry:
 ; Function Attrs: noinline nounwind optnone
 define void @s.func(i64 %0, i32 %1) local_unnamed_addr #0 !dbg !10 {
 entry:
-  %a = alloca i64, !dbg !15
-  store i64 %0, i64* %a, !dbg !15
-  %b = alloca i32, !dbg !15
-  store i32 %1, i32* %b, !dbg !15
   ret void, !dbg !15
 }
 

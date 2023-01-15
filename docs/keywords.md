@@ -1,7 +1,7 @@
 # Keywords
 
 ## ```let```
-The ```let``` keyword defines a variable.
+The ```let``` keyword defines a variable. To indicate that the value is to be discarded (no stack allocation), prefix the name with ```_``` (similar to ```Rust```).
 
 ```
 let <mutability> name: type = value
@@ -9,7 +9,7 @@ let <mutability> name: type = value
 
 
 ## ```fn```
-The ```fn``` keyword defines a function. If no ```return``` statement is executed, the last expression will be returned. Return type specification is optional for ```void``` type.
+The ```fn``` keyword defines a function. If no ```return``` statement is executed, the last expression will be returned. Return type specification is optional for ```void``` type. To indicate that an argument is to be discarded (no stack allocation), prefix the name with ```_``` (similar to ```Rust```).
 
 ```
 fn name(parameter: <mutability> type, ...) -> tp {
