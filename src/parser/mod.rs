@@ -77,6 +77,7 @@ pub struct Position{
 pub struct Type {
     pub isfn: bool,
     pub isarr: bool,
+    pub isdyn: bool,
     pub arrtp: Option<Box<Type>>,
     pub arrlen: Option<Vec<String>>,
     pub data: Option<String>,
@@ -1765,6 +1766,26 @@ impl<'life> Parser<'life> {
     }
 
     fn parse_type(&mut self, mutability: DataMutablility) -> (usize, Type){
+        if self.current_is_type(TokenType::KEYWORD) && self.current.data == "dyn" {
+            self.advance();
+            if !self.current_is_type(TokenType::IDENTIFIER) {
+                self.raise_error("Expected identifier.", ErrorType::InvalidTok);
+            }
+            let end: usize = self.current.endcol;
+            let name: String = self.current.data.to_owned();
+            self.advance();
+            return (end, Type {
+                isfn: false,
+                isarr: false,
+                isdyn: true,
+                arrtp: None,
+                arrlen: None,
+                data: Some(name),
+                args: None,
+                mutability,
+            });
+        }
+
         if !self.current_is_type(TokenType::IDENTIFIER) {
             if !self.current_is_type(TokenType::KEYWORD) || (self.current_is_type(TokenType::IDENTIFIER) && self.current.data != "fn") {
                 self.raise_error("Expected identifier.", ErrorType::InvalidTok);
@@ -1813,6 +1834,7 @@ impl<'life> Parser<'life> {
                 args_.rettp.push(Type {
                     isfn: false,
                     isarr: false,
+                    isdyn: false,
                     arrtp: None,
                     arrlen: None,
                     data: Some(String::from("void")),
@@ -1824,6 +1846,7 @@ impl<'life> Parser<'life> {
             return (end, Type {
                 isfn: true,
                 isarr: false,
+                isdyn: false,
                 arrtp: None,
                 arrlen: None,
                 data: None,
@@ -1835,6 +1858,7 @@ impl<'life> Parser<'life> {
             let basetp: Type = Type {
                 isfn: false,
                 isarr: false,
+                isdyn: false,
                 arrtp: None,
                 arrlen: None,
                 data: Some(tp),
@@ -1865,6 +1889,7 @@ impl<'life> Parser<'life> {
             return (end, Type {
                 isfn: false,
                 isarr: true,
+                isdyn: false,
                 arrtp: Some(Box::new(basetp)),
                 arrlen: Some(len),
                 data: None,
@@ -1878,6 +1903,7 @@ impl<'life> Parser<'life> {
             return (end, Type {
                 isfn: false,
                 isarr: false,
+                isdyn: false,
                 arrtp: None,
                 arrlen: None,
                 data: Some(tp),
@@ -2019,6 +2045,7 @@ impl<'life> Parser<'life> {
             args.rettp.push(Type {
                 isfn: false,
                 isarr: false,
+                isdyn: false,
                 arrtp: None,
                 arrlen: None,
                 data: Some(String::from("void")),
@@ -2925,6 +2952,7 @@ impl<'life> Parser<'life> {
                 args.rettp.push(Type {
                     isfn: false,
                     isarr: false,
+                    isdyn: false,
                     arrtp: None,
                     arrlen: None,
                     data: Some(String::from("void")),

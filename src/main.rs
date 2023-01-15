@@ -112,6 +112,7 @@ fn main() {
                                             String::from("while"),
                                             String::from("enum"),
                                             String::from("trait"),
+                                            String::from("dyn"),
                                             ];
 
     let mut lexer: lexer::Lexer = lexer::Lexer {
