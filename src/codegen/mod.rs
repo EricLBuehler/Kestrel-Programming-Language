@@ -157,6 +157,7 @@ impl<'ctx> CodeGen<'ctx> {
                 return Some(inkwell::types::AnyTypeEnum::VoidType(*types.voidtp));
             }
             types::BasicDataType::Func |
+            types::BasicDataType::Dyn |
             types::BasicDataType::WrapperFunc => {
                 return None;
             }
@@ -286,7 +287,8 @@ impl<'ctx> CodeGen<'ctx> {
         }
         else if arg.isdyn {
             let traitnm: String = arg.data.as_ref().unwrap().to_owned();
-
+            let tp: types::DataType = types::new_dyn_datatype(traitnm, arg.mutability);
+            println!("{:?}", tp);
             unimplemented!();
         }
         else {

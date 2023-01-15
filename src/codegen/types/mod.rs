@@ -23,6 +23,7 @@ pub enum BasicDataType {
     WrapperFunc,
     Bool,
     Enum,
+    Dyn,
 }
 
 #[derive(Clone)]
@@ -34,6 +35,7 @@ pub struct DataType<'a> {
     pub mutability: Vec<DataMutablility>,
     pub rettp: Option<Box<DataType<'a>>>,
     pub is_ref: bool,
+    pub is_dyn: bool,
     pub arrtp: Option<inkwell::types::ArrayType<'a>>,
     pub wrapperfn: Option<fn(&codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>>,
     pub methods: std::collections::HashMap<String, Method<'a>>,
@@ -94,6 +96,7 @@ impl std::fmt::Display for BasicDataType {
             BasicDataType::WrapperFunc => write!(f, "WrapperFn"),
             BasicDataType::Bool => write!(f, "bool"),
             BasicDataType::Enum => write!(f, "enum"),
+            BasicDataType::Dyn => write!(f, "dyn"),
         }
     }    
 }
@@ -259,9 +262,26 @@ pub fn new_datatype<'a>(tp: BasicDataType, name: String, names: Option<Vec<Strin
         mutability,
         rettp: if rettp_opt.is_some() {Some(Box::new(rettp_opt.unwrap()))} else {None},
         is_ref,
+        is_dyn: false,
         arrtp,
         wrapperfn: None,
         methods,
+    };
+}
+
+pub fn new_dyn_datatype<'a>(traitnm: String, mutability: DataMutablility) -> DataType<'a> {
+    return DataType {
+        tp: BasicDataType::Dyn,
+        names: None,
+        types: Vec::new(),
+        name: traitnm,
+        mutability: vec![mutability],
+        rettp: None,
+        is_ref: false,
+        is_dyn: true,
+        arrtp: None,
+        wrapperfn: None,
+        methods: std::collections::HashMap::new(),
     };
 }
 
