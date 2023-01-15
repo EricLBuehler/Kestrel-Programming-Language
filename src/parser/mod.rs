@@ -59,7 +59,7 @@ pub enum NodeType {
     TRAIT,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Node{
     pub tp: NodeType,
     pub data: Box<nodes::NodeData>,
@@ -2298,10 +2298,22 @@ impl<'life> Parser<'life> {
 
         self.skip_newline();
 
-        let stmt: Node = self.statement();
+        let mut functions: Vec<Node> = Vec::new();
 
-        if stmt.tp != NodeType::FUNC {
-            self.raise_error_pos("Expected fn.", ErrorType::InvlaidStatement, stmt);
+        while !self.current_is_type(TokenType::RCURLY) && !self.current_is_type(TokenType::EOF) {
+            if !self.current_is_type(TokenType::KEYWORD) && self.current.data == "fn" {
+                self.raise_error("Expected fn.", ErrorType::InvalidStatement);
+            }
+
+            let stmt: Node = self.statement();
+
+            self.skip_newline();
+
+            functions.push(stmt);            
+        
+            if self.current_is_type(TokenType::RCURLY) {
+                break;
+            }
         }
 
         self.skip_newline();
@@ -2313,7 +2325,7 @@ impl<'life> Parser<'life> {
         self.advance();
 
         let impln: nodes::ImplNode = nodes::ImplNode{
-            func: stmt,
+            functions,
             traitnm,
             structnm,
         };
@@ -2805,9 +2817,8 @@ impl<'life> Parser<'life> {
 
         while !self.current_is_type(TokenType::RCURLY) && !self.current_is_type(TokenType::EOF) {
             if !self.current_is_type(TokenType::KEYWORD) && self.current.data == "fn" {
-                self.raise_error("Expected fn.", ErrorType::InvalidTok);
+                self.raise_error("Expected fn.", ErrorType::InvalidStatement);
             }
-
 
             self.advance();
 
@@ -2816,29 +2827,11 @@ impl<'life> Parser<'life> {
             }
 
             let name: String = self.current.data.clone();
-            let mut methodname: Option<String> = None;
-            let mut namespacename: Option<String> = None;
+            let methodname: Option<String> = None;
+            let namespacename: Option<String> = None;
             let mut template_types: Vec<String> = Vec::new();
 
-            self.advance();
-
-            if self.current_is_type(TokenType::DOT) {
-                self.advance();
-                if !self.current_is_type(TokenType::IDENTIFIER) {
-                    self.raise_error("Expected identifier.", ErrorType::InvalidTok);
-                }
-                methodname = Some(self.current.data.clone());
-                self.advance();
-            }
-
-            if self.current_is_type(TokenType::DOUBLECOLON) {
-                self.advance();
-                if !self.current_is_type(TokenType::IDENTIFIER) {
-                    self.raise_error("Expected identifier.", ErrorType::InvalidTok);
-                }
-                namespacename = Some(self.current.data.clone());
-                self.advance();
-            }        
+            self.advance();   
 
             if self.current_is_type(TokenType::LT) {
                 self.advance();
@@ -2872,32 +2865,10 @@ impl<'life> Parser<'life> {
                 rettp: Vec::new(),
             };
             while !self.current_is_type(TokenType::RPAREN) && !self.current_is_type(TokenType::EOF) {
-                let mut mutability: DataMutablility = DataMutablility::Immutable;
-                if self.current_is_type(TokenType::KEYWORD) && self.current.data == "mut" {
-                    self.advance();
-                    mutability = DataMutablility::Mutable;
-                }
-
-                if !self.current_is_type(TokenType::IDENTIFIER) {
-                    self.raise_error("Expected identifier.", ErrorType::InvalidTok);
-                }
-        
-                let name: String = self.current.data.clone();
-                
-                self.advance();
-
-                if !self.current_is_type(TokenType::COLON) {
-                    self.raise_error("Expected colon.", ErrorType::InvalidTok);
-                }
-
-                self.advance();
-
-                args.args.push(self.parse_type(mutability).1);
+                args.args.push(self.parse_type(DataMutablility::Immutable).1);
                 if !self.current_is_type(TokenType::COMMA) && !self.current_is_type(TokenType::RPAREN) {
                     self.raise_error("Expected comma.", ErrorType::InvalidTok);
                 }
-                
-                args.name.push(name);
 
                 if self.current_is_type(TokenType::RPAREN) {
                     break;

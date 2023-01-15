@@ -1,4 +1,4 @@
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum BinaryOpType {
     ADD,
     SUB,
@@ -29,7 +29,7 @@ impl std::fmt::Display for BinaryOpType {
     }    
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum UnaryOpType {
     POS,
     NEG,
@@ -46,7 +46,7 @@ impl std::fmt::Display for UnaryOpType {
     }    
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct BinaryNode{
     pub left: crate::parser::Node,
     pub op: BinaryOpType,
@@ -60,7 +60,7 @@ impl std::fmt::Display for BinaryNode {
     }    
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct NumNode {
     pub left: String,
 }
@@ -71,7 +71,7 @@ impl std::fmt::Display for NumNode {
     }    
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct LetNode {
     pub name: String,
     pub expr: Option<crate::parser::Node>,
@@ -85,7 +85,7 @@ impl std::fmt::Display for LetNode {
     }    
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct IdentifierNode {
     pub name: String,
 }
@@ -96,7 +96,7 @@ impl std::fmt::Display for IdentifierNode {
     }    
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct FuncNode {
     pub name: String,
     pub blocks: Vec<crate::parser::Node>,
@@ -116,7 +116,7 @@ impl std::fmt::Display for FuncNode {
     }    
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct AssignNode {
     pub name: String,
     pub expr: crate::parser::Node,
@@ -128,7 +128,7 @@ impl std::fmt::Display for AssignNode {
     }    
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct CallNode {
     pub name: crate::parser::Node,
     pub args: Vec<crate::parser::Node>,
@@ -140,7 +140,7 @@ impl std::fmt::Display for CallNode {
     }    
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ReturnNode {
     pub expr: Option<crate::parser::Node>,
 }
@@ -151,7 +151,7 @@ impl std::fmt::Display for ReturnNode {
     }    
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ToNode {
     pub left: crate::parser::Node,
     pub tp: crate::parser::Type,
@@ -163,7 +163,7 @@ impl std::fmt::Display for ToNode {
     }    
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct AsNode {
     pub left: crate::parser::Node,
     pub tp: crate::parser::Type,
@@ -175,7 +175,7 @@ impl std::fmt::Display for AsNode {
     }    
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct UnaryNode{
     pub op: UnaryOpType,
     pub right: crate::parser::Node,
@@ -187,7 +187,7 @@ impl std::fmt::Display for UnaryNode {
     }    
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct StructNode{
     pub name: String,
     pub names: Vec<String>,
@@ -200,7 +200,7 @@ impl std::fmt::Display for StructNode {
     }    
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct StructInitNode{
     pub name: String,
     pub members: std::collections::HashMap<String, crate::parser::Node>,
@@ -213,7 +213,7 @@ impl std::fmt::Display for StructInitNode {
     }    
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct AttrNode{
     pub name: crate::parser::Node,
     pub attr: String,
@@ -225,7 +225,7 @@ impl std::fmt::Display for AttrNode {
     }    
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct AttrAssignNode{
     pub name: crate::parser::Node,
     pub attr: String,
@@ -238,7 +238,7 @@ impl std::fmt::Display for AttrAssignNode {
     }    
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct StringNode{
     pub data: String,
 }
@@ -249,7 +249,7 @@ impl std::fmt::Display for StringNode {
     }    
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ArrayNode{
     pub elements: Vec<crate::parser::Node>,
 }
@@ -260,9 +260,9 @@ impl std::fmt::Display for ArrayNode {
     }    
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ImplNode{
-    pub func: crate::parser::Node,
+    pub functions: Vec<crate::parser::Node>,
     pub traitnm: String,
     pub structnm: String,
 }
@@ -273,7 +273,7 @@ impl std::fmt::Display for ImplNode {
     }    
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct IfNode{
     pub ifs: Vec<(crate::parser::Node, Vec<crate::parser::Node>)>,
     pub else_opt: Option<Vec<crate::parser::Node>>,
@@ -285,7 +285,7 @@ impl std::fmt::Display for IfNode {
     }    
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct LoopNode{
     pub block: Vec<crate::parser::Node>,
     pub expr: Option<crate::parser::Node>,
@@ -301,7 +301,7 @@ impl std::fmt::Display for LoopNode {
     }    
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct EnumNode{
     pub variants: Vec<String>,
     pub name: String,
@@ -313,7 +313,7 @@ impl std::fmt::Display for EnumNode {
     }    
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct TraitNode{
     pub traitname: String,
     pub functions: Vec<crate::codegen::types::TemplateTraitSignature>,
@@ -325,7 +325,7 @@ impl std::fmt::Display for TraitNode {
     }    
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct NodeData {
     pub binary: Option<BinaryNode>,
     pub num: Option<NumNode>,

@@ -33,7 +33,7 @@ pub enum ErrorType {
     EmptyCharLiteral,
     GlobalScopeStmt,
     ImmutableAttr,
-    InvlaidStatement,
+    InvalidStatement,
     TraitNotFound,
     TraitExpectProperFunctionName,
     CannotImplementCallTrait,
@@ -47,6 +47,11 @@ pub enum ErrorType {
     MethodTemplateFunctionHasFirstTemplate,
     UnknownTemplateType,
     LocalScopeStmt,
+    CannotImplementBuiltinTrait,
+    ExpectedNFunctionsDefined,
+    ImplFunctionTemplateTypeMismatch,
+    FunctionNotDefinedInTrait,
+    FunctionRedefinedInImpl,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -88,7 +93,7 @@ pub fn repr_err(tp: ErrorType) -> &'static str {
         ErrorType::EmptyCharLiteral => "char literals cannot be empty",
         ErrorType::GlobalScopeStmt => "cannot have other statements in the global scope",
         ErrorType::ImmutableAttr => "immutable attr assign",
-        ErrorType::InvlaidStatement => "immutable statement",
+        ErrorType::InvalidStatement => "immutable statement",
         ErrorType::TraitNotFound => "trait not found",
         ErrorType::TraitExpectProperFunctionName => "trait implementation expects function with proper name",
         ErrorType::CannotImplementCallTrait => "cannot implement call trait",
@@ -102,6 +107,11 @@ pub fn repr_err(tp: ErrorType) -> &'static str {
         ErrorType::MethodTemplateFunctionHasFirstTemplate => "template method cannot have template first argument",
         ErrorType::UnknownTemplateType => "unknown template type",
         ErrorType::LocalScopeStmt => "invalic local scope statement",
+        ErrorType::CannotImplementBuiltinTrait => "cannot implement builtin trait",
+        ErrorType::ExpectedNFunctionsDefined => "expected n functions defined in implementation",
+        ErrorType::ImplFunctionTemplateTypeMismatch => "template argument type mismatch in impl",
+        ErrorType::FunctionNotDefinedInTrait => "function is not defined in trait impl",
+        ErrorType::FunctionRedefinedInImpl => "function is redefined in trait impl",
     }
 }
 

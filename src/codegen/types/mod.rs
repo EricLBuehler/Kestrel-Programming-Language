@@ -208,22 +208,30 @@ pub struct Trait<'a> {
     pub function: Option<fn(&codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>>,
     pub inkfunc: Option<inkwell::values::PointerValue<'a>>,
     pub traittype: TraitType,
-    pub rettp: DataType<'a>
+    pub rettp: Option<DataType<'a>>,
 }
 
 #[derive(Clone)]
 pub struct TraitSignature {
-    pub nargs: usize,
+    pub traittp: TraitMetatype,
     pub name: String,
+    pub nargs: Option<usize>,
+    pub trait_sig: Option<Vec<TemplateTraitSignature>>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct TemplateTraitSignature {
     pub name: String,
     pub methodname: Option<String>,
     pub namespacename: Option<String>,
     pub template_types: Vec<String>,
     pub args: crate::parser::Args,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum TraitMetatype {
+    Builtin,
+    User,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -291,28 +299,28 @@ impl<'a> std::fmt::Debug for Method<'a> {
     }
 }
 
-pub fn get_traittp_from_str(tp: String) -> TraitType {
+pub fn get_traittp_from_str(tp: String) -> Option<TraitType> {
     if tp == TraitType::Add.to_string() {
-        return TraitType::Add;
+        return Some(TraitType::Add);
     }
     else if tp == TraitType::Sub.to_string() {
-        return TraitType::Sub;
+        return Some(TraitType::Sub);
     }
     else if tp == TraitType::Mul.to_string() {
-        return TraitType::Mul;
+        return Some(TraitType::Mul);
     }
     else if tp == TraitType::Div.to_string() {
-        return TraitType::Div;
+        return Some(TraitType::Div);
     }
     else if tp == TraitType::Pos.to_string() {
-        return TraitType::Pos;
+        return Some(TraitType::Pos);
     }
     else if tp == TraitType::Neg.to_string() {
-        return TraitType::Neg;
+        return Some(TraitType::Neg);
     }
     else if tp == TraitType::Call.to_string() {
-        return TraitType::Call;
+        return Some(TraitType::Call);
     }
     
-    panic!("Invalid trait type '{}'", tp);
+    return None;
 }

@@ -43,7 +43,7 @@ pub fn create_trait_func<'a>(function: fn(&codegen::CodeGen<'a>, Vec<Data<'a>>, 
         function: Some(function),
         inkfunc: None,
         traittype,
-        rettp,
+        rettp: Some(rettp),
     }
 }
 
@@ -53,7 +53,7 @@ pub fn create_trait_ink<'a>(ink: inkwell::values::PointerValue<'a>, nargs: usize
         function: None,
         inkfunc: Some(ink),
         traittype,
-        rettp,
+        rettp: Some(rettp),
     }
 }
 
@@ -100,43 +100,43 @@ pub fn init(codegen: &mut codegen::CodeGen) {
 
 pub fn init_traits(codegen: &mut codegen::CodeGen) {
     codegen.traits.insert(types::TraitType::Add.to_string(), types::TraitSignature {
-         nargs: 2, name: String::from("add")
+         nargs: Some(2), trait_sig: None, name: String::from("add"), traittp: types::TraitMetatype::Builtin,
         });
     codegen.traits.insert(types::TraitType::Sub.to_string(), types::TraitSignature {
-         nargs: 2, name: String::from("sub")
+         nargs: Some(2), trait_sig: None, name: String::from("sub"), traittp: types::TraitMetatype::Builtin,
         });
     codegen.traits.insert(types::TraitType::Mul.to_string(), types::TraitSignature {
-         nargs: 2, name: String::from("mul")
+         nargs: Some(2), trait_sig: None, name: String::from("mul"), traittp: types::TraitMetatype::Builtin,
         });
     codegen.traits.insert(types::TraitType::Div.to_string(), types::TraitSignature {
-         nargs: 2, name: String::from("div")
+         nargs: Some(2), trait_sig: None, name: String::from("div"), traittp: types::TraitMetatype::Builtin,
         });
     codegen.traits.insert(types::TraitType::Pos.to_string(), types::TraitSignature {
-         nargs: 1, name: String::from("pos")
+         nargs: Some(1), trait_sig: None, name: String::from("pos"), traittp: types::TraitMetatype::Builtin,
         });
     codegen.traits.insert(types::TraitType::Neg.to_string(), types::TraitSignature {
-            nargs: 1, name: String::from("neg")
+            nargs: Some(1), trait_sig: None, name: String::from("neg"), traittp: types::TraitMetatype::Builtin,
         });
     codegen.traits.insert(types::TraitType::Bool.to_string(), types::TraitSignature {
-            nargs: 1, name: String::from("bool")
+            nargs: Some(1), trait_sig: None, name: String::from("bool"), traittp: types::TraitMetatype::Builtin,
         });
     codegen.traits.insert(types::TraitType::Eq.to_string(), types::TraitSignature {
-            nargs: 2, name: String::from("eq")
+            nargs: Some(2), trait_sig: None, name: String::from("eq"), traittp: types::TraitMetatype::Builtin,
         });
     codegen.traits.insert(types::TraitType::Ne.to_string(), types::TraitSignature {
-        nargs: 2, name: String::from("ne")
+        nargs: Some(2), trait_sig: None, name: String::from("ne"), traittp: types::TraitMetatype::Builtin,
         });
     codegen.traits.insert(types::TraitType::Gt.to_string(), types::TraitSignature {
-            nargs: 2, name: String::from("gt")
+            nargs: Some(2), trait_sig: None, name: String::from("gt"), traittp: types::TraitMetatype::Builtin,
         });
     codegen.traits.insert(types::TraitType::Lt.to_string(), types::TraitSignature {
-            nargs: 2, name: String::from("lt")
+            nargs: Some(2), trait_sig: None, name: String::from("lt"), traittp: types::TraitMetatype::Builtin,
         });
     codegen.traits.insert(types::TraitType::Ge.to_string(), types::TraitSignature {
-            nargs: 2, name: String::from("ge")
+            nargs: Some(2), trait_sig: None, name: String::from("ge"), traittp: types::TraitMetatype::Builtin,
         });
     codegen.traits.insert(types::TraitType::Le.to_string(), types::TraitSignature {
-            nargs: 2, name: String::from("le")
+            nargs: Some(2), trait_sig: None, name: String::from("le"), traittp: types::TraitMetatype::Builtin,
         });
 }
 

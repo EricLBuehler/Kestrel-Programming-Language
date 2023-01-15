@@ -358,6 +358,25 @@ impl<'ctx> CodeGen<'ctx> {
         }
     }
 
+    fn call_trait(&mut self, t: &types::Trait<'ctx>, mut args: Vec<types::Data<'ctx>>, node: &parser::Node) -> types::Data<'ctx> {
+        if t.function.is_some() {
+            let func = t.function.unwrap();
+
+            return (func)(&self, args, &node.pos);
+        }
+        else {
+            let func: inkwell::values::PointerValue = t.inkfunc.unwrap();
+
+            args.insert(0, types::Data {
+                data: Some(inkwell::values::BasicValueEnum::PointerValue(func)),
+                tp: self.datatypes.get(&types::BasicDataType::Func.to_string()).unwrap().clone(),
+                owned: true,
+            });
+
+            return builtin_types::functype::fn_call(self, args, &node.pos);
+        }
+    }
+
     fn build_binary(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         let binary: &parser::nodes::BinaryNode = node.data.binary.as_ref().unwrap();
 
@@ -416,24 +435,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
         };
 
-        let data: types::Data;
-
-        if t.function.is_some() {
-            let func = t.function.unwrap();
-
-            data = (func)(&self, args, &node.pos);
-        }
-        else {
-            let func: inkwell::values::PointerValue = t.inkfunc.unwrap();
-
-            args.insert(0, types::Data {
-                data: Some(inkwell::values::BasicValueEnum::PointerValue(func)),
-                tp: self.datatypes.get(&types::BasicDataType::Func.to_string()).unwrap().clone(),
-                owned: true,
-            });
-
-            data = builtin_types::functype::fn_call(self, args, &node.pos);
-        }
+        let data: types::Data = self.call_trait(t, args, node);
 
         if binary.isassign {
             let name: &String = &binary.left.data.identifier.as_ref().unwrap().name;
@@ -1219,24 +1221,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
         };
 
-        let data: types::Data;
-
-        if t.function.is_some() {
-            let func = t.function.unwrap();
-
-            data = (func)(&self, args, &node.pos);
-        }
-        else {
-            let func: inkwell::values::PointerValue = t.inkfunc.unwrap();
-
-            args.insert(0, types::Data {
-                data: Some(inkwell::values::BasicValueEnum::PointerValue(func)),
-                tp: self.datatypes.get(&types::BasicDataType::Func.to_string()).unwrap().clone(),
-                owned: true,
-            });
-
-            data = builtin_types::functype::fn_call(self, args, &node.pos);
-        }
+        let data: types::Data = self.call_trait(t, args, node);
 
         return data;
     }
@@ -1376,24 +1361,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
         };
 
-        let data: types::Data;
-
-        if t.function.is_some() {
-            let func = t.function.unwrap();
-
-            data = (func)(&self, args, &node.pos);
-        }
-        else {
-            let func: inkwell::values::PointerValue = t.inkfunc.unwrap();
-
-            args.insert(0, types::Data {
-                data: Some(inkwell::values::BasicValueEnum::PointerValue(func)),
-                tp: self.datatypes.get(&types::BasicDataType::Func.to_string()).unwrap().clone(),
-                owned: true,
-            });
-
-            data = builtin_types::functype::fn_call(self, args, &node.pos);
-        }
+        let data: types::Data = self.call_trait(t, args, node);
         
         return data;
     }
@@ -1725,37 +1693,172 @@ impl<'ctx> CodeGen<'ctx> {
         }
 
         let traitsig: types::TraitSignature = self.traits.get(traitnm).unwrap().clone();
-       
-        if traitsig.name != node.data.impln.as_ref().unwrap().func.data.func.as_ref().unwrap().name {
-            let fmt: String = format!("Trait '{}' expected function '{}'.", traitnm.to_string(), traitsig.name);
-            errors::raise_error(&fmt, errors::ErrorType::TraitExpectProperFunctionName, &node.pos, self.info);
+
+        if traitsig.traittp == types::TraitMetatype::Builtin {
+            if traitsig.name != node.data.impln.as_ref().unwrap().functions.last().unwrap().data.func.as_ref().unwrap().name {
+                let fmt: String = format!("Trait '{}' expected function '{}'.", traitnm.to_string(), traitsig.name);
+                errors::raise_error(&fmt, errors::ErrorType::TraitExpectProperFunctionName, &node.pos, self.info);
+            }
+
+            let nargs: usize = traitsig.nargs.unwrap();
+
+            if nargs != node.data.impln.as_ref().unwrap().functions.last().unwrap().data.func.as_ref().unwrap().args.args.len() {
+                let fmt: String = format!("Trait '{}' expected function with '{}' arguments.", traitnm.to_string(), traitsig.nargs.unwrap());
+                errors::raise_error(&fmt, errors::ErrorType::ArgumentCountMismatch, &node.pos, self.info);
+            }
+            
+            let func: types::Data = self.build_func(&node.data.impln.as_ref().unwrap().functions.last().unwrap(), Some(structnm.to_owned() + "." + node.data.impln.as_ref().unwrap().functions.last().unwrap().data.func.as_ref().unwrap().name.as_str()), None, None);
+
+            if !self.namespaces.structs.contains_key(structnm) {
+                let fmt: String = format!("Struct '{}' is not defined.", structnm);
+                errors::raise_error(&fmt, errors::ErrorType::StructNotDefined, &node.pos, self.info);
+            }
+            
+            let mut tp: types::Type = self.types.get(structnm).unwrap().clone();
+
+            let rettp: types::DataType = Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, node.data.impln.as_ref().unwrap().functions.last().unwrap().data.func.as_ref().unwrap().args.rettp.first().unwrap(), node).0;
+
+            let traittp: Option<types::TraitType> = types::get_traittp_from_str(traitnm.to_owned());
+            if traittp.as_ref().unwrap() == &types::TraitType::Call {
+                let fmt: String = format!("Cannot implement 'Call' trait.");
+                errors::raise_error(&fmt, errors::ErrorType::CannotImplementCallTrait, &node.pos, self.info);
+            }
+
+            tp.traits.insert(traitnm.to_owned(), builtin_types::create_trait_ink(func.data.unwrap().into_pointer_value(), nargs, traittp.unwrap(), rettp));
+            
+            self.types.insert(structnm.to_owned(), tp);
         }
+        else {
+            if !self.namespaces.structs.contains_key(structnm) {
+                let fmt: String = format!("Struct '{}' is not defined.", structnm);
+                errors::raise_error(&fmt, errors::ErrorType::StructNotDefined, &node.pos, self.info);
+            }
 
-        if traitsig.nargs != node.data.impln.as_ref().unwrap().func.data.func.as_ref().unwrap().args.args.len() {
-            let fmt: String = format!("Trait '{}' expected function with '{}' arguments.", traitnm.to_string(), traitsig.nargs);
-            errors::raise_error(&fmt, errors::ErrorType::ArgumentCountMismatch, &node.pos, self.info);
+            let traittp: Option<types::TraitType> = types::get_traittp_from_str(traitnm.to_owned());
+            if traittp.is_some() {
+                let fmt: String = format!("Cannot implement builtin trait '{}'.", traittp.unwrap().to_string());
+                errors::raise_error(&fmt, errors::ErrorType::CannotImplementBuiltinTrait, &node.pos, self.info);
+            }
+            
+            if node.data.impln.as_ref().unwrap().functions.len() != traitsig.trait_sig.as_ref().unwrap().len() {
+                let fmt: String = format!("Trait '{}' expected {} functions.", traitnm.to_string(), traitsig.trait_sig.unwrap().len());
+                errors::raise_error(&fmt, errors::ErrorType::ExpectedNFunctionsDefined, &node.pos, self.info);
+            }
+
+            for function in &node.data.impln.as_ref().unwrap().functions {
+                let mut found: bool = false;
+                for sig in traitsig.trait_sig.as_ref().unwrap() {
+                    if function.data.func.as_ref().unwrap().name == sig.name {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if !found {
+                    let fmt: String = format!("Function '{}' is not defined in trait '{}'.", function.data.func.as_ref().unwrap().name, traitnm.to_string());
+                    errors::raise_error(&fmt, errors::ErrorType::FunctionNotDefinedInTrait, &node.pos, self.info);
+                }
+                
+                let mut redundant: bool = false;
+                for func in &node.data.impln.as_ref().unwrap().functions {
+                    if  (function.data.func.as_ref().unwrap().name == func.data.func.as_ref().unwrap().name) &&
+                        func != function {
+                        redundant = true;
+                        break;
+                    }
+                }
+
+                if redundant {
+                    let fmt: String = format!("Function '{}' is redefined in impl for trait '{}' on struct '{}'.", function.data.func.as_ref().unwrap().name, traitnm.to_string(), structnm.to_string());
+                    errors::raise_error(&fmt, errors::ErrorType::FunctionRedefinedInImpl, &node.pos, self.info);
+                }
+            }
+            
+            for (sig, function) in izip![traitsig.trait_sig.as_ref().unwrap(), &node.data.impln.as_ref().unwrap().functions] {
+                let nargs: usize = sig.args.args.len();
+
+                if nargs != function.data.func.as_ref().unwrap().args.args.len() {
+                    let fmt: String = format!("Trait '{}' expected function with '{}' arguments.", traitnm.to_string(), nargs);
+                    errors::raise_error(&fmt, errors::ErrorType::ArgumentCountMismatch, &node.pos, self.info);
+                }
+
+                let mut template_indices: std::collections::HashMap<String, Vec<usize>> = std::collections::HashMap::new();
+                let mut all_indices: Vec<usize> = Vec::new();
+                let mut standard_indices: Vec<usize> = Vec::new();
+                for template in &sig.template_types {
+                    let mut indices: Vec<usize> = Vec::new();
+                    let mut idx: usize = 0;
+                    for arg in &sig.args.args {
+                        if  !arg.isarr &&
+                            !arg.isfn &&
+                            !self.datatypes.contains_key(arg.data.as_ref().unwrap()) &&
+                            sig.template_types.contains(arg.data.as_ref().unwrap()) &&
+                            arg.data.as_ref().unwrap() == template {
+                            indices.push(idx);
+                            all_indices.push(idx);
+                        }
+                        idx += 1;
+                    }
+                    template_indices.insert(template.to_owned(), indices);
+                }
+
+                for idx in 0..sig.args.args.len() {
+                    if all_indices.contains(&idx) {
+                        continue;
+                    }
+                    standard_indices.push(idx);
+                }
+                
+                let _ = self.build_func(&function, Some(structnm.to_owned() + "." + function.data.func.as_ref().unwrap().name.as_str()), None, None);
+                let functp: types::DataType = self.namespaces.functions.get(&(structnm.to_owned() + "." + function.data.func.as_ref().unwrap().name.as_str())).unwrap().1.to_owned();
+                
+                for (template, indices) in &template_indices {
+                    let firsttp: types::DataType = functp.types.get(indices.get(0).unwrap().to_owned()).unwrap().to_owned();
+                    if indices.len() > 1 {
+                        for index in indices[1..].to_vec() {
+                            if functp.types.get(index).unwrap().to_owned() != firsttp {
+                                let fmt: String = format!("Expected '{}' type, got '{}' type for '{}' template type.", firsttp, functp.types.get(index).unwrap().to_owned(), template);
+                                errors::raise_error(&fmt, errors::ErrorType::ImplFunctionTemplateTypeMismatch, &node.pos, self.info);
+                            }
+                        }
+                    }
+                }
+
+                for idx in &standard_indices {
+                    let tp: types::DataType = functp.types.get(idx.to_owned()).unwrap().to_owned();
+
+                    if tp != Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, sig.args.args.get(idx.to_owned()).as_ref().unwrap(), function).0 {
+                        let fmt: String = format!("Expected '{}' type, got '{}' type.", tp, Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, sig.args.args.get(idx.to_owned()).as_ref().unwrap(), function).0);
+                        errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+                    }
+                }
+
+                if  !sig.args.rettp.first().unwrap().isarr &&
+                    !sig.args.rettp.first().unwrap().isfn &&
+                    !self.datatypes.contains_key(sig.args.rettp.first().unwrap().data.as_ref().unwrap()) &&
+                    sig.template_types.contains(sig.args.rettp.first().unwrap().data.as_ref().unwrap()) {
+                    let tp: types::DataType = functp.types.get(template_indices.get(sig.args.rettp.first().unwrap().data.as_ref().unwrap()).unwrap().get(0).unwrap().to_owned()).unwrap().to_owned();
+
+                    if tp != *functp.rettp.as_ref().unwrap().to_owned() {
+                        let fmt: String = format!("Expected '{}' return  type, got '{}' return type.", tp, *functp.rettp.as_ref().unwrap().to_owned());
+                        errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+                    }
+                }
+
+                //Add as method
+                let mut s: (types::DataType, Option<AnyTypeEnum>, std::collections::HashMap<String, i32>, ForwardDeclarationType) = self.namespaces.structs.get(structnm).unwrap().clone();
+                
+                s.0.methods.insert(function.data.func.as_ref().unwrap().name.clone(), types::Method {
+                    tp: types::MethodType::Fn,
+                    builtin: None,
+                    func: Some(self.namespaces.functions.get(&(structnm.to_owned() + "." + function.data.func.as_ref().unwrap().name.as_str())).unwrap().0.as_global_value().as_pointer_value()),
+                    functp: functp.clone(),
+                    isinstance: true,
+                });
+
+                self.namespaces.structs.insert(structnm.to_owned(), (s.0, s.1, s.2, s.3));                                
+            }
         }
-
-        let func: types::Data = self.build_func(&node.data.impln.as_ref().unwrap().func, Some(structnm.to_owned() + "." + node.data.impln.as_ref().unwrap().func.data.func.as_ref().unwrap().name.as_str()), None, None);
-
-        if !self.namespaces.structs.contains_key(structnm) {
-            let fmt: String = format!("Struct '{}' is not defined.", structnm);
-            errors::raise_error(&fmt, errors::ErrorType::StructNotDefined, &node.pos, self.info);
-        }
-        
-        let mut tp: types::Type = self.types.get(structnm).unwrap().clone();
-
-        let rettp: types::DataType = Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, node.data.impln.as_ref().unwrap().func.data.func.as_ref().unwrap().args.rettp.first().unwrap(), node).0;
-
-        let traittp: types::TraitType = types::get_traittp_from_str(traitnm.to_owned());
-        if traittp == types::TraitType::Call {
-            let fmt: String = format!("Cannot implement 'Call' trait.");
-            errors::raise_error(&fmt, errors::ErrorType::CannotImplementCallTrait, &node.pos, self.info);
-        }
-
-        tp.traits.insert(traitnm.to_owned(), builtin_types::create_trait_ink(func.data.unwrap().into_pointer_value(), traitsig.nargs, traittp, rettp));
-        
-        self.types.insert(structnm.to_owned(), tp);
 
         let data: types::Data = types::Data {
             data: None,
@@ -1861,24 +1964,7 @@ impl<'ctx> CodeGen<'ctx> {
                 }
             };
 
-            let data: types::Data;
-
-            if t.function.is_some() {
-                let func = t.function.unwrap();
-
-                data = (func)(&self, args, &node.pos);
-            }
-            else {
-                let func: inkwell::values::PointerValue = t.inkfunc.unwrap();
-
-                args.insert(0, types::Data {
-                    data: Some(inkwell::values::BasicValueEnum::PointerValue(func)),
-                    tp: self.datatypes.get(&types::BasicDataType::Func.to_string()).unwrap().clone(),
-                    owned: true,
-                });
-
-                data = builtin_types::functype::fn_call(self, args, &node.pos);
-            }
+            let data: types::Data = self.call_trait(t, args, node);
 
             if data.tp != self.datatypes.get(&types::BasicDataType::Bool.to_string()).unwrap().clone() {
                 let fmt: String = format!("Expected 'bool' type, got '{}' type.", data.tp);
@@ -2182,24 +2268,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
         };
 
-        let data: types::Data;
-
-        if t.function.is_some() {
-            let func = t.function.unwrap();
-
-            data = (func)(&self, args, &node.pos);
-        }
-        else {
-            let func: inkwell::values::PointerValue = t.inkfunc.unwrap();
-
-            args.insert(0, types::Data {
-                data: Some(inkwell::values::BasicValueEnum::PointerValue(func)),
-                tp: self.datatypes.get(&types::BasicDataType::Func.to_string()).unwrap().clone(),
-                owned: true,
-            });
-
-            data = builtin_types::functype::fn_call(self, args, &node.pos);
-        }
+        let data: types::Data = self.call_trait(t, args, node);
 
         if data.tp != self.datatypes.get(&types::BasicDataType::Bool.to_string()).unwrap().clone() {
             let fmt: String = format!("Expected 'bool' type, got '{}' type.", data.tp);
@@ -2252,6 +2321,19 @@ impl<'ctx> CodeGen<'ctx> {
 
         self.datatypes.insert(node.data.enumn.as_ref().unwrap().name.clone(), tp.clone());
         builtin_types::add_simple_type(self, std::collections::HashMap::new(), types::BasicDataType::Enum, &node.data.enumn.as_ref().unwrap().name.clone());
+
+        let data: types::Data = types::Data {
+            data: None,
+            tp: self.datatypes.get(&types::BasicDataType::Void.to_string()).unwrap().clone(),
+            owned: true,
+        };
+        return data;
+    }
+
+    fn build_trait(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        self.traits.insert(node.data.traitn.as_ref().unwrap().traitname.clone(), types::TraitSignature {
+                nargs: None, trait_sig: Some(node.data.traitn.as_ref().unwrap().functions.clone()), name: node.data.traitn.as_ref().unwrap().traitname.clone(), traittp: types::TraitMetatype::User,
+            });
 
         let data: types::Data = types::Data {
             data: None,
@@ -2511,7 +2593,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.build_enum(node)
             }
             parser::NodeType::TRAIT => {
-                unimplemented!()
+                self.build_trait(node)
             }
         }
     }

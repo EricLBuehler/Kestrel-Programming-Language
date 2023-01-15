@@ -3,14 +3,15 @@ struct s {
 }
 
 trait t {
-    fn func<T>(a:T)
+    fn func<T>(T, i32)
 }
 
-fn s::f<T>(a: T, b: T){
+impl t for s {
+    fn func(a: i64, b: i32) {
 
+    }
 }
 
 fn main() {
     let st = s{}
-    st.f(1,2)
 }
