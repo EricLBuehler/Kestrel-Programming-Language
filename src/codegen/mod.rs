@@ -71,7 +71,7 @@ pub struct CodeGen<'ctx> {
     dibuilder: inkwell::debug_info::DebugInfoBuilder<'ctx>,
     dicompile_unit: inkwell::debug_info::DICompileUnit<'ctx>,
     expected_rettp: Option<types::DataType<'ctx>>,
-    traits: std::collections::HashMap<String, types::TraitSignature>,
+    traits: std::collections::HashMap<String, types::TraitSignature<'ctx>>,
     enclosing_block: Option<inkwell::basic_block::BasicBlock<'ctx>>,
     start_block: Option<inkwell::basic_block::BasicBlock<'ctx>>,
     end_block: Option<inkwell::basic_block::BasicBlock<'ctx>>,
@@ -1704,7 +1704,9 @@ impl<'ctx> CodeGen<'ctx> {
             errors::raise_error(&fmt, errors::ErrorType::TraitNotFound, &node.pos, self.info);
         }
 
-        let traitsig: types::TraitSignature = self.traits.get(traitnm).unwrap().clone();
+        let mut traitsig: types::TraitSignature = self.traits.get(traitnm).unwrap().clone();
+
+        let mut functions: std::collections::HashMap<String, inkwell::values::PointerValue> = std::collections::HashMap::new();
 
         if traitsig.traittp == types::TraitMetatype::Builtin {
             if traitsig.name != node.data.impln.as_ref().unwrap().functions.last().unwrap().data.func.as_ref().unwrap().name {
@@ -1739,6 +1741,8 @@ impl<'ctx> CodeGen<'ctx> {
             tp.traits.insert(traitnm.to_owned(), builtin_types::create_trait_ink(func.data.unwrap().into_pointer_value(), nargs, traittp.unwrap(), rettp));
             
             self.types.insert(structnm.to_owned(), tp);
+
+            functions.insert(traitsig.name, func.data.unwrap().into_pointer_value());
         }
         else {
             if !self.namespaces.structs.contains_key(structnm) {
@@ -1752,7 +1756,7 @@ impl<'ctx> CodeGen<'ctx> {
                 errors::raise_error(&fmt, errors::ErrorType::CannotImplementBuiltinTrait, &node.pos, self.info);
             }
 
-            for var in &traitsig.vars.unwrap() {
+            for var in traitsig.vars.as_ref().unwrap() {
                 if !self.namespaces.structs.get(structnm).unwrap().0.names.as_ref().unwrap().contains(var.0) {
                     let fmt: String = format!("Struct '{}' does not implement required member '{}'.", structnm, var.0);
                     errors::raise_error(&fmt, errors::ErrorType::CannotImplementBuiltinTrait, &node.pos, self.info);                    
@@ -1880,8 +1884,13 @@ impl<'ctx> CodeGen<'ctx> {
                     isinstance: true,
                 });
 
-                self.namespaces.structs.insert(structnm.to_owned(), (s.0, s.1, s.2, s.3));                                
+                self.namespaces.structs.insert(structnm.to_owned(), (s.0, s.1, s.2, s.3));  
+
+                functions.insert(function.data.func.as_ref().unwrap().name.to_owned(), self.namespaces.functions.get(&(structnm.to_owned() + "." + function.data.func.as_ref().unwrap().name.as_str())).unwrap().0.as_global_value().as_pointer_value());                  
             }
+
+            traitsig.implementations.insert(structnm.to_owned(), functions);
+            self.traits.insert(traitsig.name.to_owned(), traitsig);   
         }
 
         let data: types::Data = types::Data {
@@ -2358,6 +2367,7 @@ impl<'ctx> CodeGen<'ctx> {
         self.traits.insert(node.data.traitn.as_ref().unwrap().traitname.clone(), types::TraitSignature {
                 nargs: None, trait_sig: Some(node.data.traitn.as_ref().unwrap().functions.clone()), name: node.data.traitn.as_ref().unwrap().traitname.clone(), traittp: types::TraitMetatype::User,
                 vars: Some(node.data.traitn.as_ref().unwrap().vars.clone()),
+                implementations: std::collections::HashMap::new(),
             });
 
         let data: types::Data = types::Data {

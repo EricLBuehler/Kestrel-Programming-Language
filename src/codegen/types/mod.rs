@@ -212,12 +212,13 @@ pub struct Trait<'a> {
 }
 
 #[derive(Clone)]
-pub struct TraitSignature {
+pub struct TraitSignature<'a> {
     pub traittp: TraitMetatype,
     pub name: String,
     pub nargs: Option<usize>,
     pub trait_sig: Option<Vec<TemplateTraitSignature>>,
     pub vars: Option<std::collections::HashMap<String, crate::parser::Type>>,
+    pub implementations: std::collections::HashMap<String, std::collections::HashMap<String, inkwell::values::PointerValue<'a>>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -318,6 +319,9 @@ pub fn get_traittp_from_str(tp: String) -> Option<TraitType> {
     }
     else if tp == TraitType::Neg.to_string() {
         return Some(TraitType::Neg);
+    }
+    else if tp == TraitType::Bool.to_string() {
+        return Some(TraitType::Bool);
     }
     else if tp == TraitType::Call.to_string() {
         return Some(TraitType::Call);
