@@ -120,6 +120,13 @@ impl<'a> PartialEq for DataType<'a> {
             return self.arrtp.unwrap() == other.arrtp.unwrap();
         }
 
+        if self.is_dyn {
+            if self.name == other.name && other.is_dyn {
+                return true;
+            }
+            return false;
+        }
+
         if self.tp==BasicDataType::Func && self.tp==BasicDataType::Func {
             if  self.types != other.types || 
                 self.rettp != other.rettp ||
@@ -149,6 +156,13 @@ impl<'a> PartialEq for DataType<'a> {
     fn ne(&self, other: &DataType<'a>) -> bool {
         if self.arrtp.is_some() && other.arrtp.is_some() {
             return self.arrtp.unwrap() != other.arrtp.unwrap();
+        }
+
+        if self.is_dyn {
+            if self.name != other.name || !other.is_dyn {
+                return true;
+            }
+            return false;
         }
 
         if self.tp==BasicDataType::Func && self.tp==BasicDataType::Func {
