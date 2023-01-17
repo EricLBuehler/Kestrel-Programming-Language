@@ -2353,6 +2353,11 @@ impl<'ctx> CodeGen<'ctx> {
             errors::show_warning(errors::WarningType::ExpectedCamelCase, vec![String::from(""), node.data.st.as_ref().unwrap().name.to_camel_case()], vec![String::from("Expected camel case"), String::from("Convert to this: ")], &node.pos, self.info)
         }
 
+        if self.datatypes.get(&node.data.enumn.as_ref().unwrap().name.clone()).is_some() && self.namespaces.structs.get(&node.data.enumn.as_ref().unwrap().name.clone()).unwrap().3 != ForwardDeclarationType::Forward {
+            let fmt: String = format!("Type '{}' is already defined.", node.data.enumn.as_ref().unwrap().name.clone());
+            errors::raise_error(&fmt, errors::ErrorType::TypeRedefinitionAttempt, &node.pos, self.info);
+        }
+
         let mut names: Vec<String> = Vec::new();
         
         for member in &node.data.enumn.as_ref().unwrap().variants {
