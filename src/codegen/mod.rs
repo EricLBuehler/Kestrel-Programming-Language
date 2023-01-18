@@ -30,6 +30,7 @@ pub struct InkwellTypes<'ctx> {
     f64tp: &'ctx inkwell::types::FloatType<'ctx>,
     voidtp: &'ctx inkwell::types::VoidType<'ctx>,
     booltp: &'ctx inkwell::types::IntType<'ctx>,
+    dynptrtp: &'ctx inkwell::types::PointerType<'ctx>,
 }
 
 #[derive(PartialEq, Clone)]
@@ -157,7 +158,6 @@ impl<'ctx> CodeGen<'ctx> {
                 return Some(inkwell::types::AnyTypeEnum::VoidType(*types.voidtp));
             }
             types::BasicDataType::Func |
-            types::BasicDataType::Dyn |
             types::BasicDataType::WrapperFunc => {
                 return None;
             }
@@ -172,6 +172,9 @@ impl<'ctx> CodeGen<'ctx> {
             }
             types::BasicDataType::Enum => {
                 return Some(inkwell::types::AnyTypeEnum::IntType(*types.i32tp));
+            }
+            types::BasicDataType::Dyn => {
+                return Some(inkwell::types::AnyTypeEnum::PointerType(*types.dynptrtp));
             }
             types::BasicDataType::Unknown => {
                 return None;
@@ -2904,6 +2907,8 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
     module.set_triple(&inkwell::targets::TargetTriple::create(triple.as_str()));
     module.set_source_file_name(source_name);
 
+    let dynptrtp: inkwell::types::PointerType = context.struct_type(&[inkwell::types::BasicTypeEnum::IntType(context.i32_type()), inkwell::types::BasicTypeEnum::PointerType(context.i32_type().ptr_type(inkwell::AddressSpace::from(0u16)))], false).ptr_type(inkwell::AddressSpace::from(0u16));
+    
     let inkwelltypes = InkwellTypes {
         i8tp: &context.i8_type(),
         i16tp: &context.i16_type(),
@@ -2914,6 +2919,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
         f64tp: &context.f64_type(),
         voidtp: &context.void_type(),
         booltp: &context.bool_type(),
+        dynptrtp: &dynptrtp,
     };
 
     let namespaces: Namespaces = Namespaces {
