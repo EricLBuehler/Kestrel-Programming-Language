@@ -10,10 +10,25 @@ _main:                                  # @_main
 	.cfi_sections .debug_frame
 	.cfi_startproc
 # %bb.0:                                # %entry
+	pushq	%rbx
+	.cfi_def_cfa_offset 16
+	subq	$32, %rsp
+	.cfi_def_cfa_offset 48
+	.cfi_offset %rbx, -16
 	.loc	1 15 0 prologue_end     # program.ke:15:0
-	movl	$10, -16(%rsp)
-	movl	-16(%rsp), %eax
-	movl	%eax, -8(%rsp)
+	movl	$10, 8(%rsp)
+	movl	8(%rsp), %eax
+	movl	%eax, (%rsp)
+	movl	(%rsp), %ebx
+	movl	$0, 16(%rsp)
+	movl	$4, %edi
+	callq	malloc
+	movl	%ebx, (%rax)
+	movq	%rax, 24(%rsp)
+	addq	$32, %rsp
+	.cfi_def_cfa_offset 16
+	popq	%rbx
+	.cfi_def_cfa_offset 8
 	retq
 .Ltmp0:
 .Lfunc_end0:

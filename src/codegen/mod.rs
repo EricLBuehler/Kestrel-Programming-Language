@@ -30,7 +30,7 @@ pub struct InkwellTypes<'ctx> {
     f64tp: &'ctx inkwell::types::FloatType<'ctx>,
     voidtp: &'ctx inkwell::types::VoidType<'ctx>,
     booltp: &'ctx inkwell::types::IntType<'ctx>,
-    dynptrtp: &'ctx inkwell::types::PointerType<'ctx>,
+    dynptrtp: &'ctx inkwell::types::StructType<'ctx>,
 }
 
 #[derive(PartialEq, Clone)]
@@ -58,6 +58,9 @@ pub struct Namespaces<'ctx> {
     structs: std::collections::HashMap<String, (types::DataType<'ctx>, Option<inkwell::types::AnyTypeEnum<'ctx>>, std::collections::HashMap<String, i32>, ForwardDeclarationType)>,
     template_functions_sig: std::collections::HashMap<String, (parser::Node, TemplateFunctionInstance)>,
     template_functions: Vec<(String, types::DataType<'ctx>, inkwell::values::FunctionValue<'ctx>)>,
+    structid: std::collections::HashMap<String, i32>,
+    structid_from: std::collections::HashMap<i32, String>,
+    structid_max: i32,
 }
 
 pub struct CodeGen<'ctx> {
@@ -174,7 +177,7 @@ impl<'ctx> CodeGen<'ctx> {
                 return Some(inkwell::types::AnyTypeEnum::IntType(*types.i32tp));
             }
             types::BasicDataType::Dyn => {
-                return Some(inkwell::types::AnyTypeEnum::PointerType(*types.dynptrtp));
+                return Some(inkwell::types::AnyTypeEnum::StructType(*types.dynptrtp));
             }
             types::BasicDataType::Unknown => {
                 return None;
@@ -484,28 +487,53 @@ impl<'ctx> CodeGen<'ctx> {
         }
 
         if node.data.letn.as_ref().unwrap().expr.is_some() {
-            let right: types::Data = self.compile_expr(&node.data.letn.as_ref().unwrap().expr.as_ref().unwrap(), true, false);
+            if  node.data.letn.as_ref().unwrap().tp != None &&
+                node.data.letn.as_ref().unwrap().tp.as_ref().unwrap().isdyn {
+                let right: types::Data = self.compile_expr(&node.data.letn.as_ref().unwrap().expr.as_ref().unwrap(), true, false);
+                
+                let ptr: inkwell::values::PointerValue = self.builder.build_alloca(inkwell::types::BasicTypeEnum::StructType(*self.inkwell_types.dynptrtp), name.as_str());
 
-            let mut tp: types::DataType = right.tp;
+                let typ: types::Type = Self::get_type_from_data(self.types.clone(), &right);
+                let (dyntp, _) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
 
-            if right.data.is_some(){
-                let ptr: inkwell::values::PointerValue = self.builder.build_alloca(right.data.unwrap().get_type(), name.as_str());
-                    
-                self.builder.build_store(ptr, right.data.unwrap());
-
-                let rt_tp: types::DataType = tp.clone();
-                if node.data.letn.as_ref().unwrap().tp != None {
-                    (tp, _) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
-                    if tp != rt_tp {
-                        let fmt: String = format!("Expected '{}' type, got '{}' type.", tp.to_string(), rt_tp.to_string());
-                        errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
-                    }
+                if !typ.traits.contains_key(&dyntp.name) {
+                    let fmt: String = format!("'{}' type does not implement '{}' trait.", right.tp.to_string(), dyntp.name);
+                    errors::raise_error(&fmt, errors::ErrorType::MissingTrait, &node.pos, self.info);
                 }
 
-                self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
+                let idx: i32 = self.namespaces.structid.get(&right.tp.name).unwrap().clone();
+                let idptr = self.builder.build_struct_gep(ptr, 0u32, "id").expect("GEP error");
+                self.builder.build_store(idptr, self.inkwell_types.i32tp.const_int(idx as u64, false));
+
+                let itmptr = self.builder.build_struct_gep(ptr, 1u32, "item").expect("GEP error");
+                let structptr: inkwell::values::PointerValue = self.builder.build_malloc(right.data.unwrap().get_type(), "struct_ptr").expect("Malloc error");
+                self.builder.build_store(structptr, right.data.unwrap());
+                self.builder.build_store(itmptr, self.builder.build_pointer_cast(structptr, itmptr.get_type().get_element_type().into_pointer_type(), "st_bitcast"));
+                
+                self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), right.tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
             }
-            else {
-                self.namespaces.locals.last_mut().unwrap().insert(name, (None, tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));            
+            else { 
+                let right: types::Data = self.compile_expr(&node.data.letn.as_ref().unwrap().expr.as_ref().unwrap(), true, false);
+                if right.data.is_some(){
+                    let rt_tp: types::DataType = right.tp.clone();
+                    if node.data.letn.as_ref().unwrap().tp != None {
+                        let (tp, _) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
+                        if tp != rt_tp {
+                            let fmt: String = format!("Expected '{}' type, got '{}' type.", tp.to_string(), rt_tp.to_string());
+                            errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+                        }
+                    }
+
+                    
+                    let ptr: inkwell::values::PointerValue = self.builder.build_alloca(right.data.unwrap().get_type(), name.as_str());
+                        
+                    self.builder.build_store(ptr, right.data.unwrap());
+
+                    self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), right.tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
+                }
+                else {
+                    self.namespaces.locals.last_mut().unwrap().insert(name, (None, right.tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));            
+                }
             }
         }
         else {
@@ -514,24 +542,34 @@ impl<'ctx> CodeGen<'ctx> {
                 errors::raise_error(&fmt, errors::ErrorType::ExpectedSpecifiedType, &node.pos, self.info);
             }
             
-            let (tp, inktp) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
-            
-            if tp.tp != types::BasicDataType::Void{
-                let ptr: inkwell::values::PointerValue = self.builder.build_alloca(Self::get_basic_from_any(inktp).unwrap(), name.as_str());
+            if  node.data.letn.as_ref().unwrap().tp != None &&
+                node.data.letn.as_ref().unwrap().tp.as_ref().unwrap().isdyn {                
+                let ptr: inkwell::values::PointerValue = self.builder.build_alloca(inkwell::types::BasicTypeEnum::StructType(*self.inkwell_types.dynptrtp), name.as_str());
 
-                let rt_tp: types::DataType = tp.clone();
-                if node.data.letn.as_ref().unwrap().tp != None {
-                    
-                    if tp != rt_tp {
-                        let fmt: String = format!("Expected '{}' type, got '{}' type.", tp.to_string(), rt_tp.to_string());
-                        errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
-                    }
-                }
+                let (dyntp, _) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
 
-                self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Uninitialized));
+                self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), dyntp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
             }
-            else {
-                self.namespaces.locals.last_mut().unwrap().insert(name, (None, tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Uninitialized));            
+            else { 
+                let (tp, inktp) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
+
+                if tp.tp != types::BasicDataType::Void{
+                    let ptr: inkwell::values::PointerValue = self.builder.build_alloca(Self::get_basic_from_any(inktp).unwrap(), name.as_str());
+    
+                    let rt_tp: types::DataType = tp.clone();
+                    if node.data.letn.as_ref().unwrap().tp != None {
+    
+                        if tp != rt_tp {
+                            let fmt: String = format!("Expected '{}' type, got '{}' type.", tp.to_string(), rt_tp.to_string());
+                            errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+                        }
+                    }
+    
+                    self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Uninitialized));
+                }
+                else {
+                    self.namespaces.locals.last_mut().unwrap().insert(name, (None, tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Uninitialized));            
+                }
             }
         }
 
@@ -566,7 +604,12 @@ impl<'ctx> CodeGen<'ctx> {
                     let fmt: String = format!("Name '{}' is not owned.", name);
                     errors::raise_error_multi(errors::ErrorType::NameNotOwned, vec![transferred, fmt], vec![&self.get_variable(&name).0.unwrap().3.transferred.as_ref().unwrap(), &node.pos], self.info);
                 }
-                (v.0, v.1.clone())
+                if v.1.is_dyn {
+                    (Some(self.builder.build_struct_gep(v.0.unwrap(), 1, name.as_str()).expect("GEP Error")), v.1.clone())
+                }
+                else {
+                    (v.0, v.1.clone())
+                }
             }
         };
 
@@ -877,7 +920,6 @@ impl<'ctx> CodeGen<'ctx> {
         func.add_attribute(inkwell::attributes::AttributeLoc::Function, attr);
         
         self.builder.position_at_end(basic_block); 
-
         
         //Setup locals
         let prev_locals = self.namespaces.locals.to_owned();
@@ -898,11 +940,10 @@ impl<'ctx> CodeGen<'ctx> {
             }
 
             let ptr: inkwell::values::PointerValue;
-            if argv.is_some() {
+        if argv.is_some() {
                 ptr = self.builder.build_alloca(argv.unwrap().get_type(), name.as_str());
             
                 self.builder.build_store(ptr, argv.unwrap());
-
                 self.namespaces.locals.last_mut().unwrap().insert(name.to_string(), (Some(ptr), tp.clone(), mutability.get(idx_mut).unwrap().clone(), types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
             }
             else {
@@ -986,11 +1027,36 @@ impl<'ctx> CodeGen<'ctx> {
         let ptr: Option<inkwell::values::PointerValue> = self.get_variable(&name).0.unwrap().0;
 
         if ptr.is_some() {
-            self.builder.build_store(ptr.unwrap(), right.data.unwrap());
+            let ptr: inkwell::values::PointerValue = self.get_variable(&name).0.unwrap().0.unwrap().clone();
+            if self.get_variable(&name).0.unwrap().1.is_dyn {
+                let typ: types::Type = Self::get_type_from_data(self.types.clone(), &right);
+                let (dyntp, _) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
 
-            let idx: usize = self.get_variable(&name).1;
-            
-            self.namespaces.locals.get_mut(idx).unwrap().insert(name, (ptr, right.tp.clone(), types::DataMutablility::Mutable, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
+                if !typ.traits.contains_key(&dyntp.name) {
+                    let fmt: String = format!("'{}' type does not implement '{}' trait.", right.tp.to_string(), dyntp.name);
+                    errors::raise_error(&fmt, errors::ErrorType::MissingTrait, &node.pos, self.info);
+                }
+
+                let idx: i32 = self.namespaces.structid.get(&right.tp.name).unwrap().clone();
+                let idptr = self.builder.build_struct_gep(ptr, 0u32, "id").expect("GEP error");
+                self.builder.build_store(idptr, self.inkwell_types.i32tp.const_int(idx as u64, false));
+
+                let itmptr = self.builder.build_struct_gep(ptr, 1u32, "item").expect("GEP error");
+                let structptr: inkwell::values::PointerValue = self.builder.build_malloc(right.data.unwrap().get_type(), "struct_ptr").expect("Malloc error");
+                self.builder.build_store(structptr, right.data.unwrap());
+                self.builder.build_store(itmptr, self.builder.build_pointer_cast(structptr, itmptr.get_type().get_element_type().into_pointer_type(), "st_bitcast"));
+                
+                let idx: usize = self.get_variable(&name).1;
+
+                self.namespaces.locals.get_mut(idx).unwrap().insert(name, (Some(ptr), right.tp.clone(), node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
+            }
+            else {
+                self.builder.build_store(ptr, right.data.unwrap());
+
+                let idx: usize = self.get_variable(&name).1;
+                
+                self.namespaces.locals.get_mut(idx).unwrap().insert(name, (Some(ptr), right.tp.clone(), types::DataMutablility::Mutable, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
+            }
         }
 
         return right;
@@ -1402,6 +1468,10 @@ impl<'ctx> CodeGen<'ctx> {
             let fmt: String = format!("Type '{}' is already defined.", node.data.st.as_ref().unwrap().name.clone());
             errors::raise_error(&fmt, errors::ErrorType::TypeRedefinitionAttempt, &node.pos, self.info);
         }
+
+        self.namespaces.structid_max += 1;
+        self.namespaces.structid.insert(node.data.st.as_ref().unwrap().name.clone(), self.namespaces.structid_max);
+        self.namespaces.structid_from.insert(self.namespaces.structid_max, node.data.st.as_ref().unwrap().name.clone());
         
         if !node.data.st.as_ref().unwrap().name.is_camel_case() {
             errors::show_warning(errors::WarningType::ExpectedCamelCase, vec![String::from(""), node.data.st.as_ref().unwrap().name.to_camel_case()], vec![String::from("Expected camel case"), String::from("Convert to this: ")], &node.pos, self.info)
@@ -2907,7 +2977,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
     module.set_triple(&inkwell::targets::TargetTriple::create(triple.as_str()));
     module.set_source_file_name(source_name);
 
-    let dynptrtp: inkwell::types::PointerType = context.struct_type(&[inkwell::types::BasicTypeEnum::IntType(context.i32_type()), inkwell::types::BasicTypeEnum::PointerType(context.i32_type().ptr_type(inkwell::AddressSpace::from(0u16)))], false).ptr_type(inkwell::AddressSpace::from(0u16));
+    let dynptrtp: inkwell::types::StructType = context.struct_type(&[inkwell::types::BasicTypeEnum::IntType(context.i32_type()), inkwell::types::BasicTypeEnum::PointerType(context.i32_type().ptr_type(inkwell::AddressSpace::from(0u16)))], false);
     
     let inkwelltypes = InkwellTypes {
         i8tp: &context.i8_type(),
@@ -2928,6 +2998,9 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
         structs: std::collections::HashMap::new(),
         template_functions_sig: std::collections::HashMap::new(),
         template_functions: Vec::new(),
+        structid: std::collections::HashMap::new(),
+        structid_from: std::collections::HashMap::new(),
+        structid_max: -1,
     };
 
     

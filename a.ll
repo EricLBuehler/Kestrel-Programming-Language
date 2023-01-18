@@ -11,6 +11,16 @@ entry:
   %s1 = load { i32 }, { i32 }* %s, !dbg !8
   %st = alloca { i32 }, !dbg !8
   store { i32 } %s1, { i32 }* %st, !dbg !8
+  %st2 = load { i32 }, { i32 }* %st, !dbg !8
+  %x3 = alloca { i32, i32* }, !dbg !8
+  %id = getelementptr inbounds { i32, i32* }, { i32, i32* }* %x3, i32 0, i32 0, !dbg !8
+  store i32 0, i32* %id, !dbg !8
+  %item = getelementptr inbounds { i32, i32* }, { i32, i32* }* %x3, i32 0, i32 1, !dbg !8
+  %malloccall = tail call i8* @malloc(i32 ptrtoint (i32* getelementptr (i32, i32* null, i32 1) to i32))
+  %struct_ptr = bitcast i8* %malloccall to { i32 }*, !dbg !8
+  store { i32 } %st2, { i32 }* %struct_ptr, !dbg !8
+  %st_bitcast = bitcast { i32 }* %struct_ptr to i32*, !dbg !8
+  store i32* %st_bitcast, i32** %item, !dbg !8
   ret void, !dbg !8
 }
 
@@ -20,6 +30,9 @@ entry:
   ret void, !dbg !15
 }
 
+; Function Attrs: nofree nounwind
+declare noalias i8* @malloc(i32) local_unnamed_addr #1
+
 ; Function Attrs: noinline nounwind optnone
 define i32 @main(i32 %0, i8** %1) local_unnamed_addr #0 {
 entry:
@@ -28,6 +41,7 @@ entry:
 }
 
 attributes #0 = { noinline nounwind optnone }
+attributes #1 = { nofree nounwind }
 
 !llvm.module.flags = !{!0}
 !llvm.dbg.cu = !{!1}
