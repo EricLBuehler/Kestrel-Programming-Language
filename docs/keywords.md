@@ -176,3 +176,8 @@ trait t{
     fn name()
 }
 ```
+
+## ```dyn```
+The ```dyn``` keyword defines a dynamically-dispatched type. Types defined with the ```dyn``` keyword follow the following format:
+```dyn trait```
+All objects used with the ```dyn``` type must be used with structs.
