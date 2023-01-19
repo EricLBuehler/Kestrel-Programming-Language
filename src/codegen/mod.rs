@@ -295,7 +295,7 @@ impl<'ctx> CodeGen<'ctx> {
             let traitnm: String = arg.data.as_ref().unwrap().to_owned();
             let tp: types::DataType = types::new_dyn_datatype(traitnm, arg.mutability);
             
-            return (tp, inkwell::types::AnyTypeEnum::VoidType(*types.voidtp));
+            return (tp, inkwell::types::AnyTypeEnum::StructType(*types.dynptrtp));
         }
         else {
             let tp: Option<&types::DataType> = datatypes.get(arg.data.as_ref().unwrap());
@@ -800,7 +800,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
 
             if fn_type.get_return_type() != None {
-                let fmt: String = format!("Expected 'void' return type, got '{}'.", &rettp_tp.name);
+                let fmt: String = format!("Expected 'void' return type, got '{}'.", &rettp_tp);
                 errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
             }
         }
@@ -975,7 +975,7 @@ impl<'ctx> CodeGen<'ctx> {
         //Check if last stmt. is a return
         if node.data.func.as_ref().unwrap().blocks.len()==0 || node.data.func.as_ref().unwrap().blocks.last().unwrap().tp != parser::NodeType::RETURN {
             if retv.tp != rettp_tp.tp && name!="main"{
-                let fmt: String = format!("Expected '{}' return type, got '{}'.", &rettp_tp.name, retv.tp.name);
+                let fmt: String = format!("Expected '{}' return type, got '{}'.", &rettp_tp, retv.tp);
                 errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
             }
 
@@ -1049,7 +1049,7 @@ impl<'ctx> CodeGen<'ctx> {
                 }
 
                 if right.tp.tp != types::BasicDataType::Struct {
-                    let fmt: String = format!("Expected struct.");
+                    let fmt: String = format!("Expected struct, got '{}'.", right.tp.tp);
                     errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
                 }
 
@@ -1134,7 +1134,7 @@ impl<'ctx> CodeGen<'ctx> {
                 have_template_method = true;
             }
             else{
-                let fmt: String = format!("Type '{}' has no method '{}'.", base.tp.name, attr);
+                let fmt: String = format!("Type '{}' has no method '{}'.", base.tp, attr);
                 errors::raise_error(&fmt, errors::ErrorType::StructAttrNotFound, &node.pos, self.info);
             }
         }
@@ -1370,7 +1370,7 @@ impl<'ctx> CodeGen<'ctx> {
         let left: types::Data = self.compile_expr(&node.data.to.as_ref().unwrap().left, false, false);     
         let arg: &parser::Type = &node.data.to.as_ref().unwrap().tp;  
         if arg.isfn {
-            let fmt: String = format!("Non primitive cast from '{}' to 'fn'.", left.tp.name);
+            let fmt: String = format!("Non primitive cast from '{}' to 'fn'.", left.tp);
             errors::raise_error(&fmt, errors::ErrorType::InvalidCast, &node.pos, self.info);
         }
         let tp_name: &String = &arg.data.as_ref().unwrap();
@@ -1426,7 +1426,7 @@ impl<'ctx> CodeGen<'ctx> {
             };
         } 
         else {
-            let fmt: String = format!("Non primitive cast from '{}' to '{}'.", left.tp.name, tp_name);
+            let fmt: String = format!("Non primitive cast from '{}' to '{}'.", left.tp, tp_name);
             errors::raise_error(&fmt, errors::ErrorType::InvalidCast, &node.pos, self.info);
         }
     }
@@ -1600,7 +1600,7 @@ impl<'ctx> CodeGen<'ctx> {
         let attr: String = node.data.attr.as_ref().unwrap().attr.clone();
 
         if !base.tp.names.as_ref().unwrap().contains(&attr) {
-            let fmt: String = format!("Type '{}' has no attribute '{}'.", base.tp.name, attr);
+            let fmt: String = format!("Type '{}' has no attribute '{}'.", base.tp, attr);
             errors::raise_error(&fmt, errors::ErrorType::StructAttrNotFound, &node.pos, self.info);
         }
 
@@ -1654,7 +1654,7 @@ impl<'ctx> CodeGen<'ctx> {
         let attr: String = node.data.attrassign.as_ref().unwrap().attr.clone();
 
         if !base.tp.names.as_ref().unwrap().contains(&attr) {
-            let fmt: String = format!("Struct '{}' has no attribute '{}'.", base.tp.name, attr);
+            let fmt: String = format!("Struct '{}' has no attribute '{}'.", base.tp, attr);
             errors::raise_error(&fmt, errors::ErrorType::StructAttrNotFound, &node.pos, self.info);
         }
 
@@ -1678,7 +1678,7 @@ impl<'ctx> CodeGen<'ctx> {
         }
 
         if base.tp.mutability.get(idx as usize).unwrap() == &types::DataMutablility::Immutable{
-            let fmt: String = format!("Attribute '{}' is immutable.", base.tp.name);
+            let fmt: String = format!("Attribute '{}' is immutable.", base.tp);
             errors::raise_error(&fmt, errors::ErrorType::ImmutableAttr, &node.pos, self.info);
         }
 
@@ -2893,7 +2893,7 @@ impl<'ctx> CodeGen<'ctx> {
                     }
 
                     if fn_type.get_return_type() != None {
-                        let fmt: String = format!("Expected 'void' return type, got '{}'.", &rettp_full.0.name);
+                        let fmt: String = format!("Expected 'void' return type, got '{}'.", &rettp_full.0);
                         errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
                     }
                 }

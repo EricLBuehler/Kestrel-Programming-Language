@@ -8,7 +8,7 @@ trait t {
 }
 
 impl t for s {
-    fn func(_a: i64, _b: i32) {
+    fn func(_a: s, _b: i32) {
 
     }
 }
@@ -16,4 +16,5 @@ impl t for s {
 fn main() {
     let st = s{x = 10u32}
     let x: dyn t = st
+    x.func(2)
 }
