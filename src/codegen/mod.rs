@@ -501,6 +501,11 @@ impl<'ctx> CodeGen<'ctx> {
                     errors::raise_error(&fmt, errors::ErrorType::MissingTrait, &node.pos, self.info);
                 }
 
+                if right.tp.tp != types::BasicDataType::Struct {
+                    let fmt: String = format!("Expected struct.");
+                    errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+                }
+
                 let idx: i32 = self.namespaces.structid.get(&right.tp.name).unwrap().clone();
                 let idptr = self.builder.build_struct_gep(ptr, 0u32, "id").expect("GEP error");
                 self.builder.build_store(idptr, self.inkwell_types.i32tp.const_int(idx as u64, false));
@@ -1041,6 +1046,11 @@ impl<'ctx> CodeGen<'ctx> {
                 if !typ.traits.contains_key(&dyntp.name) {
                     let fmt: String = format!("'{}' type does not implement '{}' trait.", right.tp.to_string(), dyntp.name);
                     errors::raise_error(&fmt, errors::ErrorType::MissingTrait, &node.pos, self.info);
+                }
+
+                if right.tp.tp != types::BasicDataType::Struct {
+                    let fmt: String = format!("Expected struct.");
+                    errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
                 }
 
                 let idx: i32 = self.namespaces.structid.get(&right.tp.name).unwrap().clone();
