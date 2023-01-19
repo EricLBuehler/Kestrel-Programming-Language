@@ -21,6 +21,9 @@ entry:
   store { i32 } %st2, { i32 }* %struct_ptr, !dbg !8
   %st_bitcast = bitcast { i32 }* %struct_ptr to i32*, !dbg !8
   store i32* %st_bitcast, i32** %item, !dbg !8
+  %free_dyn = getelementptr inbounds { i32, i32* }, { i32, i32* }* %x3, i32 0, i32 1, !dbg !8
+  %0 = bitcast i32** %free_dyn to i8*
+  tail call void @free(i8* %0), !dbg !8
   ret void, !dbg !8
 }
 
@@ -33,6 +36,9 @@ entry:
 ; Function Attrs: nofree nounwind
 declare noalias i8* @malloc(i32) local_unnamed_addr #1
 
+; Function Attrs: nounwind
+declare void @free(i8* nocapture) local_unnamed_addr #2
+
 ; Function Attrs: noinline nounwind optnone
 define i32 @main(i32 %0, i8** %1) local_unnamed_addr #0 {
 entry:
@@ -42,6 +48,7 @@ entry:
 
 attributes #0 = { noinline nounwind optnone }
 attributes #1 = { nofree nounwind }
+attributes #2 = { nounwind }
 
 !llvm.module.flags = !{!0}
 !llvm.dbg.cu = !{!1}

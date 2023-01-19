@@ -39,7 +39,7 @@ pub enum ForwardDeclarationType {
     Real,
 }
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum InitializationStatus {
     Initialized,
     Uninitialized,
@@ -510,7 +510,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.builder.build_store(structptr, right.data.unwrap());
                 self.builder.build_store(itmptr, self.builder.build_pointer_cast(structptr, itmptr.get_type().get_element_type().into_pointer_type(), "st_bitcast"));
                 
-                self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), right.tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
+                self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), dyntp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
             }
             else { 
                 let right: types::Data = self.compile_expr(&node.data.letn.as_ref().unwrap().expr.as_ref().unwrap(), true, false);
@@ -956,6 +956,12 @@ impl<'ctx> CodeGen<'ctx> {
 
         let retv: types::Data = self.compile(&node.data.func.as_ref().unwrap().blocks, true, true);
         
+        for local in self.namespaces.locals.last().unwrap() {
+            if local.1.3.owned && local.1.1.is_dyn { //Free all owned dyn types
+                self.builder.build_free(self.builder.build_struct_gep(local.1.0.unwrap(), 1, "free_dyn").expect("GEP error"));
+            }
+        }
+        
         //Reset locals
         self.namespaces.locals = prev_locals;
 
@@ -1048,7 +1054,7 @@ impl<'ctx> CodeGen<'ctx> {
                 
                 let idx: usize = self.get_variable(&name).1;
 
-                self.namespaces.locals.get_mut(idx).unwrap().insert(name, (Some(ptr), right.tp.clone(), node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
+                self.namespaces.locals.get_mut(idx).unwrap().insert(name, (Some(ptr), dyntp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
             }
             else {
                 self.builder.build_store(ptr, right.data.unwrap());

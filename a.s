@@ -10,26 +10,33 @@ _main:                                  # @_main
 	.cfi_sections .debug_frame
 	.cfi_startproc
 # %bb.0:                                # %entry
-	pushq	%rbx
+	pushq	%rbp
 	.cfi_def_cfa_offset 16
-	subq	$32, %rsp
-	.cfi_def_cfa_offset 48
-	.cfi_offset %rbx, -16
+	pushq	%rbx
+	.cfi_def_cfa_offset 24
+	subq	$40, %rsp
+	.cfi_def_cfa_offset 64
+	.cfi_offset %rbx, -24
+	.cfi_offset %rbp, -16
 	.loc	1 15 0 prologue_end     # program.ke:15:0
-	movl	$10, 8(%rsp)
-	movl	8(%rsp), %eax
-	movl	%eax, (%rsp)
-	movl	(%rsp), %ebx
-	movl	$0, 16(%rsp)
+	movl	$10, 16(%rsp)
+	movl	16(%rsp), %eax
+	movl	%eax, 8(%rsp)
+	movl	8(%rsp), %ebp
+	movl	$0, 24(%rsp)
+	leaq	32(%rsp), %rbx
 	movl	$4, %edi
 	callq	malloc
-	movl	%ebx, (%rax)
-	movq	%rax, 24(%rsp)
-	addq	$32, %rsp
-	.cfi_def_cfa_offset 16
+	movl	%ebp, (%rax)
+	movq	%rax, 32(%rsp)
+	movq	%rbx, %rdi
+	addq	$40, %rsp
+	.cfi_def_cfa_offset 24
 	popq	%rbx
+	.cfi_def_cfa_offset 16
+	popq	%rbp
 	.cfi_def_cfa_offset 8
-	retq
+	jmp	free                    # TAILCALL
 .Ltmp0:
 .Lfunc_end0:
 	.size	_main, .Lfunc_end0-_main
