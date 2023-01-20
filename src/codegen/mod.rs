@@ -373,7 +373,7 @@ impl<'ctx> CodeGen<'ctx> {
         }
     }
 
-    fn append_struct_to_vtables(&mut self, tbl: Vec<inkwell::values::PointerValue<'ctx>>) {
+    fn append_struct_to_vtables(&mut self, tbl: Vec<inkwell::values::PointerValue<'ctx>>, idx: i32) {
         let mut structs: Vec<inkwell::values::BasicValueEnum> = Vec::new();
         for table in &self.vtables_vec {
             let mut ptrs: Vec<inkwell::values::BasicValueEnum> = Vec::new();
@@ -388,7 +388,14 @@ impl<'ctx> CodeGen<'ctx> {
             ptrs.push(inkwell::values::BasicValueEnum::PointerValue(*ptr));
         }
 
-        structs.push(inkwell::values::BasicValueEnum::StructValue(self.context.const_struct(&ptrs[..], false)));
+        if idx as usize >= self.vtables_vec.len() {
+            structs.push(inkwell::values::BasicValueEnum::StructValue(self.context.const_struct(&ptrs[..], false)));
+            
+            self.vtables_vec.push(tbl);
+        }
+        else {
+            structs.insert(idx as usize, inkwell::values::BasicValueEnum::StructValue(self.context.const_struct(&ptrs[..], false)));
+        }
 
         let st: inkwell::values::BasicValueEnum = inkwell::values::BasicValueEnum::StructValue(self.context.const_struct(&structs[..], false));
 
@@ -396,8 +403,6 @@ impl<'ctx> CodeGen<'ctx> {
         vtable.set_initializer(&st);
         vtable.set_constant(true);
         self.vtables = Some(vtable);
-        
-        self.vtables_vec.push(tbl);
     }
 
     fn call_trait(&mut self, t: &types::Trait<'ctx>, mut args: Vec<types::Data<'ctx>>, node: &parser::Node) -> types::Data<'ctx> {
@@ -2055,7 +2060,9 @@ impl<'ctx> CodeGen<'ctx> {
             traitsig.implementations.insert(structnm.to_owned(), functions);
             self.traits.insert(traitsig.name.to_owned(), traitsig);   
 
-            self.append_struct_to_vtables(ptrs);
+            let idx: i32 = self.namespaces.structid.get(structnm).unwrap().clone();
+
+            self.append_struct_to_vtables(ptrs, idx);
         }
 
         let data: types::Data = types::Data {
