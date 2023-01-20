@@ -1126,12 +1126,12 @@ impl<'ctx> CodeGen<'ctx> {
 
                 let idx: usize = self.traits.get(&base.tp.name).unwrap().trait_sig.as_ref().unwrap().iter().position(|x| &x.name == attr).unwrap();
                 
-                let method: inkwell::values::PointerValue = unsafe { self.builder.build_in_bounds_gep(vtable, &[self.inkwell_types.i32tp.const_int(idx as u64, false), self.inkwell_types.i32tp.const_zero()], "vtable") };
+                let method: inkwell::values::PointerValue = self.builder.build_load( unsafe { self.builder.build_in_bounds_gep(vtable, &[self.inkwell_types.i32tp.const_int(idx as u64, false), self.inkwell_types.i32tp.const_zero()], "method_ptr") }, "method").into_pointer_value();
 
                 let mtp: types::DataType = self.datatypes.get(&types::BasicDataType::Func.to_string()).unwrap().clone();
                 
                 args.push(types::Data {
-                    data: Some(self.builder.build_load(method, "method")),
+                    data: Some(inkwell::values::BasicValueEnum::PointerValue(method)),
                     tp: mtp,
                     owned: true,
                 });
