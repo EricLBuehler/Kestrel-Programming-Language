@@ -1937,6 +1937,11 @@ impl<'ctx> CodeGen<'ctx> {
             }
 
             for function in &node.data.impln.as_ref().unwrap().functions {
+                if function.data.func.unwrap().template_types.len() > 0 {
+                    let fmt: String = format!("Implementation functions may not be templated.");
+                    errors::raise_error(&fmt, errors::ErrorType::ImplTemplatedFunction, &node.pos, self.info);
+                }
+
                 let mut found: bool = false;
                 for sig in traitsig.trait_sig.as_ref().unwrap() {
                     if function.data.func.as_ref().unwrap().name == sig.name {

@@ -52,6 +52,7 @@ pub enum ErrorType {
     ImplFunctionTemplateTypeMismatch,
     FunctionNotDefinedInTrait,
     FunctionRedefinedInImpl,
+    ImplTemplatedFunction,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -112,6 +113,7 @@ pub fn repr_err(tp: ErrorType) -> &'static str {
         ErrorType::ImplFunctionTemplateTypeMismatch => "template argument type mismatch in impl",
         ErrorType::FunctionNotDefinedInTrait => "function is not defined in trait impl",
         ErrorType::FunctionRedefinedInImpl => "function is redefined in trait impl",
+        ErrorType::ImplTemplatedFunction => "functions may not be templated in impl",
     }
 }
 
