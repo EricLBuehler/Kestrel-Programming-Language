@@ -1937,7 +1937,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
 
             for function in &node.data.impln.as_ref().unwrap().functions {
-                if function.data.func.unwrap().template_types.len() > 0 {
+                if function.data.func.as_ref().unwrap().template_types.len() > 0 {
                     let fmt: String = format!("Implementation functions may not be templated.");
                     errors::raise_error(&fmt, errors::ErrorType::ImplTemplatedFunction, &node.pos, self.info);
                 }
