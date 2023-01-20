@@ -1122,19 +1122,17 @@ impl<'ctx> CodeGen<'ctx> {
                 let instance: inkwell::values::PointerValue = self.builder.build_struct_gep(base.data.unwrap().into_pointer_value(), 1u32, "instance_ptr").expect("GEP error");
                 let idptr: inkwell::values::PointerValue = self.builder.build_struct_gep(base.data.unwrap().into_pointer_value(), 0u32, "id_ptr").expect("GEP error");
 
-                self.module.print_to_file("out.ll").expect("Print failed");
-
                 let vtable: inkwell::values::PointerValue = unsafe { self.builder.build_in_bounds_gep(self.vtables.unwrap().as_pointer_value(), &[self.builder.build_load(idptr, "id").into_int_value(), self.inkwell_types.i32tp.const_zero()], "vtable") };
 
                 let idx: usize = self.traits.get(&base.tp.name).unwrap().trait_sig.as_ref().unwrap().iter().position(|x| &x.name == attr).unwrap();
                 
                 let method: inkwell::values::PointerValue = unsafe { self.builder.build_in_bounds_gep(vtable, &[self.inkwell_types.i32tp.const_int(idx as u64, false), self.inkwell_types.i32tp.const_zero()], "vtable") };
 
-                self.module.print_to_file("out2.ll").expect("Print failed");
-
+                let mtp: types::DataType = self.datatypes.get(&types::BasicDataType::Func.to_string()).unwrap().clone();
+                
                 args.push(types::Data {
                     data: Some(self.builder.build_load(method, "method")),
-                    tp: self.datatypes.get(&types::BasicDataType::Func.to_string()).unwrap().clone(),
+                    tp: mtp,
                     owned: true,
                 });
 
