@@ -80,6 +80,8 @@ pub struct CodeGen<'ctx> {
     start_block: Option<inkwell::basic_block::BasicBlock<'ctx>>,
     end_block: Option<inkwell::basic_block::BasicBlock<'ctx>>,
     loop_flow_broken: bool,
+    vtables: Option<inkwell::values::GlobalValue<'ctx>>,
+    vtables_vec: Vec<Vec<inkwell::values::PointerValue<'ctx>>>,
 }
 
 //Codegen functions
@@ -371,6 +373,33 @@ impl<'ctx> CodeGen<'ctx> {
         }
     }
 
+    fn append_struct_to_vtables(&mut self, tbl: Vec<inkwell::values::PointerValue<'ctx>>) {
+        let mut structs: Vec<inkwell::values::BasicValueEnum> = Vec::new();
+        for table in &self.vtables_vec {
+            let mut ptrs: Vec<inkwell::values::BasicValueEnum> = Vec::new();
+            for ptr in table {
+                ptrs.push(inkwell::values::BasicValueEnum::PointerValue(*ptr));
+            }
+            structs.push(inkwell::values::BasicValueEnum::StructValue(self.context.const_struct(&ptrs[..], false)));
+        }
+
+        let mut ptrs: Vec<inkwell::values::BasicValueEnum> = Vec::new();
+        for ptr in &tbl {
+            ptrs.push(inkwell::values::BasicValueEnum::PointerValue(*ptr));
+        }
+
+        structs.push(inkwell::values::BasicValueEnum::StructValue(self.context.const_struct(&ptrs[..], false)));
+
+        let st: inkwell::values::BasicValueEnum = inkwell::values::BasicValueEnum::StructValue(self.context.const_struct(&structs[..], false));
+
+        let vtable: inkwell::values::GlobalValue = self.module.add_global(st.get_type(), Some(inkwell::AddressSpace::from(0u16)), "vtable");
+        vtable.set_initializer(&st);
+        vtable.set_constant(true);
+        self.vtables = Some(vtable);
+        
+        self.vtables_vec.push(tbl);
+    }
+
     fn call_trait(&mut self, t: &types::Trait<'ctx>, mut args: Vec<types::Data<'ctx>>, node: &parser::Node) -> types::Data<'ctx> {
         if t.function.is_some() {
             let func = t.function.unwrap();
@@ -506,15 +535,15 @@ impl<'ctx> CodeGen<'ctx> {
                     errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
                 }
 
-                let idx: i32 = self.namespaces.structid.get(&right.tp.name).unwrap().clone();
-                let idptr = self.builder.build_struct_gep(ptr, 0u32, "id").expect("GEP error");
-                self.builder.build_store(idptr, self.inkwell_types.i32tp.const_int(idx as u64, false));
+                let idptr = self.builder.build_struct_gep(ptr, 0u32, "idptr").expect("GEP error");
+                self.builder.build_store(idptr, self.inkwell_types.i32tp.const_int(*self.namespaces.structid.get(&right.tp.name).unwrap() as u64, false));
 
                 let itmptr = self.builder.build_struct_gep(ptr, 1u32, "item").expect("GEP error");
                 let structptr: inkwell::values::PointerValue = self.builder.build_malloc(right.data.unwrap().get_type(), "struct_ptr").expect("Malloc error");
                 self.builder.build_store(structptr, right.data.unwrap());
                 self.builder.build_store(itmptr, self.builder.build_pointer_cast(structptr, itmptr.get_type().get_element_type().into_pointer_type(), "st_bitcast"));
-                
+
+
                 self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), dyntp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
             }
             else { 
@@ -609,12 +638,7 @@ impl<'ctx> CodeGen<'ctx> {
                     let fmt: String = format!("Name '{}' is not owned.", name);
                     errors::raise_error_multi(errors::ErrorType::NameNotOwned, vec![transferred, fmt], vec![&self.get_variable(&name).0.unwrap().3.transferred.as_ref().unwrap(), &node.pos], self.info);
                 }
-                if v.1.is_dyn {
-                    (Some(self.builder.build_struct_gep(v.0.unwrap(), 1, name.as_str()).expect("GEP Error")), v.1.clone())
-                }
-                else {
-                    (v.0, v.1.clone())
-                }
+                (v.0, v.1.clone())
             }
         };
 
@@ -1053,9 +1077,8 @@ impl<'ctx> CodeGen<'ctx> {
                     errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
                 }
 
-                let idx: i32 = self.namespaces.structid.get(&right.tp.name).unwrap().clone();
-                let idptr = self.builder.build_struct_gep(ptr, 0u32, "id").expect("GEP error");
-                self.builder.build_store(idptr, self.inkwell_types.i32tp.const_int(idx as u64, false));
+                let idptr = self.builder.build_struct_gep(ptr, 0u32, "idptr").expect("GEP error");
+                self.builder.build_store(idptr, self.inkwell_types.i32tp.const_int(*self.namespaces.structid.get(&right.tp.name).unwrap() as u64, false));
 
                 let itmptr = self.builder.build_struct_gep(ptr, 1u32, "item").expect("GEP error");
                 let structptr: inkwell::values::PointerValue = self.builder.build_malloc(right.data.unwrap().get_type(), "struct_ptr").expect("Malloc error");
@@ -1089,8 +1112,38 @@ impl<'ctx> CodeGen<'ctx> {
             let attr: &String = &node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().attr;
 
             let base: types::Data = self.compile_expr(&node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().name, false, true);
-            
-            if base.tp.methods.get(attr).is_some() {
+
+            if base.tp.is_dyn {
+                let instance: inkwell::values::PointerValue = self.builder.build_struct_gep(base.data.unwrap().into_pointer_value(), 1u32, "instance_ptr").expect("GEP error");
+                let idptr: inkwell::values::PointerValue = self.builder.build_struct_gep(base.data.unwrap().into_pointer_value(), 0u32, "id_ptr").expect("GEP error");
+
+                self.module.print_to_file("out.ll").expect("Print failed");
+
+                let vtable: inkwell::values::PointerValue = unsafe { self.builder.build_in_bounds_gep(self.vtables.unwrap().as_pointer_value(), &[self.builder.build_load(idptr, "id").into_int_value(), self.inkwell_types.i32tp.const_zero()], "vtable") };
+
+                let idx: usize = self.traits.get(&base.tp.name).unwrap().trait_sig.as_ref().unwrap().iter().position(|x| &x.name == attr).unwrap();
+                
+                let method: inkwell::values::PointerValue = unsafe { self.builder.build_in_bounds_gep(vtable, &[self.inkwell_types.i32tp.const_int(idx as u64, false), self.inkwell_types.i32tp.const_zero()], "vtable") };
+
+                self.module.print_to_file("out2.ll").expect("Print failed");
+
+                args.push(types::Data {
+                    data: Some(self.builder.build_load(method, "method")),
+                    tp: self.datatypes.get(&types::BasicDataType::Func.to_string()).unwrap().clone(),
+                    owned: true,
+                });
+
+                args.push(types::Data {
+                    data: Some(self.builder.build_load(instance, "instance")),
+                    tp: base.tp.clone(),
+                    owned: base.owned,
+                });
+
+                tp_name = self.datatypes.get(&types::BasicDataType::Func.to_string()).unwrap().clone().name.clone();
+                
+                tp = Some(Self::get_type_from_data(self.types.clone(), args.first().unwrap()));
+            }
+            else if base.tp.methods.get(attr).is_some() {
                 let method: &types::Method = base.tp.methods.get(attr).unwrap();
                 if method.tp == types::MethodType::Fn {
                     let data: types::Data = types::Data {
@@ -1906,6 +1959,8 @@ impl<'ctx> CodeGen<'ctx> {
                     errors::raise_error(&fmt, errors::ErrorType::FunctionRedefinedInImpl, &node.pos, self.info);
                 }
             }
+
+            let mut ptrs: Vec<inkwell::values::PointerValue<'ctx>> = Vec::new();
             
             for (sig, function) in izip![traitsig.trait_sig.as_ref().unwrap(), &node.data.impln.as_ref().unwrap().functions] {
                 let nargs: usize = sig.args.args.len();
@@ -1993,11 +2048,14 @@ impl<'ctx> CodeGen<'ctx> {
 
                 self.namespaces.structs.insert(structnm.to_owned(), (s.0, s.1, s.2, s.3));  
 
+                ptrs.push(self.namespaces.functions.get(&(structnm.to_owned() + "." + function.data.func.as_ref().unwrap().name.as_str())).unwrap().0.as_global_value().as_pointer_value());
                 functions.insert(function.data.func.as_ref().unwrap().name.to_owned(), self.namespaces.functions.get(&(structnm.to_owned() + "." + function.data.func.as_ref().unwrap().name.as_str())).unwrap().0.as_global_value().as_pointer_value());                  
             }
 
             traitsig.implementations.insert(structnm.to_owned(), functions);
             self.traits.insert(traitsig.name.to_owned(), traitsig);   
+
+            self.append_struct_to_vtables(ptrs);
         }
 
         let data: types::Data = types::Data {
@@ -2993,7 +3051,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
     module.set_triple(&inkwell::targets::TargetTriple::create(triple.as_str()));
     module.set_source_file_name(source_name);
 
-    let dynptrtp: inkwell::types::StructType = context.struct_type(&[inkwell::types::BasicTypeEnum::IntType(context.i32_type()), inkwell::types::BasicTypeEnum::PointerType(context.i32_type().ptr_type(inkwell::AddressSpace::from(0u16)))], false);
+    let dynptrtp: inkwell::types::StructType = context.struct_type(&[inkwell::types::BasicTypeEnum::IntType(context.i32_type()), inkwell::types::BasicTypeEnum::PointerType(context.opaque_struct_type("st_data").ptr_type(inkwell::AddressSpace::from(0u16)))], false);
     
     let inkwelltypes = InkwellTypes {
         i8tp: &context.i8_type(),
@@ -3054,6 +3112,8 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
         start_block: None,
         end_block: None,
         loop_flow_broken: false,
+        vtables: None,
+        vtables_vec: Vec::new(),
     };
     
     //Pass manager (optimizer)
