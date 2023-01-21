@@ -7,7 +7,6 @@ _main:                                  # @_main
 .Lfunc_begin0:
 	.file	1 "./program.ke"
 	.loc	1 15 0                  # program.ke:15:0
-	.cfi_sections .debug_frame
 	.cfi_startproc
 # %bb.0:                                # %entry
 	pushq	%rbp
@@ -29,6 +28,12 @@ _main:                                  # @_main
 	callq	malloc
 	movl	%ebp, (%rax)
 	movq	%rax, 32(%rsp)
+	movslq	24(%rsp), %rdi
+	movq	vtable(,%rdi,8), %rax
+	movq	32(%rsp), %rsi
+                                        # kill: def $edi killed $edi killed $rdi
+	movl	$2, %edx
+	callq	*%rax
 	movq	%rbx, %rdi
 	addq	$40, %rsp
 	.cfi_def_cfa_offset 24
@@ -50,8 +55,6 @@ s.func:                                 # @s.func
 	.loc	1 10 0                  # program.ke:10:0
 	.cfi_startproc
 # %bb.0:                                # %entry
-                                        # kill: killed $esi
-                                        # kill: killed $rdi
 	.loc	1 10 4 prologue_end     # program.ke:10:4
 	retq
 .Ltmp1:
@@ -79,6 +82,14 @@ main:                                   # @main
 	.size	main, .Lfunc_end2-main
 	.cfi_endproc
                                         # -- End function
+	.type	vtable,@object          # @vtable
+	.section	.rodata,"a",@progbits
+	.globl	vtable
+	.p2align	3
+vtable:
+	.quad	s.func
+	.size	vtable, 8
+
 	.section	.debug_str,"MS",@progbits,1
 .Linfo_string0:
 	.asciz	"Kestrel"               # string offset=0

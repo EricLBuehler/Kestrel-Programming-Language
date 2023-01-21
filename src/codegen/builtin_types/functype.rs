@@ -24,7 +24,13 @@ pub fn fn_call<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &pa
         if res != None {
             args_basic.push(basic_to_metadata(res.unwrap()));
         }
-        if arg.tp != *types.get(idx).unwrap(){
+        if  arg.tp.is_dyn &&
+            types.get(idx).unwrap().is_dyn &&
+            arg.tp.name != types.get(idx).unwrap().name {
+            let fmt: String = format!("expected '{}' type, got '{}' type.", types.get(idx).unwrap(), arg.tp);
+            errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, pos, codegen.info);
+        }
+        else if arg.tp != *types.get(idx).unwrap(){
             let fmt: String = format!("expected '{}' type, got '{}' type.", types.get(idx).unwrap().name, arg.tp.name);
             errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, pos, codegen.info);
         }

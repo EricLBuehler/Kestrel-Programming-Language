@@ -53,6 +53,7 @@ pub enum ErrorType {
     FunctionNotDefinedInTrait,
     FunctionRedefinedInImpl,
     ImplTemplatedFunction,
+    TraitIsNotTraitObjSafe,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -114,6 +115,7 @@ pub fn repr_err(tp: ErrorType) -> &'static str {
         ErrorType::FunctionNotDefinedInTrait => "function is not defined in trait impl",
         ErrorType::FunctionRedefinedInImpl => "function is redefined in trait impl",
         ErrorType::ImplTemplatedFunction => "functions may not be templated in impl",
+        ErrorType::TraitIsNotTraitObjSafe => "trait is not trait object safe",
     }
 }
 

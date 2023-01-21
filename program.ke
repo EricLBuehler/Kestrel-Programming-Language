@@ -4,11 +4,11 @@ struct s {
 
 trait t {
     x: u32
-    fn func<T>(T, i32)
+    fn func(dyn t, i32)
 }
 
 impl t for s {
-    fn func(_a: s, _b: i32) {
+    fn func(_a: dyn t, _b: i32) {
 
     }
 }
