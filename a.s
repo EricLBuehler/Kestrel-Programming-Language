@@ -1,11 +1,26 @@
 	.text
 	.file	"program.ke"
+	.globl	s.func                  # -- Begin function s.func
+	.p2align	4, 0x90
+	.type	s.func,@function
+s.func:                                 # @s.func
+.Lfunc_begin0:
+	.file	1 "./program.ke"
+	.loc	1 10 0                  # program.ke:10:0
+	.cfi_startproc
+# %bb.0:                                # %entry
+	.loc	1 10 4 prologue_end     # program.ke:10:4
+	retq
+.Ltmp0:
+.Lfunc_end0:
+	.size	s.func, .Lfunc_end0-s.func
+	.cfi_endproc
+                                        # -- End function
 	.globl	_main                   # -- Begin function _main
 	.p2align	4, 0x90
 	.type	_main,@function
 _main:                                  # @_main
-.Lfunc_begin0:
-	.file	1 "./program.ke"
+.Lfunc_begin1:
 	.loc	1 15 0                  # program.ke:15:0
 	.cfi_startproc
 # %bb.0:                                # %entry
@@ -18,19 +33,20 @@ _main:                                  # @_main
 	.cfi_offset %rbx, -24
 	.cfi_offset %rbp, -16
 	.loc	1 15 0 prologue_end     # program.ke:15:0
-	movl	$10, 16(%rsp)
-	movl	16(%rsp), %eax
-	movl	%eax, 8(%rsp)
-	movl	8(%rsp), %ebp
-	movl	$0, 24(%rsp)
-	leaq	32(%rsp), %rbx
+	movl	$10, 8(%rsp)
+	movl	8(%rsp), %eax
+	movl	%eax, (%rsp)
+	movl	(%rsp), %ebp
+	movl	$1, 16(%rsp)
+	leaq	24(%rsp), %rbx
 	movl	$4, %edi
 	callq	malloc
 	movl	%ebp, (%rax)
-	movq	%rax, 32(%rsp)
-	movslq	24(%rsp), %rdi
-	movq	vtable(,%rdi,8), %rax
-	movq	32(%rsp), %rsi
+	movq	%rax, 24(%rsp)
+	movq	$s.func, 32(%rsp)
+	movslq	16(%rsp), %rdi
+	movq	32(%rsp,%rdi,8), %rax
+	movq	24(%rsp), %rsi
                                         # kill: def $edi killed $edi killed $rdi
 	movl	$2, %edx
 	callq	*%rax
@@ -42,24 +58,9 @@ _main:                                  # @_main
 	popq	%rbp
 	.cfi_def_cfa_offset 8
 	jmp	free                    # TAILCALL
-.Ltmp0:
-.Lfunc_end0:
-	.size	_main, .Lfunc_end0-_main
-	.cfi_endproc
-                                        # -- End function
-	.globl	s.func                  # -- Begin function s.func
-	.p2align	4, 0x90
-	.type	s.func,@function
-s.func:                                 # @s.func
-.Lfunc_begin1:
-	.loc	1 10 0                  # program.ke:10:0
-	.cfi_startproc
-# %bb.0:                                # %entry
-	.loc	1 10 4 prologue_end     # program.ke:10:4
-	retq
 .Ltmp1:
 .Lfunc_end1:
-	.size	s.func, .Lfunc_end1-s.func
+	.size	_main, .Lfunc_end1-_main
 	.cfi_endproc
                                         # -- End function
 	.globl	main                    # -- Begin function main
@@ -82,14 +83,6 @@ main:                                   # @main
 	.size	main, .Lfunc_end2-main
 	.cfi_endproc
                                         # -- End function
-	.type	vtable,@object          # @vtable
-	.section	.rodata,"a",@progbits
-	.globl	vtable
-	.p2align	3
-vtable:
-	.quad	s.func
-	.size	vtable, 8
-
 	.section	.debug_str,"MS",@progbits,1
 .Linfo_string0:
 	.asciz	"Kestrel"               # string offset=0
@@ -98,13 +91,13 @@ vtable:
 .Linfo_string2:
 	.asciz	"."                     # string offset=19
 .Linfo_string3:
-	.asciz	"_main"                 # string offset=21
+	.asciz	"s.func"                # string offset=21
 .Linfo_string4:
-	.asciz	"main"                  # string offset=27
+	.asciz	"void"                  # string offset=28
 .Linfo_string5:
-	.asciz	"void"                  # string offset=32
+	.asciz	"_main"                 # string offset=33
 .Linfo_string6:
-	.asciz	"s.func"                # string offset=37
+	.asciz	"main"                  # string offset=39
 	.section	.debug_abbrev,"",@progbits
 	.byte	1                       # Abbreviation Code
 	.byte	17                      # DW_TAG_compile_unit
@@ -184,9 +177,9 @@ vtable:
 	.byte	1                       # DW_AT_frame_base
 	.byte	87
 	.long	.Linfo_string3          # DW_AT_linkage_name
-	.long	.Linfo_string4          # DW_AT_name
+	.long	.Linfo_string3          # DW_AT_name
 	.byte	1                       # DW_AT_decl_file
-	.byte	15                      # DW_AT_decl_line
+	.byte	10                      # DW_AT_decl_line
 	.long	102                     # DW_AT_type
 	.byte	1                       # DW_AT_accessibility
                                         # DW_ACCESS_public
@@ -195,15 +188,15 @@ vtable:
 	.long	.Lfunc_end1-.Lfunc_begin1 # DW_AT_high_pc
 	.byte	1                       # DW_AT_frame_base
 	.byte	87
-	.long	.Linfo_string6          # DW_AT_linkage_name
+	.long	.Linfo_string5          # DW_AT_linkage_name
 	.long	.Linfo_string6          # DW_AT_name
 	.byte	1                       # DW_AT_decl_file
-	.byte	10                      # DW_AT_decl_line
+	.byte	15                      # DW_AT_decl_line
 	.long	102                     # DW_AT_type
 	.byte	1                       # DW_AT_accessibility
                                         # DW_ACCESS_public
 	.byte	3                       # Abbrev [3] 0x66:0x7 DW_TAG_base_type
-	.long	.Linfo_string5          # DW_AT_name
+	.long	.Linfo_string4          # DW_AT_name
 	.byte	0                       # DW_AT_encoding
 	.byte	2                       # DW_AT_byte_size
 	.byte	0                       # End Of Children Mark
@@ -214,9 +207,9 @@ vtable:
 	.short	2                       # DWARF Version
 	.long	.Lcu_begin0             # Offset of Compilation Unit Info
 	.long	110                     # Compilation Unit Length
-	.long	42                      # DIE offset
-	.asciz	"main"                  # External Name
 	.long	72                      # DIE offset
+	.asciz	"main"                  # External Name
+	.long	42                      # DIE offset
 	.asciz	"s.func"                # External Name
 	.long	0                       # End Mark
 .LpubNames_end0:

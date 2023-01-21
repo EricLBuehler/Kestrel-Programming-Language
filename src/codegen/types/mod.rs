@@ -47,7 +47,7 @@ impl<'a> std::fmt::Debug for DataType<'a> {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum TraitType {
     Add,
     Mul,
@@ -235,6 +235,18 @@ pub struct Trait<'a> {
     pub inkfunc: Option<inkwell::values::PointerValue<'a>>,
     pub traittype: TraitType,
     pub rettp: Option<DataType<'a>>,
+}
+
+impl<'a> std::fmt::Display for Trait<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.traittype)
+    }
+}
+
+impl<'a> std::fmt::Debug for Trait<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.traittype)
+    }
 }
 
 #[derive(Clone)]

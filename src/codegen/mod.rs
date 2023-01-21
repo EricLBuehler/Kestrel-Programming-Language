@@ -80,8 +80,9 @@ pub struct CodeGen<'ctx> {
     start_block: Option<inkwell::basic_block::BasicBlock<'ctx>>,
     end_block: Option<inkwell::basic_block::BasicBlock<'ctx>>,
     loop_flow_broken: bool,
-    vtables: Option<inkwell::values::GlobalValue<'ctx>>,
+    vtables: Option<inkwell::values::StructValue<'ctx>>,
     vtables_vec: Vec<Vec<inkwell::values::PointerValue<'ctx>>>,
+    current_function_calls_dyn: Option<inkwell::values::PointerValue<'ctx>>,
 }
 
 //Codegen functions
@@ -401,12 +402,9 @@ impl<'ctx> CodeGen<'ctx> {
             structs.insert(idx as usize, inkwell::values::BasicValueEnum::StructValue(self.context.const_struct(&ptrs[..], false)));
         }
 
-        let st: inkwell::values::BasicValueEnum = inkwell::values::BasicValueEnum::StructValue(self.context.const_struct(&structs[..], false));
-
-        let vtable: inkwell::values::GlobalValue = self.module.add_global(st.get_type(), Some(inkwell::AddressSpace::from(0u16)), "vtable");
-        vtable.set_initializer(&st);
-        vtable.set_constant(true);
-        self.vtables = Some(vtable);
+        let st: inkwell::values::StructValue = self.context.const_struct(&structs[..], false);
+        
+        self.vtables = Some(st);
     }
 
     fn call_trait(&mut self, t: &types::Trait<'ctx>, mut args: Vec<types::Data<'ctx>>, node: &parser::Node) -> types::Data<'ctx> {
@@ -533,7 +531,7 @@ impl<'ctx> CodeGen<'ctx> {
 
                 let typ: types::Type = Self::get_type_from_data(self.types.clone(), &right);
                 let (dyntp, _) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
-
+                
                 if !typ.traits.contains_key(&dyntp.name) {
                     let fmt: String = format!("'{}' type does not implement '{}' trait.", right.tp.to_string(), dyntp.name);
                     errors::raise_error(&fmt, errors::ErrorType::MissingTrait, &node.pos, self.info);
@@ -1139,7 +1137,13 @@ impl<'ctx> CodeGen<'ctx> {
             if base.tp.is_dyn {
                 let idptr: inkwell::values::PointerValue = self.builder.build_struct_gep(base.data.unwrap().into_pointer_value(), 0u32, "id_ptr").expect("GEP error");
 
-                let vtable: inkwell::values::PointerValue = unsafe { self.builder.build_in_bounds_gep(self.vtables.unwrap().as_pointer_value(), &[self.builder.build_load(idptr, "id").into_int_value(), self.inkwell_types.i32tp.const_zero()], "vtable") };
+                if self.current_function_calls_dyn.is_none() {
+                    let vtables: inkwell::values::PointerValue = self.builder.build_alloca(self.vtables.unwrap().get_type(), "vtables");
+                    self.builder.build_store(vtables, self.vtables.unwrap());
+                    self.current_function_calls_dyn = Some(vtables);
+                }
+
+                let vtable: inkwell::values::PointerValue = unsafe { self.builder.build_in_bounds_gep(self.current_function_calls_dyn.unwrap(), &[self.builder.build_load(idptr, "id").into_int_value(), self.inkwell_types.i32tp.const_zero()], "vtable") };
 
                 let idx: usize = self.traits.get(&base.tp.name).unwrap().trait_sig.as_ref().unwrap().iter().position(|x| &x.name == attr).unwrap();
                 
@@ -1633,8 +1637,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         self.datatypes.insert(node.data.st.as_ref().unwrap().name.clone(), tp.clone());
         self.namespaces.structs.insert(node.data.st.as_ref().unwrap().name.clone(), (tp, Some(Self::build_struct_tp_from_types(self.context, &self.inkwell_types, &simpletypes)), idxmapping, ForwardDeclarationType::Real));
-        builtin_types::add_simple_type(self, std::collections::HashMap::new(), types::BasicDataType::Struct, &node.data.st.as_ref().unwrap().name.clone());
-
+        
         let data: types::Data = types::Data {
             data: None,
             tp: self.datatypes.get(&types::BasicDataType::Void.to_string()).unwrap().clone(),
@@ -1967,6 +1970,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
             
             let mut tp: types::Type = self.types.get(structnm).unwrap().clone();
+            
             tp.traits.insert(traitnm.to_owned(), builtin_types::create_empty_trait());  
             self.types.insert(structnm.to_owned(), tp);
 
@@ -2114,6 +2118,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
 
             traitsig.implementations.insert(structnm.to_owned(), functions);
+            
             self.traits.insert(traitsig.name.to_owned(), traitsig);   
 
             let idx: i32 = self.namespaces.structid.get(structnm).unwrap().clone();
@@ -2837,7 +2842,11 @@ impl<'ctx> CodeGen<'ctx> {
                 self.build_array(node)
             }
             parser::NodeType::IMPL => {
-                self.build_impl(node)
+                types::Data {
+                    data: None,
+                    tp: self.datatypes.get(&types::BasicDataType::Void.to_string()).unwrap().clone(),
+                    owned: true,
+                }
             }
             parser::NodeType::NAMESPACE => {
                 self.build_namespaceload(node)
@@ -2861,7 +2870,11 @@ impl<'ctx> CodeGen<'ctx> {
                 self.build_enum(node)
             }
             parser::NodeType::TRAIT => {
-                self.build_trait(node)
+                types::Data {
+                    data: None,
+                    tp: self.datatypes.get(&types::BasicDataType::Void.to_string()).unwrap().clone(),
+                    owned: true,
+                }
             }
         }
     }
@@ -3034,6 +3047,10 @@ impl<'ctx> CodeGen<'ctx> {
                 if !node.data.st.as_ref().unwrap().name.is_camel_case() {
                     errors::show_warning(errors::WarningType::ExpectedCamelCase, vec![String::from(""), node.data.st.as_ref().unwrap().name.to_camel_case()], vec![String::from("Expected camel case"), String::from("Convert to this: ")], &node.pos, self.info)
                 }
+
+                self.namespaces.structid_max += 1;
+                self.namespaces.structid.insert(node.data.st.as_ref().unwrap().name.clone(), self.namespaces.structid_max);
+                self.namespaces.structid_from.insert(self.namespaces.structid_max, node.data.st.as_ref().unwrap().name.clone());
                     
                 let mut names: Vec<String> = Vec::new();
                 let mut types: Vec<(types::DataType, AnyTypeEnum)> = Vec::new();
@@ -3097,6 +3114,12 @@ impl<'ctx> CodeGen<'ctx> {
         
                 self.datatypes.insert(node.data.enumn.as_ref().unwrap().name.clone(), tp.clone());
                 builtin_types::add_simple_type(self, std::collections::HashMap::new(), types::BasicDataType::Enum, &node.data.enumn.as_ref().unwrap().name.clone()); 
+            }
+            else if node.tp == parser::NodeType::IMPL {
+                self.build_impl(node);
+            }
+            else if node.tp == parser::NodeType::TRAIT {
+                self.build_trait(node);
             }
         }
     }
@@ -3177,6 +3200,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
         loop_flow_broken: false,
         vtables: None,
         vtables_vec: Vec::new(),
+        current_function_calls_dyn: None,
     };
     
     //Pass manager (optimizer)
