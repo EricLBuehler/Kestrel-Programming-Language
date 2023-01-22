@@ -57,6 +57,7 @@ pub enum NodeType {
     WHILE,
     ENUM,
     TRAIT,
+    VOID,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -132,6 +133,7 @@ impl std::fmt::Display for Node {
             NodeType::CONTINUE => Ok(()),
             NodeType::ENUM => write!(f, "{}", self.data.enumn.as_ref().unwrap() ),
             NodeType::TRAIT => write!(f, "{}", self.data.traitn.as_ref().unwrap() ),
+            NodeType::VOID => write!(f, "void"),
         }
     }    
 }
@@ -346,6 +348,7 @@ impl<'life> Parser<'life> {
             TokenType::STRING => Some(self.generate_str()),
             TokenType::CHAR => Some(self.generate_char(self.current.data.clone())),
             TokenType::LSQUARE => Some(self.generate_array()),
+            TokenType::KEYWORD => if self.current.data == "void" { Some(self.generate_void()) } else { None },
             _ => None,
         }
     }
@@ -1678,6 +1681,37 @@ impl<'life> Parser<'life> {
         let n: Node = self.create_node(NodeType::ARRAY, nodedat, pos);
     
         return n;
+    }
+
+    fn generate_void(&mut self) -> Node {
+        let nodedat: nodes::NodeData = nodes::NodeData {
+            binary: None,
+            num: None,
+            letn: None,
+            identifier: None,
+            func: None,
+            assign: None,
+            call: None,
+            ret: None,
+            to: None,
+            unary: None,
+            st: None,
+            initst: None,
+            attr: None,
+            attrassign: None,
+            str: None,
+            arr: None,
+            impln: None,
+            ifn: None,
+            loopn: None,
+            enumn: None,
+            traitn: None,
+        };
+
+    
+        let n: Node = self.create_node(NodeType::VOID, nodedat, Position {startcol: self.current.startcol, endcol: self.current.endcol, line: self.current.line } );
+
+        return n;   
     }
 
     //Keywords

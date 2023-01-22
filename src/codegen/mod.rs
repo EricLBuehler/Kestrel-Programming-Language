@@ -2876,6 +2876,13 @@ impl<'ctx> CodeGen<'ctx> {
                     owned: true,
                 }
             }
+            parser::NodeType::VOID => {
+                types::Data {
+                    data: None,
+                    tp: self.datatypes.get(&types::BasicDataType::Void.to_string()).unwrap().clone(),
+                    owned: true,
+                }
+            }
         }
     }
 

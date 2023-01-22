@@ -113,6 +113,7 @@ fn main() {
                                             String::from("enum"),
                                             String::from("trait"),
                                             String::from("dyn"),
+                                            String::from("void"),
                                             ];
 
     let mut lexer: lexer::Lexer = lexer::Lexer {
