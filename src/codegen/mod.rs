@@ -2130,13 +2130,15 @@ impl<'ctx> CodeGen<'ctx> {
         //Check for enums
         if  self.datatypes.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).is_some() &&
             self.datatypes.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().tp == types::BasicDataType::Enum{
-            let tp: types::DataType = self.datatypes.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().clone();
+            let mut tp: types::DataType = self.datatypes.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().clone();
             let name: String = node.data.attr.as_ref().unwrap().attr.clone();
             
             if !tp.names.as_ref().unwrap().contains(&name) {
                 let fmt: String = format!("Type '{}' has no namespace attribute '{}'.", node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name, attr);
                 errors::raise_error(&fmt, errors::ErrorType::NamespaceAttrNotFound, &node.pos, self.info);
             }
+
+            tp.enum_tp = Some(Box::new(self.datatypes.get(&types::BasicDataType::I32.to_string()).unwrap().clone()));
 
             let int: inkwell::values::IntValue = self.inkwell_types.i32tp.const_int(tp.names.as_ref().unwrap().iter().position(|x| x == &name).unwrap() as u64, false);
             return types::Data {
