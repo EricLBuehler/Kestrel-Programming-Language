@@ -1135,7 +1135,7 @@ impl<'ctx> CodeGen<'ctx> {
                 let idptr: inkwell::values::PointerValue = self.builder.build_struct_gep(base.data.unwrap().into_pointer_value(), 0u32, "id_ptr").expect("GEP error");
 
                 let vtable: inkwell::values::PointerValue = unsafe { self.builder.build_in_bounds_gep(self.vtables.unwrap().as_pointer_value(), &[self.builder.build_load(idptr, "id").into_int_value(), self.inkwell_types.i32tp.const_zero()], "vtable") };
-
+                
                 let idx: usize = self.traits.get(&base.tp.name).unwrap().trait_sig.as_ref().unwrap().iter().position(|x| &x.name == attr).unwrap();
                 
                 let method: inkwell::values::PointerValue = self.builder.build_load( unsafe { self.builder.build_in_bounds_gep(vtable, &[self.inkwell_types.i32tp.const_int(idx as u64, false), self.inkwell_types.i32tp.const_zero()], "method_ptr") }, "method").into_pointer_value();
@@ -1176,7 +1176,6 @@ impl<'ctx> CodeGen<'ctx> {
                 mtp.types = datatypes;
                 mtp.names = Some(names);
                 mtp.rettp = Some(Box::new(rettp_tp));
-
                 
                 args.push(types::Data {
                     data: Some(inkwell::values::BasicValueEnum::PointerValue(method)),
@@ -1589,9 +1588,9 @@ impl<'ctx> CodeGen<'ctx> {
             errors::raise_error(&fmt, errors::ErrorType::TypeRedefinitionAttempt, &node.pos, self.info);
         }
 
-        self.namespaces.structid_max += 1;
         self.namespaces.structid.insert(node.data.st.as_ref().unwrap().name.clone(), self.namespaces.structid_max);
         self.namespaces.structid_from.insert(self.namespaces.structid_max, node.data.st.as_ref().unwrap().name.clone());
+        self.namespaces.structid_max += 1;
         
         if !node.data.st.as_ref().unwrap().name.is_camel_case() {
             errors::show_warning(errors::WarningType::ExpectedCamelCase, vec![String::from(""), node.data.st.as_ref().unwrap().name.to_camel_case()], vec![String::from("Expected camel case"), String::from("Convert to this: ")], &node.pos, self.info)

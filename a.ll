@@ -24,7 +24,7 @@ entry:
   %st2 = load { i32 }, { i32 }* %st, !dbg !15
   %x3 = alloca { i32, %st_data* }, !dbg !15
   %idptr = getelementptr inbounds { i32, %st_data* }, { i32, %st_data* }* %x3, i32 0, i32 0, !dbg !15
-  store i32 1, i32* %idptr, !dbg !15
+  store i32 0, i32* %idptr, !dbg !15
   %item = getelementptr inbounds { i32, %st_data* }, { i32, %st_data* }* %x3, i32 0, i32 1, !dbg !15
   %struct_ptr = alloca { i32 }, !dbg !15
   store { i32 } %st2, { i32 }* %struct_ptr, !dbg !15

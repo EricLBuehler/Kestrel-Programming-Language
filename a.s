@@ -32,7 +32,7 @@ _main:                                  # @_main
 	movl	16(%rsp), %eax
 	movl	%eax, 8(%rsp)
 	movl	8(%rsp), %eax
-	movl	$1, 24(%rsp)
+	movl	$0, 24(%rsp)
 	movl	%eax, (%rsp)
 	movq	%rsp, %rax
 	movq	%rax, 32(%rsp)

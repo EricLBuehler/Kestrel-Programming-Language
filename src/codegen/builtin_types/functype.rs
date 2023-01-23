@@ -38,7 +38,7 @@ pub fn fn_call<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &pa
     }
 
     let res: inkwell::values::CallSiteValue = codegen.builder.build_call(inkwell::values::CallableValue::try_from(selfv.data.unwrap().into_pointer_value()).unwrap(), &args_basic[..], "res");
-    
+
     if res.try_as_basic_value().is_left() {
         return Data {
             data: Some(res.try_as_basic_value().left().unwrap()),
