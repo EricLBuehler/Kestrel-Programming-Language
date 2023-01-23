@@ -33,20 +33,19 @@ _main:                                  # @_main
 	.cfi_offset %rbx, -24
 	.cfi_offset %rbp, -16
 	.loc	1 15 0 prologue_end     # program.ke:15:0
-	movl	$10, 8(%rsp)
-	movl	8(%rsp), %eax
-	movl	%eax, (%rsp)
-	movl	(%rsp), %ebp
-	movl	$1, 16(%rsp)
-	leaq	24(%rsp), %rbx
+	movl	$10, 16(%rsp)
+	movl	16(%rsp), %eax
+	movl	%eax, 8(%rsp)
+	movl	8(%rsp), %ebp
+	movl	$1, 24(%rsp)
+	leaq	32(%rsp), %rbx
 	movl	$4, %edi
 	callq	malloc
 	movl	%ebp, (%rax)
-	movq	%rax, 24(%rsp)
-	movq	$s.func, 32(%rsp)
-	movslq	16(%rsp), %rdi
-	movq	32(%rsp,%rdi,8), %rax
-	movq	24(%rsp), %rsi
+	movq	%rax, 32(%rsp)
+	movslq	24(%rsp), %rdi
+	movq	vtables(,%rdi,8), %rax
+	movq	32(%rsp), %rsi
                                         # kill: def $edi killed $edi killed $rdi
 	movl	$2, %edx
 	callq	*%rax
@@ -83,6 +82,14 @@ main:                                   # @main
 	.size	main, .Lfunc_end2-main
 	.cfi_endproc
                                         # -- End function
+	.type	vtables,@object         # @vtables
+	.section	.rodata,"a",@progbits
+	.globl	vtables
+	.p2align	3
+vtables:
+	.quad	s.func
+	.size	vtables, 8
+
 	.section	.debug_str,"MS",@progbits,1
 .Linfo_string0:
 	.asciz	"Kestrel"               # string offset=0

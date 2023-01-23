@@ -4,6 +4,8 @@ target triple = "x86_64-unknown-linux-gnu"
 
 %st_data = type opaque
 
+@vtables = local_unnamed_addr constant { { void ({ i32, %st_data* }, i32)* } } { { void ({ i32, %st_data* }, i32)* } { void ({ i32, %st_data* }, i32)* @s.func } }
+
 ; Function Attrs: noinline nounwind optnone
 define void @s.func({ i32, %st_data* } %0, i32 %1) #0 !dbg !4 {
 entry:
@@ -30,10 +32,8 @@ entry:
   %st_bitcast = bitcast { i32 }* %struct_ptr to %st_data*, !dbg !15
   store %st_data* %st_bitcast, %st_data** %item, !dbg !15
   %id_ptr = getelementptr inbounds { i32, %st_data* }, { i32, %st_data* }* %x3, i32 0, i32 0, !dbg !15
-  %vtables = alloca { { void ({ i32, %st_data* }, i32)* } }, !dbg !15
-  store { { void ({ i32, %st_data* }, i32)* } } { { void ({ i32, %st_data* }, i32)* } { void ({ i32, %st_data* }, i32)* @s.func } }, { { void ({ i32, %st_data* }, i32)* } }* %vtables, !dbg !15
   %id = load i32, i32* %id_ptr, !dbg !15
-  %vtable = getelementptr inbounds { { void ({ i32, %st_data* }, i32)* } }, { { void ({ i32, %st_data* }, i32)* } }* %vtables, i32 %id, i32 0, !dbg !15
+  %vtable = getelementptr inbounds { { void ({ i32, %st_data* }, i32)* } }, { { void ({ i32, %st_data* }, i32)* } }* @vtables, i32 %id, i32 0, !dbg !15
   %method_ptr = getelementptr inbounds { void ({ i32, %st_data* }, i32)* }, { void ({ i32, %st_data* }, i32)* }* %vtable, i32 0, i32 0, !dbg !15
   %method = load void ({ i32, %st_data* }, i32)*, void ({ i32, %st_data* }, i32)** %method_ptr, !dbg !15
   %instance = load { i32, %st_data* }, { i32, %st_data* }* %x3, !dbg !15

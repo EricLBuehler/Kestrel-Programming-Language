@@ -80,9 +80,8 @@ pub struct CodeGen<'ctx> {
     start_block: Option<inkwell::basic_block::BasicBlock<'ctx>>,
     end_block: Option<inkwell::basic_block::BasicBlock<'ctx>>,
     loop_flow_broken: bool,
-    vtables: Option<inkwell::values::StructValue<'ctx>>,
+    vtables: Option<inkwell::values::GlobalValue<'ctx>>,
     vtables_vec: Vec<Vec<inkwell::values::PointerValue<'ctx>>>,
-    current_function_calls_dyn: Option<inkwell::values::PointerValue<'ctx>>,
 }
 
 //Codegen functions
@@ -402,9 +401,13 @@ impl<'ctx> CodeGen<'ctx> {
             structs.insert(idx as usize, inkwell::values::BasicValueEnum::StructValue(self.context.const_struct(&ptrs[..], false)));
         }
 
-        let st: inkwell::values::StructValue = self.context.const_struct(&structs[..], false);
+        let st: inkwell::values::BasicValueEnum = inkwell::values::BasicValueEnum::StructValue(self.context.const_struct(&structs[..], false));
+
+        let glbl: inkwell::values::GlobalValue = self.module.add_global(st.get_type(), Some(inkwell::AddressSpace::from(0u16)), "vtables");
+        glbl.set_constant(true);
+        glbl.set_initializer(&st);
         
-        self.vtables = Some(st);
+        self.vtables = Some(glbl);
     }
 
     fn call_trait(&mut self, t: &types::Trait<'ctx>, mut args: Vec<types::Data<'ctx>>, node: &parser::Node) -> types::Data<'ctx> {
@@ -1137,13 +1140,7 @@ impl<'ctx> CodeGen<'ctx> {
             if base.tp.is_dyn {
                 let idptr: inkwell::values::PointerValue = self.builder.build_struct_gep(base.data.unwrap().into_pointer_value(), 0u32, "id_ptr").expect("GEP error");
 
-                if self.current_function_calls_dyn.is_none() {
-                    let vtables: inkwell::values::PointerValue = self.builder.build_alloca(self.vtables.unwrap().get_type(), "vtables");
-                    self.builder.build_store(vtables, self.vtables.unwrap());
-                    self.current_function_calls_dyn = Some(vtables);
-                }
-
-                let vtable: inkwell::values::PointerValue = unsafe { self.builder.build_in_bounds_gep(self.current_function_calls_dyn.unwrap(), &[self.builder.build_load(idptr, "id").into_int_value(), self.inkwell_types.i32tp.const_zero()], "vtable") };
+                let vtable: inkwell::values::PointerValue = unsafe { self.builder.build_in_bounds_gep(self.vtables.unwrap().as_pointer_value(), &[self.builder.build_load(idptr, "id").into_int_value(), self.inkwell_types.i32tp.const_zero()], "vtable") };
 
                 let idx: usize = self.traits.get(&base.tp.name).unwrap().trait_sig.as_ref().unwrap().iter().position(|x| &x.name == attr).unwrap();
                 
@@ -3207,7 +3204,6 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
         loop_flow_broken: false,
         vtables: None,
         vtables_vec: Vec::new(),
-        current_function_calls_dyn: None,
     };
     
     //Pass manager (optimizer)
