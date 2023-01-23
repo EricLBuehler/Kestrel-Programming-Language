@@ -180,4 +180,4 @@ trait t{
 ## ```dyn```
 The ```dyn``` keyword defines a dynamically-dispatched type. Types defined with the ```dyn``` keyword follow the following format:
 ```dyn trait```
-All objects used with the ```dyn``` type must be used with structs.
+Only instances of structs may be used with the ```dyn``` keyword. Unlike other languages, the ```dyn``` keyword has a very low memory and performance footprint due to the constant ```vtable``` and the use of stack instead of heap allocation.
