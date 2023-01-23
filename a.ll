@@ -26,8 +26,7 @@ entry:
   %idptr = getelementptr inbounds { i32, %st_data* }, { i32, %st_data* }* %x3, i32 0, i32 0, !dbg !15
   store i32 1, i32* %idptr, !dbg !15
   %item = getelementptr inbounds { i32, %st_data* }, { i32, %st_data* }* %x3, i32 0, i32 1, !dbg !15
-  %malloccall = tail call i8* @malloc(i32 ptrtoint (i32* getelementptr (i32, i32* null, i32 1) to i32))
-  %struct_ptr = bitcast i8* %malloccall to { i32 }*, !dbg !15
+  %struct_ptr = alloca { i32 }, !dbg !15
   store { i32 } %st2, { i32 }* %struct_ptr, !dbg !15
   %st_bitcast = bitcast { i32 }* %struct_ptr to %st_data*, !dbg !15
   store %st_data* %st_bitcast, %st_data** %item, !dbg !15
@@ -38,17 +37,8 @@ entry:
   %method = load void ({ i32, %st_data* }, i32)*, void ({ i32, %st_data* }, i32)** %method_ptr, !dbg !15
   %instance = load { i32, %st_data* }, { i32, %st_data* }* %x3, !dbg !15
   call void %method({ i32, %st_data* } %instance, i32 2), !dbg !15
-  %free_dyn = getelementptr inbounds { i32, %st_data* }, { i32, %st_data* }* %x3, i32 0, i32 1, !dbg !15
-  %0 = bitcast %st_data** %free_dyn to i8*
-  tail call void @free(i8* %0), !dbg !15
   ret void, !dbg !15
 }
-
-; Function Attrs: nofree nounwind
-declare noalias i8* @malloc(i32) local_unnamed_addr #2
-
-; Function Attrs: nounwind
-declare void @free(i8* nocapture) local_unnamed_addr #3
 
 ; Function Attrs: noinline optnone
 define i32 @main(i32 %0, i8** %1) local_unnamed_addr #1 {
@@ -59,8 +49,6 @@ entry:
 
 attributes #0 = { noinline nounwind optnone }
 attributes #1 = { noinline optnone }
-attributes #2 = { nofree nounwind }
-attributes #3 = { nounwind }
 
 !llvm.module.flags = !{!0}
 !llvm.dbg.cu = !{!1}

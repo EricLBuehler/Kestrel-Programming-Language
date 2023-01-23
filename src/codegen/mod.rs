@@ -556,7 +556,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.builder.build_store(idptr, self.inkwell_types.i32tp.const_int(*self.namespaces.structid.get(&right.tp.name).unwrap() as u64, false));
 
                 let itmptr = self.builder.build_struct_gep(ptr, 1u32, "item").expect("GEP error");
-                let structptr: inkwell::values::PointerValue = self.builder.build_malloc(right.data.unwrap().get_type(), "struct_ptr").expect("Malloc error");
+                let structptr: inkwell::values::PointerValue = self.builder.build_alloca(right.data.unwrap().get_type(), "struct_ptr");
                 self.builder.build_store(structptr, right.data.unwrap());
                 self.builder.build_store(itmptr, self.builder.build_pointer_cast(structptr, itmptr.get_type().get_element_type().into_pointer_type(), "st_bitcast"));
 
@@ -1001,12 +1001,6 @@ impl<'ctx> CodeGen<'ctx> {
         /////// Code generation start:
 
         let retv: types::Data = self.compile(&node.data.func.as_ref().unwrap().blocks, true, true);
-        
-        for local in self.namespaces.locals.last().unwrap() {
-            if local.1.3.owned && local.1.1.is_dyn { //Free all owned dyn types
-                self.builder.build_free(self.builder.build_struct_gep(local.1.0.unwrap(), 1, "free_dyn").expect("GEP error"));
-            }
-        }
         
         //Reset locals
         self.namespaces.locals = prev_locals;

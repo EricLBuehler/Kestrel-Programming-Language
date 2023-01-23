@@ -24,24 +24,17 @@ _main:                                  # @_main
 	.loc	1 15 0                  # program.ke:15:0
 	.cfi_startproc
 # %bb.0:                                # %entry
-	pushq	%rbp
-	.cfi_def_cfa_offset 16
-	pushq	%rbx
-	.cfi_def_cfa_offset 24
 	subq	$40, %rsp
-	.cfi_def_cfa_offset 64
-	.cfi_offset %rbx, -24
-	.cfi_offset %rbp, -16
+	.cfi_def_cfa_offset 48
+.Ltmp1:
 	.loc	1 15 0 prologue_end     # program.ke:15:0
 	movl	$10, 16(%rsp)
 	movl	16(%rsp), %eax
 	movl	%eax, 8(%rsp)
-	movl	8(%rsp), %ebp
+	movl	8(%rsp), %eax
 	movl	$1, 24(%rsp)
-	leaq	32(%rsp), %rbx
-	movl	$4, %edi
-	callq	malloc
-	movl	%ebp, (%rax)
+	movl	%eax, (%rsp)
+	movq	%rsp, %rax
 	movq	%rax, 32(%rsp)
 	movslq	24(%rsp), %rdi
 	movq	vtables(,%rdi,8), %rax
@@ -49,15 +42,10 @@ _main:                                  # @_main
                                         # kill: def $edi killed $edi killed $rdi
 	movl	$2, %edx
 	callq	*%rax
-	movq	%rbx, %rdi
 	addq	$40, %rsp
-	.cfi_def_cfa_offset 24
-	popq	%rbx
-	.cfi_def_cfa_offset 16
-	popq	%rbp
 	.cfi_def_cfa_offset 8
-	jmp	free                    # TAILCALL
-.Ltmp1:
+	retq
+.Ltmp2:
 .Lfunc_end1:
 	.size	_main, .Lfunc_end1-_main
 	.cfi_endproc
