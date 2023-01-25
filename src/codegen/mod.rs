@@ -2148,8 +2148,8 @@ impl<'ctx> CodeGen<'ctx> {
             }
             else {
                 let dat: types::Data = self.compile_expr(&node.data.attr.as_ref().unwrap().expr.as_ref().unwrap(), true, false);
-                if dat.tp != *tp.enum_tp.unwrap() {
-                    let fmt: String = format!("Expected '{}' type, got '{}' type.", *tp.enum_tp.unwrap(), dat.tp);
+                if dat.tp != *tp.enum_tp.as_ref().unwrap() {
+                    let fmt: String = format!("Expected '{}' type, got '{}' type.", *tp.enum_tp.as_ref().unwrap(), dat.tp);
                     errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
                 }
                 data = dat.data;
