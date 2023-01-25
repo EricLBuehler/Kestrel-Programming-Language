@@ -2578,9 +2578,21 @@ impl<'ctx> CodeGen<'ctx> {
             names.push(member.clone());
         }
 
+        let mut types: Vec<types::DataType> = Vec::new();
+        
+        for tp in &node.data.enumn.as_ref().unwrap().tps {
+            if tp.is_some() {
+                types.push(Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, tp.as_ref().unwrap(), node).0);
+            }
+            else {
+                types.push(self.datatypes.get(&types::BasicDataType::I32.to_string()).unwrap().clone());
+            }
+        }
+
         let mut tp: types::DataType = self.datatypes.get(&types::BasicDataType::Enum.to_string()).unwrap().clone();
         tp.name = node.data.enumn.as_ref().unwrap().name.clone();
         tp.names = Some(names);
+        tp.types = types;
 
         self.datatypes.insert(node.data.enumn.as_ref().unwrap().name.clone(), tp.clone());
         builtin_types::add_simple_type(self, std::collections::HashMap::new(), types::BasicDataType::Enum, &node.data.enumn.as_ref().unwrap().name.clone());
