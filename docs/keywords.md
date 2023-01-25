@@ -158,13 +158,28 @@ while expression {
 The ```enum``` keyword creates an ```enum``` type.
 
 ```
-enum {
+enum name {
     ...
 }
 ```
 
 Each line contains a name for a variant of the ```enum```.
 Access each variant using the [```::```](symbols.md#namespace-attribute-access--assignment).
+
+An ```enum``` may contain typed variants, that when constructed hold data.
+
+```
+enum name {
+    variant<type>,
+    ...
+}
+```
+
+To construct:
+
+```
+name::variant<value>
+```
 
 ## ```trait```
 The ```trait``` keyword creates a new trait.
