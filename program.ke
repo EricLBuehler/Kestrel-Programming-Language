@@ -13,6 +13,11 @@ impl t for s {
     }
 }
 
+enum e {
+    a,
+    b(String),
+}
+
 fn main() {
     let st = s{x = 10u32}
     let x: dyn t = st

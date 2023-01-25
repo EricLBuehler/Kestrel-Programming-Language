@@ -2788,12 +2788,24 @@ impl<'life> Parser<'life> {
         self.skip_newline();
 
         let mut variants: Vec<String> = Vec::new();
+        let mut tps: Vec<Option<Type>> = Vec::new();
 
         while self.current_is_type(TokenType::IDENTIFIER) {
             let name: String = self.current.data.clone();
             self.advance();
 
             variants.push(name);
+
+            if self.current_is_type(TokenType::LPAREN) {
+                tps.push(Some(self.parse_type(DataMutablility::Immutable).1));
+        
+                if !self.current_is_type(TokenType::RPAREN) {
+                    self.raise_error("Expected right parenthesis.", ErrorType::InvalidTok);
+                }
+            }
+            else {
+                tps.push(None);
+            }
         
             if !self.current_is_type(TokenType::COMMA) {
                 self.raise_error("Expected comma.", ErrorType::InvalidTok);
@@ -2815,6 +2827,7 @@ impl<'life> Parser<'life> {
         let enumn: nodes::EnumNode = nodes::EnumNode{
             name,
             variants,
+            tps,
         };
     
         let nodedat: nodes::NodeData = nodes::NodeData {

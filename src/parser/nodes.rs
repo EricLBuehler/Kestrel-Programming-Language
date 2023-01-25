@@ -305,6 +305,7 @@ impl std::fmt::Display for LoopNode {
 pub struct EnumNode{
     pub variants: Vec<String>,
     pub name: String,
+    pub tps: Vec<Option<crate::parser::Type>>,
 }
 
 impl std::fmt::Display for EnumNode {
