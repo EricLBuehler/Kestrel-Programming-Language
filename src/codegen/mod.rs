@@ -2137,22 +2137,24 @@ impl<'ctx> CodeGen<'ctx> {
                 let fmt: String = format!("Type '{}' has no namespace attribute '{}'.", node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name, attr);
                 errors::raise_error(&fmt, errors::ErrorType::NamespaceAttrNotFound, &node.pos, self.info);
             }
-
-            tp.enum_tp = Some(Box::new(self.datatypes.get(&types::BasicDataType::I32.to_string()).unwrap().clone()));
-
+            
             let idx: usize = tp.names.as_ref().unwrap().iter().position(|x| x == &name).unwrap() as usize;
+            let enum_tp: types::DataType = tp.types.get(idx).unwrap().clone();
+            tp.enum_tp = Some(Box::new(enum_tp));
 
             let data: Option<inkwell::values::BasicValueEnum>;
             if node.data.attr.as_ref().unwrap().expr.is_none() {
                 data = Some(inkwell::values::BasicValueEnum::IntValue(self.inkwell_types.i32tp.const_int(idx as u64, false)));
             }
             else {
-                data = self.compile_expr(&node.data.attr.as_ref().unwrap().expr.as_ref().unwrap(), true, false).data;
+                let dat: types::Data = self.compile_expr(&node.data.attr.as_ref().unwrap().expr.as_ref().unwrap(), true, false);
+                if dat.tp != *tp.enum_tp.unwrap() {
+                    let fmt: String = format!("Expected '{}' type, got '{}' type.", *tp.enum_tp.unwrap(), dat.tp);
+                    errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+                }
+                data = dat.data;
             }
 
-            
-            let enum_tp: types::DataType = tp.types.get(idx).unwrap().clone();
-            tp.enum_tp = Some(Box::new(enum_tp));
             return types::Data {
                 data,
                 tp: tp.clone(),
