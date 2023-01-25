@@ -742,6 +742,7 @@ impl<'life> Parser<'life> {
                 let attr: nodes::AttrNode = nodes::AttrNode{
                     name: n,
                     attr,
+                    expr: None,
                 };
             
                 let nodedat: nodes::NodeData = nodes::NodeData {
@@ -780,12 +781,28 @@ impl<'life> Parser<'life> {
             self.advance();
             self.advance();
             let attr: String = self.current.data.clone();
+            let expr: Option<Node>;
+
+            if self.next_is_type(TokenType::LT) {
+                self.advance();
+                self.advance();
+                
+                expr = Some(self.expr(Precedence::Comparison));
+                
+                if !self.current_is_type(TokenType::GT) {
+                    self.raise_error("Expected right angle bracket.", ErrorType::InvalidTok);
+                }
+            }
+            else {
+                expr = None;
+            }
 
             pos.endcol = self.current.endcol;
 
             let attr: nodes::AttrNode = nodes::AttrNode{
                 name: n,
                 attr,
+                expr,
             };
         
             let nodedat: nodes::NodeData = nodes::NodeData {
@@ -2796,12 +2813,15 @@ impl<'life> Parser<'life> {
 
             variants.push(name);
 
-            if self.current_is_type(TokenType::LPAREN) {
+            if self.current_is_type(TokenType::LT) {
+                self.advance();
+
                 tps.push(Some(self.parse_type(DataMutablility::Immutable).1));
         
-                if !self.current_is_type(TokenType::RPAREN) {
+                if !self.current_is_type(TokenType::GT) {
                     self.raise_error("Expected right parenthesis.", ErrorType::InvalidTok);
                 }
+                self.advance();
             }
             else {
                 tps.push(None);

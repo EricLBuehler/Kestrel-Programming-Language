@@ -217,6 +217,7 @@ impl std::fmt::Display for StructInitNode {
 pub struct AttrNode{
     pub name: crate::parser::Node,
     pub attr: String,
+    pub expr: Option<crate::parser::Node>,
 }
 
 impl std::fmt::Display for AttrNode {

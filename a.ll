@@ -37,6 +37,12 @@ entry:
   %method = load void ({ i32, %st_data* }, i32)*, void ({ i32, %st_data* }, i32)** %method_ptr, !dbg !15
   %instance = load { i32, %st_data* }, { i32, %st_data* }* %x3, !dbg !15
   call void %method({ i32, %st_data* } %instance, i32 2), !dbg !15
+  %String = alloca { [7 x i8] }, !dbg !15
+  %arr = getelementptr inbounds { [7 x i8] }, { [7 x i8] }* %String, i32 0, i32 0, !dbg !15
+  store [7 x i8] c"Kestrel", [7 x i8]* %arr, !dbg !15
+  %string = load { [7 x i8] }, { [7 x i8] }* %String, !dbg !15
+  %var = alloca { [7 x i8] }, !dbg !15
+  store { [7 x i8] } %string, { [7 x i8] }* %var, !dbg !15
   ret void, !dbg !15
 }
 
@@ -65,8 +71,8 @@ attributes #1 = { noinline optnone }
 !9 = !DIBasicType(name: "i32", size: 16, flags: DIFlagPublic)
 !10 = !DILocation(line: 10, column: 4, scope: !11)
 !11 = distinct !DILexicalBlock(scope: !4, file: !2, line: 10, column: 4)
-!12 = distinct !DISubprogram(name: "main", linkageName: "_main", scope: null, file: !2, line: 15, type: !13, scopeLine: 15, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
+!12 = distinct !DISubprogram(name: "main", linkageName: "_main", scope: null, file: !2, line: 20, type: !13, scopeLine: 20, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !13 = !DISubroutineType(flags: DIFlagPublic, types: !14)
 !14 = !{!7}
-!15 = !DILocation(line: 15, scope: !16)
-!16 = distinct !DILexicalBlock(scope: !12, file: !2, line: 15)
+!15 = !DILocation(line: 20, scope: !16)
+!16 = distinct !DILexicalBlock(scope: !12, file: !2, line: 20)

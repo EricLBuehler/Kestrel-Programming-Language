@@ -2140,9 +2140,21 @@ impl<'ctx> CodeGen<'ctx> {
 
             tp.enum_tp = Some(Box::new(self.datatypes.get(&types::BasicDataType::I32.to_string()).unwrap().clone()));
 
-            let int: inkwell::values::IntValue = self.inkwell_types.i32tp.const_int(tp.names.as_ref().unwrap().iter().position(|x| x == &name).unwrap() as u64, false);
+            let idx: usize = tp.names.as_ref().unwrap().iter().position(|x| x == &name).unwrap() as usize;
+
+            let data: Option<inkwell::values::BasicValueEnum>;
+            if node.data.attr.as_ref().unwrap().expr.is_none() {
+                data = Some(inkwell::values::BasicValueEnum::IntValue(self.inkwell_types.i32tp.const_int(idx as u64, false)));
+            }
+            else {
+                data = self.compile_expr(&node.data.attr.as_ref().unwrap().expr.as_ref().unwrap(), true, false).data;
+            }
+
+            
+            let enum_tp: types::DataType = tp.types.get(idx).unwrap().clone();
+            tp.enum_tp = Some(Box::new(enum_tp));
             return types::Data {
-                data: Some(inkwell::values::BasicValueEnum::IntValue(int)),
+                data,
                 tp: tp.clone(),
                 owned: true
             };
@@ -2870,16 +2882,8 @@ impl<'ctx> CodeGen<'ctx> {
             parser::NodeType::WHILE => {
                 self.build_while(node)
             }
-            parser::NodeType::ENUM => {
-                self.build_enum(node)
-            }
-            parser::NodeType::TRAIT => {
-                types::Data {
-                    data: None,
-                    tp: self.datatypes.get(&types::BasicDataType::Void.to_string()).unwrap().clone(),
-                    owned: true,
-                }
-            }
+            parser::NodeType::ENUM |
+            parser::NodeType::TRAIT |
             parser::NodeType::VOID => {
                 types::Data {
                     data: None,
@@ -3097,34 +3101,7 @@ impl<'ctx> CodeGen<'ctx> {
                 builtin_types::add_simple_type(self, std::collections::HashMap::new(), types::BasicDataType::Struct, &node.data.st.as_ref().unwrap().name.clone());
             }
             else if node.tp == parser::NodeType::ENUM {
-                if self.datatypes.get(&node.data.enumn.as_ref().unwrap().name.clone()).is_some() {
-                    let fmt: String = format!("Type '{}' is already defined.", node.data.st.as_ref().unwrap().name.clone());
-                    errors::raise_error(&fmt, errors::ErrorType::TypeRedefinitionAttempt, &node.pos, self.info);
-                }
-                
-                if !node.data.enumn.as_ref().unwrap().name.is_camel_case() {
-                    errors::show_warning(errors::WarningType::ExpectedCamelCase, vec![String::from(""), node.data.st.as_ref().unwrap().name.to_camel_case()], vec![String::from("Expected camel case"), String::from("Convert to this: ")], &node.pos, self.info)
-                }
-        
-                let mut names: Vec<String> = Vec::new();        
-                
-                for member in &node.data.enumn.as_ref().unwrap().variants {
-                    if !member.is_camel_case() {
-                        errors::show_warning(errors::WarningType::ExpectedCamelCase, vec![String::from(""), member.to_camel_case()], vec![String::from("Expected camel case"), String::from("Convert to this: ")], &node.pos, self.info)
-                    }
-                    if names.contains(&member.clone()) {
-                        let fmt: String = format!("Variant '{}' is already declared.", member.clone());
-                        errors::raise_error(&fmt, errors::ErrorType::VariantRedeclaration, &node.pos, self.info);
-                    }
-                    names.push(member.clone());
-                }
-        
-                let mut tp: types::DataType = self.datatypes.get(&types::BasicDataType::Enum.to_string()).unwrap().clone();
-                tp.name = node.data.enumn.as_ref().unwrap().name.clone();
-                tp.names = Some(names);
-        
-                self.datatypes.insert(node.data.enumn.as_ref().unwrap().name.clone(), tp.clone());
-                builtin_types::add_simple_type(self, std::collections::HashMap::new(), types::BasicDataType::Enum, &node.data.enumn.as_ref().unwrap().name.clone()); 
+                self.build_enum(node);    
             }
             else if node.tp == parser::NodeType::IMPL {
                 self.build_impl(node);

@@ -21,28 +21,49 @@ s.func:                                 # @s.func
 	.type	_main,@function
 _main:                                  # @_main
 .Lfunc_begin1:
-	.loc	1 15 0                  # program.ke:15:0
+	.loc	1 20 0                  # program.ke:20:0
 	.cfi_startproc
 # %bb.0:                                # %entry
-	subq	$40, %rsp
-	.cfi_def_cfa_offset 48
+	subq	$56, %rsp
+	.cfi_def_cfa_offset 64
 .Ltmp1:
-	.loc	1 15 0 prologue_end     # program.ke:15:0
-	movl	$10, 16(%rsp)
-	movl	16(%rsp), %eax
-	movl	%eax, 8(%rsp)
-	movl	8(%rsp), %eax
-	movl	$0, 24(%rsp)
-	movl	%eax, (%rsp)
-	movq	%rsp, %rax
-	movq	%rax, 32(%rsp)
-	movslq	24(%rsp), %rdi
+	.loc	1 20 0 prologue_end     # program.ke:20:0
+	movl	$10, 32(%rsp)
+	movl	32(%rsp), %eax
+	movl	%eax, 24(%rsp)
+	movl	24(%rsp), %eax
+	movl	$0, 40(%rsp)
+	movl	%eax, 16(%rsp)
+	leaq	16(%rsp), %rax
+	movq	%rax, 48(%rsp)
+	movslq	40(%rsp), %rdi
 	movq	vtables(,%rdi,8), %rax
-	movq	32(%rsp), %rsi
+	movq	48(%rsp), %rsi
                                         # kill: def $edi killed $edi killed $rdi
 	movl	$2, %edx
 	callq	*%rax
-	addq	$40, %rsp
+	movb	$108, 6(%rsp)
+	movb	$101, 5(%rsp)
+	movb	$114, 4(%rsp)
+	movb	$116, 3(%rsp)
+	movb	$115, 2(%rsp)
+	movb	$101, 1(%rsp)
+	movb	$75, (%rsp)
+	movb	(%rsp), %sil
+	movb	1(%rsp), %dil
+	movb	2(%rsp), %r8b
+	movb	3(%rsp), %r9b
+	movb	4(%rsp), %cl
+	movb	5(%rsp), %dl
+	movb	6(%rsp), %al
+	movb	%al, 14(%rsp)
+	movb	%dl, 13(%rsp)
+	movb	%cl, 12(%rsp)
+	movb	%r9b, 11(%rsp)
+	movb	%r8b, 10(%rsp)
+	movb	%dil, 9(%rsp)
+	movb	%sil, 8(%rsp)
+	addq	$56, %rsp
 	.cfi_def_cfa_offset 8
 	retq
 .Ltmp2:
@@ -186,7 +207,7 @@ vtables:
 	.long	.Linfo_string5          # DW_AT_linkage_name
 	.long	.Linfo_string6          # DW_AT_name
 	.byte	1                       # DW_AT_decl_file
-	.byte	15                      # DW_AT_decl_line
+	.byte	20                      # DW_AT_decl_line
 	.long	102                     # DW_AT_type
 	.byte	1                       # DW_AT_accessibility
                                         # DW_ACCESS_public
