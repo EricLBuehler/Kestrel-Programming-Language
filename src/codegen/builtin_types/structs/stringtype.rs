@@ -43,7 +43,7 @@ fn string_get_array<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos
     return Data {
         data: Some(inkwell::values::BasicValueEnum::ArrayValue(arr)),
         tp,
-        owned: true,
+        owned: false,
     };
 }
 
@@ -67,7 +67,7 @@ fn string_get<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &cra
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(itm)),
         tp: codegen.datatypes.get(&String::from("char")).unwrap().clone(),
-        owned: true,
+        owned: false,
     };
 }
 

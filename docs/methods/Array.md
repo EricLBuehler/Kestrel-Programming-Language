@@ -12,9 +12,9 @@ arr.length() == 3usize
 ```
 
 ### ```get```
-The ```get``` instance method returns an item of type ```T``` (array element type) from the array.
+The ```get``` instance method returns a reference to an item of type ```T``` (array element type) from the array.
 
-```Array.get(self: Array, index: usize) -> T```
+```Array.get(self: Array, index: usize) -> &T```
 
 ```
 let arr = [1,2,3]

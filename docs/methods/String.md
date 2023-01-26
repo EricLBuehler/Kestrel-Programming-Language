@@ -12,9 +12,9 @@ str.length() == 3usize
 ```
 
 ### ```get```
-The ```get``` instance method returns a character from the ```String``` array.
+The ```get``` instance method returns a reference to a character from the ```String``` array.
 
-```String.get(self: String, index: usize) -> char```
+```String.get(self: String, index: usize) -> &char```
 
 ```
 let str = String::new("Kestrel")
@@ -22,9 +22,9 @@ str.get(1usize) == 3usize
 ```
 
 ### ```get_array```
-The ```get_array``` instance method returns the internal ```String``` array.
+The ```get_array``` instance method returns a reference to the internal ```String``` array.
 
-```String.get_array(self: String) -> char[]```
+```String.get_array(self: String) -> &char[]```
 
 ```
 let str = String::new("Kestrel")

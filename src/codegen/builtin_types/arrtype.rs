@@ -58,7 +58,7 @@ fn array_get<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &crat
     return Data {
         data: Some(codegen.builder.build_load(itmptr, "item")),
         tp: args.get(0).unwrap().tp.types.first().unwrap().clone(),
-        owned: true,
+        owned: false,
     };
 }
 
