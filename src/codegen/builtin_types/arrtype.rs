@@ -42,7 +42,12 @@ fn array_get<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &crat
     } 
 
     if &args.get(1).unwrap().tp != codegen.datatypes.get(&String::from("usize")).unwrap() {
-        let fmt: String = format!("invalid types for String.get, expected 'usize', got '{}'.", args.get(1).unwrap().tp);
+        let fmt: String = format!("Invalid types for Array.get, expected 'usize', got '{}'.", args.get(1).unwrap().tp);
+        errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
+    }
+
+    if args.get(1).unwrap().data.unwrap().into_int_value().is_const() && args.get(1).unwrap().data.unwrap().into_int_value().get_zero_extended_constant().unwrap() > args.get(0).unwrap().tp.arrtp.unwrap().len() as u64-1 {
+        let fmt: String = format!("Array.get out of range. Maximum index is '{}'.", args.get(0).unwrap().tp.arrtp.unwrap().len());
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
     }
     
