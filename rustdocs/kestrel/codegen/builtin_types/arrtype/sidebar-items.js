@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["arr_length",""],["array_bool",""],["array_get",""],["init_array",""]]};

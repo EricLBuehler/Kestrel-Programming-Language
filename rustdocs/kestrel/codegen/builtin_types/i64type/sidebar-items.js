@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["check_overflow_literal",""],["i64_add",""],["i64_bool",""],["i64_div",""],["i64_eq",""],["i64_ge",""],["i64_gt",""],["i64_le",""],["i64_lt",""],["i64_mul",""],["i64_ne",""],["i64_neg",""],["i64_pos",""],["i64_sub",""],["init_i64",""]]};

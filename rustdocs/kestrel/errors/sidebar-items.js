@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":[["_IMPL_NUM_FromPrimitive_FOR_ErrorType",""],["_IMPL_NUM_FromPrimitive_FOR_WarningType",""]],"enum":[["ErrorType",""],["WarningType",""]],"fn":[["raise_error",""],["raise_error_multi",""],["raise_error_no_pos",""],["repr_err",""],["repr_warn",""],["show_warning",""]]};

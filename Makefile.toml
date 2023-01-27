@@ -1,0 +1,22 @@
+[tasks.run_doc]
+command = "cargo"
+args = ["doc", "--no-deps", "--verbose"]
+
+[tasks.clean_rustdocs]
+command = "rm"
+args = ["-rf", "./rustdocs"]
+
+[tasks.template_index]
+script = 'echo "<meta http-equiv=\"refresh\" content=\"0; url=build_wheel\">" > target/doc/index.html'
+
+[tasks.create_rustdocs]
+command = "cp"
+args = ["-r", "target/doc", "./rustdocs"]
+
+[tasks.docs]
+dependencies = [
+    "run_doc",
+    "clean_rustdocs",
+    "template_index",
+    "create_rustdocs"
+]
