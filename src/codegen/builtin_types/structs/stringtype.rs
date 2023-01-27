@@ -38,7 +38,7 @@ fn string_get_array<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos
     let mut tp: DataType = codegen.datatypes.get(&BasicDataType::Array.to_string()).unwrap().clone();
     tp.name = codegen::CodeGen::array_repr(arr.get_type());
     tp.arrtp = Some(arr.get_type());
-    tp.types = vec![codegen.datatypes.get(&String::from("char")).unwrap().clone()];
+    tp.types = vec![codegen.datatypes.get(&crate::codegen::types::BasicDataType::U8.to_string()).unwrap().clone()];
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::ArrayValue(arr)),
@@ -66,7 +66,7 @@ fn string_get<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &cra
     
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(itm)),
-        tp: codegen.datatypes.get(&String::from("char")).unwrap().clone(),
+        tp: codegen.datatypes.get(&crate::codegen::types::BasicDataType::U8.to_string()).unwrap().clone(),
         owned: false,
     };
 }
@@ -149,7 +149,7 @@ pub fn init_string(codegen: &mut codegen::CodeGen) {
     let mut lengthfntp: DataType = codegen.datatypes.get(&BasicDataType::Func.to_string()).unwrap().clone();
     lengthfntp.name = String::from("get");
     lengthfntp.names = Some(vec![String::from("self"), String::from("index")]);
-    lengthfntp.rettp = Some(Box::new(codegen.datatypes.get(&String::from("usize")).unwrap().clone()));
+    lengthfntp.rettp = Some(Box::new(codegen.datatypes.get(&crate::codegen::types::BasicDataType::U8.to_string()).unwrap().clone()));
     lengthfntp.types = vec![codegen.datatypes.get(&BasicDataType::Array.to_string()).unwrap().clone(), codegen.datatypes.get(&String::from("usize")).unwrap().clone()];
 
     methods.insert(String::from("get"), Method {

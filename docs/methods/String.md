@@ -14,11 +14,11 @@ str.length() == 3usize
 ### ```get```
 The ```get``` instance method returns a reference to a character from the ```String``` array.
 
-```String.get(self: String, index: usize) -> &char```
+```String.get(self: String, index: usize) -> &u8```
 
 ```
 let str = String::new("Kestrel")
-str.get(1usize) == 3usize
+str.get(1usize) == 'e' as u8
 ```
 
 ### ```get_array```
