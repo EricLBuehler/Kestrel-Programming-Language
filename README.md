@@ -30,6 +30,7 @@ See an example [here](https://github.com/EricLBuehler/Kestrel-Programming-Langua
 
 ## Links
 - [Documentation](https://github.com/EricLBuehler/Kestrel-Programming-Language/tree/master/docs/)
+- [GitHub Pages](https://ericlbuehler.github.io/Kestrel-Programming-Language/)
 - [Inkwell LLVM wrapper](https://github.com/TheDan64/inkwell)
     - [Documentation](https://thedan64.github.io/inkwell/inkwell/index.html)
     - [License](https://github.com/TheDan64/inkwell/blob/master/LICENSE)
