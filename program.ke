@@ -23,5 +23,4 @@ fn main() {
     let x: dyn t = st
     x.func(2)
     let var: e = e::b<String::new("Kestrel")>
-    e::b
 }
