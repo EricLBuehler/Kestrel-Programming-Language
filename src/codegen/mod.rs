@@ -2151,7 +2151,7 @@ impl<'ctx> CodeGen<'ctx> {
             else {
                 if node.data.attr.as_ref().unwrap().expr.is_none() {
                     let fmt: String = format!("Expected '{}' type, got 'i32' type.", *tp.enum_tp.unwrap().clone());
-                    errors::raise_error_multi(errors::ErrorType::TypeMismatch, vec![fmt, String::from("Add <...>.")], vec![&node.pos, &node.pos], self.info);
+                    errors::raise_error_multi(errors::ErrorType::TypeMismatch, vec![String::from("Add <...>."), fmt], vec![&node.pos, &node.pos], self.info);
                 }
                 let dat: types::Data = self.compile_expr(&node.data.attr.as_ref().unwrap().expr.as_ref().unwrap(), true, false);
                 if dat.tp != *tp.enum_tp.as_ref().unwrap().clone() {
