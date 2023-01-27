@@ -40,6 +40,7 @@ pub struct DataType<'a> {
     pub wrapperfn: Option<fn(&codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>>,
     pub methods: std::collections::HashMap<String, Method<'a>>,
     pub enum_tp: Option<Box<DataType<'a>>>,
+    pub enum_num: Option<Box<inkwell::values::IntValue<'a>>>,
 }
 
 impl<'a> std::fmt::Debug for DataType<'a> {
@@ -301,6 +302,7 @@ pub fn new_datatype<'a>(tp: BasicDataType, name: String, names: Option<Vec<Strin
         wrapperfn: None,
         methods,
         enum_tp: None,
+        enum_num: None,
     };
 }
 
@@ -318,6 +320,7 @@ pub fn new_dyn_datatype<'a>(traitnm: String, mutability: DataMutablility) -> Dat
         wrapperfn: None,
         methods: std::collections::HashMap::new(),
         enum_tp: None,
+        enum_num: None,
     };
 }
 

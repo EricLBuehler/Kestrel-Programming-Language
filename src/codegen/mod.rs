@@ -2141,6 +2141,7 @@ impl<'ctx> CodeGen<'ctx> {
             let idx: usize = tp.names.as_ref().unwrap().iter().position(|x| x == &name).unwrap() as usize;
             let enum_tp: types::DataType = tp.types.get(idx).unwrap().clone();
             tp.enum_tp = Some(Box::new(enum_tp));
+            tp.enum_num = Some(Box::new(self.inkwell_types.i32tp.const_int(idx as u64, false)));
 
             let data: Option<inkwell::values::BasicValueEnum>;
             if node.data.attr.as_ref().unwrap().expr.is_none() {
