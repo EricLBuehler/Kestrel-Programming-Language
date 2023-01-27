@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["check_overflow_literal",""],["init_u32",""],["u32_add",""],["u32_bool",""],["u32_div",""],["u32_eq",""],["u32_ge",""],["u32_gt",""],["u32_le",""],["u32_lt",""],["u32_mul",""],["u32_ne",""],["u32_pos",""],["u32_sub",""]]};

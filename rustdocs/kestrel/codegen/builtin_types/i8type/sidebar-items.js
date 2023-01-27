@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["check_overflow_literal",""],["i8_add",""],["i8_bool",""],["i8_div",""],["i8_eq",""],["i8_ge",""],["i8_gt",""],["i8_le",""],["i8_lt",""],["i8_mul",""],["i8_ne",""],["i8_neg",""],["i8_pos",""],["i8_sub",""],["init_i8",""]]};

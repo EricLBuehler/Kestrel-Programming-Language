@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":[["TokenType",""]],"fn":[["advance",""],["generate_tokens",""],["make_char",""],["make_identifier",""],["make_number",""],["make_string",""],["print_tokens",""]],"struct":[["Lexer",""],["Token",""]]};

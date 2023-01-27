@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["fn_call",""],["func_bool",""],["init_func",""]]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["init_wrapperfn",""],["wrapperfn_bool",""],["wrapperfn_call",""]]};

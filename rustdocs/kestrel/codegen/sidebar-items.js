@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":[["ForwardDeclarationType",""],["InitializationStatus",""],["TemplateFunctionInstance",""]],"fn":[["generate_code",""]],"mod":[["builtin_types",""],["types",""]],"struct":[["CodeGen",""],["InkwellTypes",""],["Namespaces",""]]};
