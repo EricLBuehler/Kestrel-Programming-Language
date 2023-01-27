@@ -171,6 +171,7 @@ An ```enum``` may contain typed variants, that when constructed hold data.
 ```
 enum name {
     variant<type>,
+    variant,
     ...
 }
 ```
@@ -179,6 +180,12 @@ To construct:
 
 ```
 name::variant<value>
+```
+
+The value is optional, depending on the variant:
+
+```
+name::variant
 ```
 
 ## ```trait```
