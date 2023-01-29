@@ -65,6 +65,7 @@ pub struct Namespaces<'ctx> {
     structid: std::collections::HashMap<String, i32>,
     structid_from: std::collections::HashMap<i32, String>,
     structid_max: i32,
+    enums: std::collections::HashMap<String, (parser::Node, Vec<String>)>,
 }
 
 pub struct CodeGen<'ctx> {
@@ -2134,7 +2135,8 @@ impl<'ctx> CodeGen<'ctx> {
         //Check for enums
         if  self.datatypes.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).is_some() &&
             self.datatypes.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().tp == types::BasicDataType::Enum{
-            let tp: types::DataType = self.datatypes.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().clone();
+            let mut tp: types::DataType = self.datatypes.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().clone();
+            
             let name: String = node.data.attr.as_ref().unwrap().attr.clone();
             
             if !tp.names.as_ref().unwrap().contains(&name) {
@@ -2143,6 +2145,45 @@ impl<'ctx> CodeGen<'ctx> {
             }
             
             let idx: usize = tp.names.as_ref().unwrap().iter().position(|x| x == &name).unwrap() as usize;
+            let mut expr: Option<types::Data> = None;
+            if self.namespaces.enums.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).is_some(){
+                if  self.namespaces.enums.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().0.data.enumn.as_ref().unwrap().tps.get(idx).unwrap().is_some() &&
+                    self.namespaces.enums.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().0.data.enumn.as_ref().unwrap().tps.get(idx).unwrap().as_ref().unwrap().data.is_some() &&
+                    self.namespaces.enums.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().1.contains(self.namespaces.enums.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().0.data.enumn.as_ref().unwrap().tps.get(idx).unwrap().as_ref().unwrap().data.as_ref().unwrap()) {
+                    let tp_name: String = self.namespaces.enums.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().0.data.enumn.as_ref().unwrap().tps.get(idx).unwrap().as_ref().unwrap().data.as_ref().unwrap().clone();
+                    let mut types: Vec<types::DataType> = Vec::new();
+                    let mut mutabilities: Vec<types::DataMutablility> = Vec::new();
+                    
+                    let mut index: usize = 0;
+                    for typ in &self.namespaces.enums.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().0.data.enumn.as_ref().unwrap().tps.clone() { 
+                        if  typ.is_some() &&
+                            typ.as_ref().unwrap().data.is_some() &&
+                            typ.as_ref().unwrap().data.as_ref().unwrap() == &tp_name &&
+                            node.data.attr.as_ref().unwrap().expr.is_some() &&
+                            tp.mutability.get(index).unwrap() == &types::DataMutablility::Immutable {
+                            if expr.is_none() {
+                                let expr_val: types::Data = self.compile_expr(&node.data.attr.as_ref().unwrap().expr.as_ref().unwrap(), true, false, false);
+                                expr = Some(expr_val);
+                            }
+                            types.push(expr.as_ref().unwrap().tp.clone());
+                            mutabilities.push(types::DataMutablility::Mutable);
+                        }
+                        else if typ.is_some() && self.namespaces.enums.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().0.data.enumn.as_ref().unwrap().template_types.len() == 0 {
+                            types.push(Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, typ.as_ref().unwrap(), node).0);
+                            mutabilities.push(types::DataMutablility::Mutable);
+                        }
+                        else {
+                            types.push(self.datatypes.get(&types::BasicDataType::I32.to_string()).unwrap().clone());
+                            mutabilities.push(types::DataMutablility::Immutable);
+                        }
+                        index += 1;
+                    }
+
+                    tp.types = types;
+                    tp.mutability = mutabilities;
+                }
+            }
+            
             if get_enum_id {
                 return types::Data {
                     data: Some(inkwell::values::BasicValueEnum::IntValue(self.inkwell_types.i32tp.const_int(idx as u64, false))),
@@ -2162,7 +2203,13 @@ impl<'ctx> CodeGen<'ctx> {
                     let fmt: String = format!("Expected '{}' type, got 'i32' type.", enum_tp.clone());
                     errors::raise_error_multi(errors::ErrorType::TypeMismatch, vec![String::from("Add <...>."), fmt], vec![&node.pos, &node.pos], self.info);
                 }
-                let dat: types::Data = self.compile_expr(&node.data.attr.as_ref().unwrap().expr.as_ref().unwrap(), true, false, false);
+                
+                let dat: types::Data = if expr.is_none() {
+                    self.compile_expr(&node.data.attr.as_ref().unwrap().expr.as_ref().unwrap(), true, false, false)
+                } else {
+                    expr.unwrap()
+                };
+
                 if dat.tp != enum_tp.clone() {
                     let fmt: String = format!("Expected '{}' type, got '{}' type.", enum_tp.clone(), dat.tp);
                     errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
@@ -2625,7 +2672,7 @@ impl<'ctx> CodeGen<'ctx> {
         let mut types: Vec<types::DataType> = Vec::new();
         
         for tp in &node.data.enumn.as_ref().unwrap().tps {
-            if tp.is_some() {
+            if tp.is_some() && node.data.enumn.as_ref().unwrap().template_types.len() == 0 {
                 types.push(Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, tp.as_ref().unwrap(), node).0);
                 mutabilities.push(types::DataMutablility::Mutable);
             }
@@ -2643,6 +2690,10 @@ impl<'ctx> CodeGen<'ctx> {
 
         self.datatypes.insert(node.data.enumn.as_ref().unwrap().name.clone(), tp.clone());
         builtin_types::add_simple_type(self, std::collections::HashMap::new(), types::BasicDataType::Enum, &node.data.enumn.as_ref().unwrap().name.clone());
+
+        if node.data.enumn.as_ref().unwrap().template_types.len() > 0 {
+            self.namespaces.enums.insert(node.data.enumn.as_ref().unwrap().name.clone(), (node.clone(), node.data.enumn.as_ref().unwrap().template_types.clone()));
+        }
 
         let data: types::Data = types::Data {
             data: None,
@@ -3225,6 +3276,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
         structid: std::collections::HashMap::new(),
         structid_from: std::collections::HashMap::new(),
         structid_max: -1,
+        enums: std::collections::HashMap::new(),
     };
 
     
