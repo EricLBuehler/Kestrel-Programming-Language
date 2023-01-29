@@ -203,3 +203,11 @@ trait t{
 The ```dyn``` keyword defines a dynamically-dispatched type. Types defined with the ```dyn``` keyword follow the following format:
 ```dyn trait```
 Only instances of structs may be used with the ```dyn``` keyword. Unlike other languages, the ```dyn``` keyword has a very low memory and performance footprint due to the constant ```vtable``` and the use of stack instead of heap allocation.
+
+## ```is```
+The ```is``` keyword checks whether a constructed enum variant is a specific variant.
+
+```
+let var = e::x
+(var is e::x) == true
+```
