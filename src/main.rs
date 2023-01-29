@@ -114,6 +114,7 @@ fn main() {
                                             String::from("trait"),
                                             String::from("dyn"),
                                             String::from("void"),
+                                            String::from("is"),
                                             ];
 
     let mut lexer: lexer::Lexer = lexer::Lexer {

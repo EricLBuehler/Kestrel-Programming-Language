@@ -2918,6 +2918,9 @@ impl<'ctx> CodeGen<'ctx> {
                     owned: true,
                 }
             }
+            parser::NodeType::IS => {
+                unimplemented!();
+            }
         }
     }
 

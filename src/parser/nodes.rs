@@ -329,6 +329,18 @@ impl std::fmt::Display for TraitNode {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct IsNode{
+    pub left: crate::parser::Node,
+    pub variant: crate::parser::Node,
+}
+
+impl std::fmt::Display for IsNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Is '{}' '{}'", self.left, self.variant)
+    }    
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct NodeData {
     pub binary: Option<BinaryNode>,
     pub num: Option<NumNode>,
@@ -351,4 +363,5 @@ pub struct NodeData {
     pub loopn: Option<LoopNode>,
     pub enumn: Option<EnumNode>,
     pub traitn: Option<TraitNode>,
+    pub is: Option<IsNode>,
 }

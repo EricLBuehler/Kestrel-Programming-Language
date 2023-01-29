@@ -58,6 +58,7 @@ pub enum NodeType {
     ENUM,
     TRAIT,
     VOID,
+    IS,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -134,6 +135,7 @@ impl std::fmt::Display for Node {
             NodeType::ENUM => write!(f, "{}", self.data.enumn.as_ref().unwrap() ),
             NodeType::TRAIT => write!(f, "{}", self.data.traitn.as_ref().unwrap() ),
             NodeType::VOID => write!(f, "void"),
+            NodeType::IS => write!(f, "{}", self.data.is.as_ref().unwrap() ),
         }
     }    
 }
@@ -248,6 +250,9 @@ impl<'life> Parser<'life> {
                 }
                 else if self.current.data == "as" {
                     Precedence::To
+                }
+                else if self.current.data == "is" {
+                    Precedence::Comparison
                 }
                 else {
                     Precedence::Lowest
@@ -438,6 +443,9 @@ impl<'life> Parser<'life> {
                     if self.current.data=="as" {
                         left = self.generate_as(left);
                     }
+                    else if self.current.data=="as" {
+                        left = self.generate_is(left);
+                    }
                     else {
                         return left;
                     }
@@ -483,6 +491,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
 
         let pos = Position {
@@ -561,6 +570,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
     
         let n: Node = self.create_node(NodeType::BINARY, nodedat, pos);
@@ -595,6 +605,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
 
         let pos = Position {
@@ -683,6 +694,7 @@ impl<'life> Parser<'life> {
                 loopn: None,
                 enumn: None,
                 traitn: None,
+                is: None,
             };
         
             n = self.create_node(NodeType::INITSTRUCT, nodedat, pos);
@@ -732,6 +744,7 @@ impl<'life> Parser<'life> {
                     loopn: None,
                     enumn: None,
                     traitn: None,
+                    is: None,
                 };
             
                 n = self.create_node(NodeType::ATTRASSIGN, nodedat, pos.clone());
@@ -767,6 +780,7 @@ impl<'life> Parser<'life> {
                     loopn: None,
                     enumn: None,
                     traitn: None,
+                    is: None,
                 };
             
                 n = self.create_node(NodeType::ATTR, nodedat, pos.clone());
@@ -827,6 +841,7 @@ impl<'life> Parser<'life> {
                 loopn: None,
                 enumn: None,
                 traitn: None,
+                is: None,
             };
         
             n = self.create_node(NodeType::NAMESPACE, nodedat, pos.clone());
@@ -877,6 +892,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
     
         let n: Node = self.create_node(NodeType::ASSIGN, nodedat, pos);
@@ -958,6 +974,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
     
         let n: Node = self.create_node(NodeType::CALL, nodedat, pos);
@@ -991,6 +1008,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
 
         let pos = Position {
@@ -1031,6 +1049,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
 
         let pos = Position {
@@ -1071,6 +1090,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
 
         let pos = Position {
@@ -1111,6 +1131,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
 
         let pos = Position {
@@ -1151,6 +1172,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
 
         let pos = Position {
@@ -1191,6 +1213,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
 
         let pos = Position {
@@ -1231,6 +1254,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
 
         let pos = Position {
@@ -1271,6 +1295,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
 
         let pos = Position {
@@ -1311,6 +1336,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
 
         let pos = Position {
@@ -1364,6 +1390,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
     
         let n: Node = self.create_node(NodeType::AS, nodedat, pos);
@@ -1398,6 +1425,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
 
         let pos = Position {
@@ -1438,6 +1466,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
 
         let pos = Position {
@@ -1487,6 +1516,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
 
         self.backadvance();
@@ -1543,6 +1573,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
     
         let n: Node = self.create_node(NodeType::UNARY, nodedat, pos);
@@ -1583,6 +1614,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
     
         let n: Node = self.create_node(NodeType::STRING, nodedat, pos);
@@ -1625,6 +1657,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
 
         let pos = Position {
@@ -1693,6 +1726,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
     
         let n: Node = self.create_node(NodeType::ARRAY, nodedat, pos);
@@ -1723,12 +1757,61 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
 
     
         let n: Node = self.create_node(NodeType::VOID, nodedat, Position {startcol: self.current.startcol, endcol: self.current.endcol, line: self.current.line } );
 
         return n;   
+    }
+    
+    fn generate_is(&mut self, left: Node) -> Node{
+        let mut pos = Position {
+            line: left.pos.line,
+            startcol: left.pos.startcol,
+            endcol: 0,
+        };
+
+        self.advance();
+        
+        let expr: Node = self.expr(Precedence::Lowest);
+
+        pos.endcol = expr.pos.endcol;
+
+        let is: nodes::IsNode = nodes::IsNode{
+            left,
+            variant: expr,
+        };
+
+        let nodedat: nodes::NodeData = nodes::NodeData {
+            binary: None,
+            num: None,
+            letn: None,
+            identifier: None,
+            func: None,
+            assign: None,
+            call: None,
+            ret: None,
+            to: None,
+            unary: None,
+            st: None,
+            initst: None,
+            attr: None,
+            attrassign: None,
+            str: None,
+            arr: None,
+            impln: None,
+            ifn: None,
+            loopn: None,
+            enumn: None,
+            traitn: None,
+            is: Some(is),
+        };
+    
+        let n: Node = self.create_node(NodeType::IS, nodedat, pos);
+    
+        return n;
     }
 
     //Keywords
@@ -1805,6 +1888,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
         
         if nodedat.letn.as_ref().unwrap().expr.is_some() {
@@ -2152,6 +2236,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
 
         let n: Node = self.create_node(NodeType::FUNC, nodedat, pos);
@@ -2203,6 +2288,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
 
         if nodedat.ret.as_ref().unwrap().expr.is_some() {
@@ -2326,6 +2412,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
 
     
@@ -2430,6 +2517,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
 
     
@@ -2559,6 +2647,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
 
     
@@ -2621,6 +2710,7 @@ impl<'life> Parser<'life> {
             loopn: Some(loopn),
             enumn: None,
             traitn: None,
+            is: None,
         };
 
     
@@ -2656,6 +2746,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
 
         let pos = Position {
@@ -2698,6 +2789,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: None,
+            is: None,
         };
 
         let pos = Position {
@@ -2771,6 +2863,7 @@ impl<'life> Parser<'life> {
             loopn: Some(loopn),
             enumn: None,
             traitn: None,
+            is: None,
         };
 
     
@@ -2872,6 +2965,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: Some(enumn),
             traitn: None,
+            is: None,
         };
 
     
@@ -3080,6 +3174,7 @@ impl<'life> Parser<'life> {
             loopn: None,
             enumn: None,
             traitn: Some(traitn),
+            is: None,
         };
 
     
