@@ -13,9 +13,9 @@ impl t for s {
     }
 }
 
-enum e {
+enum e<T> {
     a,
-    b<String>,
+    b<T>,
 }
 
 fn main() {
