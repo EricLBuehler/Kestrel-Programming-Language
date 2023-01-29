@@ -54,6 +54,8 @@ pub enum ErrorType {
     FunctionRedefinedInImpl,
     ImplTemplatedFunction,
     TraitIsNotTraitObjSafe,
+    ExpectedEnum,
+    EnumTypeMismatch,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -116,6 +118,8 @@ pub fn repr_err(tp: ErrorType) -> &'static str {
         ErrorType::FunctionRedefinedInImpl => "function is redefined in trait impl",
         ErrorType::ImplTemplatedFunction => "functions may not be templated in impl",
         ErrorType::TraitIsNotTraitObjSafe => "trait is not trait object safe",
+        ErrorType::ExpectedEnum => "expected enum variant",
+        ErrorType::EnumTypeMismatch => "enum type mismatch",
     }
 }
 

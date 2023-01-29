@@ -1777,6 +1777,10 @@ impl<'life> Parser<'life> {
         
         let expr: Node = self.expr(Precedence::Lowest);
 
+        if expr.tp != NodeType::NAMESPACE {
+            self.raise_error("Expected namespace or enum attribute access.", ErrorType::InvalidTok);
+        }
+
         pos.endcol = expr.pos.endcol;
 
         let is: nodes::IsNode = nodes::IsNode{
