@@ -24,46 +24,51 @@ _main:                                  # @_main
 	.loc	1 20 0                  # program.ke:20:0
 	.cfi_startproc
 # %bb.0:                                # %entry
-	subq	$56, %rsp
-	.cfi_def_cfa_offset 64
+	subq	$88, %rsp
+	.cfi_def_cfa_offset 96
 .Ltmp1:
 	.loc	1 20 0 prologue_end     # program.ke:20:0
-	movl	$10, 32(%rsp)
+	movl	$10, 40(%rsp)
+	movl	40(%rsp), %eax
+	movl	%eax, 32(%rsp)
 	movl	32(%rsp), %eax
+	movl	$0, 48(%rsp)
 	movl	%eax, 24(%rsp)
-	movl	24(%rsp), %eax
-	movl	$0, 40(%rsp)
-	movl	%eax, 16(%rsp)
-	leaq	16(%rsp), %rax
-	movq	%rax, 48(%rsp)
-	movslq	40(%rsp), %rdi
+	leaq	24(%rsp), %rax
+	movq	%rax, 56(%rsp)
+	movslq	48(%rsp), %rdi
 	movq	vtables(,%rdi,8), %rax
-	movq	48(%rsp), %rsi
+	movq	56(%rsp), %rsi
                                         # kill: def $edi killed $edi killed $rdi
 	movl	$2, %edx
 	callq	*%rax
-	movb	$108, 6(%rsp)
-	movb	$101, 5(%rsp)
-	movb	$114, 4(%rsp)
-	movb	$116, 3(%rsp)
-	movb	$115, 2(%rsp)
-	movb	$101, 1(%rsp)
-	movb	$75, (%rsp)
-	movb	(%rsp), %sil
-	movb	1(%rsp), %dil
-	movb	2(%rsp), %r8b
-	movb	3(%rsp), %r9b
-	movb	4(%rsp), %cl
-	movb	5(%rsp), %dl
-	movb	6(%rsp), %al
-	movb	%al, 14(%rsp)
-	movb	%dl, 13(%rsp)
-	movb	%cl, 12(%rsp)
-	movb	%r9b, 11(%rsp)
-	movb	%r8b, 10(%rsp)
-	movb	%dil, 9(%rsp)
-	movb	%sil, 8(%rsp)
-	addq	$56, %rsp
+	movb	$108, 14(%rsp)
+	movb	$101, 13(%rsp)
+	movb	$114, 12(%rsp)
+	movb	$116, 11(%rsp)
+	movb	$115, 10(%rsp)
+	movb	$101, 9(%rsp)
+	movb	$75, 8(%rsp)
+	movb	8(%rsp), %sil
+	movb	9(%rsp), %dil
+	movb	10(%rsp), %r8b
+	movb	11(%rsp), %r9b
+	movb	12(%rsp), %cl
+	movb	13(%rsp), %dl
+	movb	14(%rsp), %al
+	movl	$1, 64(%rsp)
+	movb	%al, 22(%rsp)
+	movb	%dl, 21(%rsp)
+	movb	%cl, 20(%rsp)
+	movb	%r9b, 19(%rsp)
+	movb	%r8b, 18(%rsp)
+	movb	%dil, 17(%rsp)
+	movb	%sil, 16(%rsp)
+	leaq	16(%rsp), %rax
+	movq	%rax, 72(%rsp)
+	leaq	64(%rsp), %rax
+	movq	%rax, 80(%rsp)
+	addq	$88, %rsp
 	.cfi_def_cfa_offset 8
 	retq
 .Ltmp2:

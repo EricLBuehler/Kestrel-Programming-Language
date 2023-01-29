@@ -3,6 +3,7 @@ source_filename = "program.ke"
 target triple = "x86_64-unknown-linux-gnu"
 
 %st_data = type opaque
+%enum_st_data = type opaque
 
 @vtables = local_unnamed_addr constant { { void ({ i32, %st_data* }, i32)* } } { { void ({ i32, %st_data* }, i32)* } { void ({ i32, %st_data* }, i32)* @s.func } }
 
@@ -41,8 +42,16 @@ entry:
   %arr = getelementptr inbounds { [7 x i8] }, { [7 x i8] }* %String, i32 0, i32 0, !dbg !15
   store [7 x i8] c"Kestrel", [7 x i8]* %arr, !dbg !15
   %string = load { [7 x i8] }, { [7 x i8] }* %String, !dbg !15
-  %var = alloca { [7 x i8] }, !dbg !15
-  store { [7 x i8] } %string, { [7 x i8] }* %var, !dbg !15
+  %enum_st = alloca { i32, %enum_st_data* }, !dbg !15
+  %variant_id = getelementptr inbounds { i32, %enum_st_data* }, { i32, %enum_st_data* }* %enum_st, i32 0, i32 0, !dbg !15
+  store i32 1, i32* %variant_id, !dbg !15
+  %variant_data_ptr = alloca { [7 x i8] }, !dbg !15
+  store { [7 x i8] } %string, { [7 x i8] }* %variant_data_ptr, !dbg !15
+  %variant_data_bitcast = bitcast { [7 x i8] }* %variant_data_ptr to %enum_st_data*, !dbg !15
+  %variant_data = getelementptr inbounds { i32, %enum_st_data* }, { i32, %enum_st_data* }* %enum_st, i32 0, i32 1, !dbg !15
+  store %enum_st_data* %variant_data_bitcast, %enum_st_data** %variant_data, !dbg !15
+  %var = alloca { i32, %enum_st_data* }*, !dbg !15
+  store { i32, %enum_st_data* }* %enum_st, { i32, %enum_st_data* }** %var, !dbg !15
   ret void, !dbg !15
 }
 
