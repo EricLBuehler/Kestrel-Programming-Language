@@ -443,7 +443,7 @@ impl<'life> Parser<'life> {
                     if self.current.data=="as" {
                         left = self.generate_as(left);
                     }
-                    else if self.current.data=="as" {
+                    else if self.current.data=="is" {
                         left = self.generate_is(left);
                     }
                     else {

@@ -2151,7 +2151,7 @@ impl<'ctx> CodeGen<'ctx> {
                 };
             }
             let enum_tp: types::DataType = tp.types.get(idx).unwrap().clone();
-
+            
             let data: Option<inkwell::values::BasicValueEnum>;
             if  node.data.attr.as_ref().unwrap().expr.is_none() &&
                 tp.mutability.get(idx).unwrap() == &types::DataMutablility::Immutable  {
@@ -2639,6 +2639,7 @@ impl<'ctx> CodeGen<'ctx> {
         tp.name = node.data.enumn.as_ref().unwrap().name.clone();
         tp.names = Some(names);
         tp.types = types;
+        tp.mutability = mutabilities;
 
         self.datatypes.insert(node.data.enumn.as_ref().unwrap().name.clone(), tp.clone());
         builtin_types::add_simple_type(self, std::collections::HashMap::new(), types::BasicDataType::Enum, &node.data.enumn.as_ref().unwrap().name.clone());
@@ -2674,7 +2675,7 @@ impl<'ctx> CodeGen<'ctx> {
             errors::raise_error(&fmt, errors::ErrorType::ExpectedEnum, &node.data.is.as_ref().unwrap().left.pos, self.info);
         }
 
-        let variant: types::Data = self.compile_expr(&node.data.is.as_ref().unwrap().variant, false, false, false);
+        let variant: types::Data = self.compile_expr(&node.data.is.as_ref().unwrap().variant, false, false, true);
 
         if variant.tp.tp != types::BasicDataType::Enum {
             let fmt: String = format!("Expected 'enum', got '{}'.", left.tp);

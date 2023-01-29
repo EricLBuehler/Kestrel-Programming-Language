@@ -52,6 +52,10 @@ entry:
   store %enum_st_data* %variant_data_bitcast, %enum_st_data** %variant_data, !dbg !15
   %var = alloca { i32, %enum_st_data* }*, !dbg !15
   store { i32, %enum_st_data* }* %enum_st, { i32, %enum_st_data* }** %var, !dbg !15
+  %var4 = load { i32, %enum_st_data* }*, { i32, %enum_st_data* }** %var, !dbg !15
+  %is_id_ptr = getelementptr inbounds { i32, %enum_st_data* }, { i32, %enum_st_data* }* %var4, i32 0, i32 0, !dbg !15
+  %is_id = load i32, i32* %is_id_ptr, !dbg !15
+  %is_compare = icmp eq i32 %is_id, 1, !dbg !15
   ret void, !dbg !15
 }
 
