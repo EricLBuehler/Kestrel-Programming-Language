@@ -278,6 +278,7 @@ impl std::fmt::Display for ImplNode {
 pub struct IfNode{
     pub ifs: Vec<(crate::parser::Node, Vec<crate::parser::Node>)>,
     pub else_opt: Option<Vec<crate::parser::Node>>,
+    pub inexpr: bool,
 }
 
 impl std::fmt::Display for IfNode {

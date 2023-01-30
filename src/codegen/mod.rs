@@ -2244,6 +2244,8 @@ impl<'ctx> CodeGen<'ctx> {
 
         let mut rettp: Option<types::DataType> = None;
 
+        let inexpr: bool = node.data.ifn.as_ref().unwrap().inexpr;
+
         let mut idx: usize = 0;
         for ifn in &node.data.ifn.as_ref().unwrap().ifs {
             self.builder.position_at_end(enclosing_block);            
@@ -2323,7 +2325,7 @@ impl<'ctx> CodeGen<'ctx> {
 
             blocks.push((res.data.clone(), then_block));
 
-            if &res.tp != rettp.as_ref().unwrap() {
+            if &res.tp != rettp.as_ref().unwrap() && inexpr {
                 let fmt: String = format!("Expected '{}' type, got '{}' type.", rettp.as_ref().unwrap(), res.tp);
                 errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);                
             }
@@ -2397,7 +2399,7 @@ impl<'ctx> CodeGen<'ctx> {
 
             blocks.push((res.data.clone(), else_block));
 
-            if &res.tp != rettp.as_ref().unwrap() {
+            if &res.tp != rettp.as_ref().unwrap() && inexpr{
                 let fmt: String = format!("Expected '{}' type, got '{}' type.", rettp.as_ref().unwrap(), res.tp);
                 errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);                
             }

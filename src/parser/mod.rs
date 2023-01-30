@@ -353,7 +353,7 @@ impl<'life> Parser<'life> {
             TokenType::STRING => Some(self.generate_str()),
             TokenType::CHAR => Some(self.generate_char(self.current.data.clone())),
             TokenType::LSQUARE => Some(self.generate_array()),
-            TokenType::KEYWORD => if self.current.data == "void" { Some(self.generate_void()) } else if self.current.data == "if" { let v: Option<Node> = Some(self.parse_if()); self.backadvance(); v }else { None },
+            TokenType::KEYWORD => if self.current.data == "void" { Some(self.generate_void()) } else if self.current.data == "if" { let v: Option<Node> = Some(self.parse_if(true)); self.backadvance(); v }else { None },
             _ => None,
         }
     }
@@ -381,7 +381,7 @@ impl<'life> Parser<'life> {
             return self.parse_impl();
         }
         else if self.current.data == String::from("if") {
-            return self.parse_if();
+            return self.parse_if(false);
         }
         else if self.current.data == String::from("loop") {
             return self.parse_loop();
@@ -2530,7 +2530,7 @@ impl<'life> Parser<'life> {
         return n;        
     }
 
-    fn parse_if(&mut self) -> Node{
+    fn parse_if(&mut self, inexpr: bool) -> Node{
         let mut pos = Position {
             line: self.current.line,
             startcol: self.current.startcol,
@@ -2627,6 +2627,7 @@ impl<'life> Parser<'life> {
         let ifn: nodes::IfNode = nodes::IfNode{
             ifs,
             else_opt,
+            inexpr,
         };
     
         let nodedat: nodes::NodeData = nodes::NodeData {

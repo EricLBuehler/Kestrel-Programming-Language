@@ -130,6 +130,8 @@ else {
 
 All conditions must be of type [```bool```](types.md#bool).
 
+```if```, ```elif```, and ```else``` blocks all evaluate to a value, which must be the same when the value is used. Error checking is not applied when the value is not used.
+
 ## ```loop```
 The ```loop``` keyword executes the given code infinitely.
 
