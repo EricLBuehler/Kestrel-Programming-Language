@@ -353,7 +353,7 @@ impl<'life> Parser<'life> {
             TokenType::STRING => Some(self.generate_str()),
             TokenType::CHAR => Some(self.generate_char(self.current.data.clone())),
             TokenType::LSQUARE => Some(self.generate_array()),
-            TokenType::KEYWORD => if self.current.data == "void" { Some(self.generate_void()) } else { None },
+            TokenType::KEYWORD => if self.current.data == "void" { Some(self.generate_void()) } else if self.current.data == "if" { let v: Option<Node> = Some(self.parse_if()); self.backadvance(); v }else { None },
             _ => None,
         }
     }
