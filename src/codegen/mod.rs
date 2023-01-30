@@ -2240,6 +2240,10 @@ impl<'ctx> CodeGen<'ctx> {
         
         let mut collected_locals: Vec<std::collections::HashMap<String, usize>> = Vec::new();
 
+        let mut blocks: Vec<(Option<inkwell::values::BasicValueEnum>, inkwell::basic_block::BasicBlock)> = Vec::new();
+
+        let mut rettp: Option<types::DataType> = None;
+
         let mut idx: usize = 0;
         for ifn in &node.data.ifn.as_ref().unwrap().ifs {
             self.builder.position_at_end(enclosing_block);            
@@ -2311,7 +2315,18 @@ impl<'ctx> CodeGen<'ctx> {
             
             let loop_flow_broken_old = self.loop_flow_broken;
 
-            self.compile(&ifn.1, true, false);
+            let res: types::Data = self.compile(&ifn.1, true, false);
+
+            if rettp.is_none() {
+                rettp = Some(res.tp.clone());
+            }
+
+            blocks.push((res.data.clone(), then_block));
+
+            if &res.tp != rettp.as_ref().unwrap() {
+                let fmt: String = format!("Expected '{}' type, got '{}' type.", rettp.as_ref().unwrap(), res.tp);
+                errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);                
+            }
 
             self.loop_flow_broken = loop_flow_broken_old;
 
@@ -2372,9 +2387,20 @@ impl<'ctx> CodeGen<'ctx> {
 
             let loop_flow_broken_old = self.loop_flow_broken;
 
-            self.compile(&node.data.ifn.as_ref().unwrap().else_opt.as_ref().unwrap(), true, false);
+            let res: types::Data = self.compile(&node.data.ifn.as_ref().unwrap().else_opt.as_ref().unwrap(), true, false);
 
             self.loop_flow_broken = loop_flow_broken_old;
+            
+            if rettp.is_none() {
+                rettp = Some(res.tp.clone());
+            }
+
+            blocks.push((res.data.clone(), else_block));
+
+            if &res.tp != rettp.as_ref().unwrap() {
+                let fmt: String = format!("Expected '{}' type, got '{}' type.", rettp.as_ref().unwrap(), res.tp);
+                errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);                
+            }
 
             let mut lvl: usize = 0;
             for local in &self.namespaces.locals {
@@ -2444,16 +2470,28 @@ impl<'ctx> CodeGen<'ctx> {
             }
         }
 
-
-
-
         self.enclosing_block = Some(end_block);
 
         self.builder.position_at_end(end_block);
-        
+
+        if rettp.as_ref().unwrap().tp == types::BasicDataType::Void {
+            let data: types::Data = types::Data {
+                data: None,
+                tp: rettp.unwrap().clone(),
+                owned: true,
+            };
+            return data;
+        }
+
+        let phi: inkwell::values::PhiValue = self.builder.build_phi(blocks.first().unwrap().0.unwrap().get_type(), "if_phi");
+
+        for block in blocks {
+            phi.add_incoming(&[(&block.0.unwrap(), block.1)]);
+        }
+
         let data: types::Data = types::Data {
-            data: None,
-            tp: self.datatypes.get(&types::BasicDataType::Void.to_string()).unwrap().clone(),
+            data: Some(phi.as_basic_value()),
+            tp: rettp.unwrap().clone(),
             owned: true,
         };
         return data;
