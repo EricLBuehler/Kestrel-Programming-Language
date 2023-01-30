@@ -38,16 +38,16 @@ entry:
   %method = load void ({ i32, %st_data* }, i32)*, void ({ i32, %st_data* }, i32)** %method_ptr, !dbg !15
   %instance = load { i32, %st_data* }, { i32, %st_data* }* %x3, !dbg !15
   call void %method({ i32, %st_data* } %instance, i32 2), !dbg !15
-  %String = alloca { [7 x i8] }, !dbg !15
-  %arr = getelementptr inbounds { [7 x i8] }, { [7 x i8] }* %String, i32 0, i32 0, !dbg !15
-  store [7 x i8] c"Kestrel", [7 x i8]* %arr, !dbg !15
-  %string = load { [7 x i8] }, { [7 x i8] }* %String, !dbg !15
+  %String = alloca { [12 x i8] }, !dbg !15
+  %arr = getelementptr inbounds { [12 x i8] }, { [12 x i8] }* %String, i32 0, i32 0, !dbg !15
+  store [12 x i8] c"Kestrel \F0\9F\A6\85", [12 x i8]* %arr, !dbg !15
+  %string = load { [12 x i8] }, { [12 x i8] }* %String, !dbg !15
   %enum_st = alloca { i32, %enum_st_data* }, !dbg !15
   %variant_id = getelementptr inbounds { i32, %enum_st_data* }, { i32, %enum_st_data* }* %enum_st, i32 0, i32 0, !dbg !15
   store i32 1, i32* %variant_id, !dbg !15
-  %variant_data_ptr = alloca { [7 x i8] }, !dbg !15
-  store { [7 x i8] } %string, { [7 x i8] }* %variant_data_ptr, !dbg !15
-  %variant_data_bitcast = bitcast { [7 x i8] }* %variant_data_ptr to %enum_st_data*, !dbg !15
+  %variant_data_ptr = alloca { [12 x i8] }, !dbg !15
+  store { [12 x i8] } %string, { [12 x i8] }* %variant_data_ptr, !dbg !15
+  %variant_data_bitcast = bitcast { [12 x i8] }* %variant_data_ptr to %enum_st_data*, !dbg !15
   %variant_data = getelementptr inbounds { i32, %enum_st_data* }, { i32, %enum_st_data* }* %enum_st, i32 0, i32 1, !dbg !15
   store %enum_st_data* %variant_data_bitcast, %enum_st_data** %variant_data, !dbg !15
   %var = alloca { i32, %enum_st_data* }*, !dbg !15

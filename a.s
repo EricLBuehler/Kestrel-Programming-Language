@@ -24,54 +24,83 @@ _main:                                  # @_main
 	.loc	1 20 0                  # program.ke:20:0
 	.cfi_startproc
 # %bb.0:                                # %entry
-	subq	$88, %rsp
-	.cfi_def_cfa_offset 96
-.Ltmp1:
+	pushq	%rbp
+	.cfi_def_cfa_offset 16
+	pushq	%r14
+	.cfi_def_cfa_offset 24
+	pushq	%rbx
+	.cfi_def_cfa_offset 32
+	subq	$96, %rsp
+	.cfi_def_cfa_offset 128
+	.cfi_offset %rbx, -32
+	.cfi_offset %r14, -24
+	.cfi_offset %rbp, -16
 	.loc	1 20 0 prologue_end     # program.ke:20:0
-	movl	$10, 40(%rsp)
+	movl	$10, 48(%rsp)
+	movl	48(%rsp), %eax
+	movl	%eax, 40(%rsp)
 	movl	40(%rsp), %eax
+	movl	$0, 56(%rsp)
 	movl	%eax, 32(%rsp)
-	movl	32(%rsp), %eax
-	movl	$0, 48(%rsp)
-	movl	%eax, 24(%rsp)
-	leaq	24(%rsp), %rax
-	movq	%rax, 56(%rsp)
-	movslq	48(%rsp), %rdi
+	leaq	32(%rsp), %rax
+	movq	%rax, 64(%rsp)
+	movslq	56(%rsp), %rdi
 	movq	vtables(,%rdi,8), %rax
-	movq	56(%rsp), %rsi
+	movq	64(%rsp), %rsi
                                         # kill: def $edi killed $edi killed $rdi
 	movl	$2, %edx
 	callq	*%rax
-	movb	$108, 14(%rsp)
-	movb	$101, 13(%rsp)
-	movb	$114, 12(%rsp)
-	movb	$116, 11(%rsp)
-	movb	$115, 10(%rsp)
-	movb	$101, 9(%rsp)
-	movb	$75, 8(%rsp)
-	movb	8(%rsp), %sil
-	movb	9(%rsp), %dil
-	movb	10(%rsp), %r8b
-	movb	11(%rsp), %r9b
-	movb	12(%rsp), %cl
-	movb	13(%rsp), %dl
-	movb	14(%rsp), %al
-	movl	$1, 64(%rsp)
-	movb	%al, 22(%rsp)
-	movb	%dl, 21(%rsp)
-	movb	%cl, 20(%rsp)
+	movb	$-123, 11(%rsp)
+	movb	$-90, 10(%rsp)
+	movb	$-97, 9(%rsp)
+	movb	$-16, 8(%rsp)
+	movb	$32, 7(%rsp)
+	movb	$108, 6(%rsp)
+	movb	$101, 5(%rsp)
+	movb	$114, 4(%rsp)
+	movb	$116, 3(%rsp)
+	movb	$115, 2(%rsp)
+	movb	$101, 1(%rsp)
+	movb	$75, (%rsp)
+	movb	(%rsp), %sil
+	movb	1(%rsp), %dil
+	movb	2(%rsp), %r8b
+	movb	3(%rsp), %r9b
+	movb	4(%rsp), %r10b
+	movb	5(%rsp), %r11b
+	movb	6(%rsp), %bpl
+	movb	7(%rsp), %r14b
+	movb	8(%rsp), %dl
+	movb	9(%rsp), %bl
+	movb	10(%rsp), %al
+	movb	11(%rsp), %cl
+	movl	$1, 72(%rsp)
+	movb	%cl, 27(%rsp)
+	movb	%al, 26(%rsp)
+	movb	%bl, 25(%rsp)
+	movb	%dl, 24(%rsp)
+	movb	%r14b, 23(%rsp)
+	movb	%bpl, 22(%rsp)
+	movb	%r11b, 21(%rsp)
+	movb	%r10b, 20(%rsp)
 	movb	%r9b, 19(%rsp)
 	movb	%r8b, 18(%rsp)
 	movb	%dil, 17(%rsp)
 	movb	%sil, 16(%rsp)
 	leaq	16(%rsp), %rax
-	movq	%rax, 72(%rsp)
-	leaq	64(%rsp), %rax
 	movq	%rax, 80(%rsp)
-	addq	$88, %rsp
+	leaq	72(%rsp), %rax
+	movq	%rax, 88(%rsp)
+	addq	$96, %rsp
+	.cfi_def_cfa_offset 32
+	popq	%rbx
+	.cfi_def_cfa_offset 24
+	popq	%r14
+	.cfi_def_cfa_offset 16
+	popq	%rbp
 	.cfi_def_cfa_offset 8
 	retq
-.Ltmp2:
+.Ltmp1:
 .Lfunc_end1:
 	.size	_main, .Lfunc_end1-_main
 	.cfi_endproc

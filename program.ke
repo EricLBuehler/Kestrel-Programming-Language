@@ -22,5 +22,5 @@ fn main() {
     let st = s{x = 10u32}
     let x: dyn t = st
     x.func(2)
-    let var: e = e::b<String::new("Kestrel")>
+    let var: e = e::b<String::new("Kestrel 🦅")>
 }
