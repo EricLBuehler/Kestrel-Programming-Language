@@ -2237,11 +2237,9 @@ impl<'ctx> CodeGen<'ctx> {
 
         let mut enclosing_block: inkwell::basic_block::BasicBlock = self.enclosing_block.unwrap();
 
-        
         let mut collected_locals: Vec<std::collections::HashMap<String, usize>> = Vec::new();
 
         let mut blocks: Vec<(Option<inkwell::values::BasicValueEnum>, inkwell::basic_block::BasicBlock)> = Vec::new();
-
         let mut rettp: Option<types::DataType> = None;
 
         let inexpr: bool = node.data.ifn.as_ref().unwrap().inexpr;
