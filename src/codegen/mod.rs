@@ -180,7 +180,7 @@ impl<'ctx> CodeGen<'ctx> {
                 return Some(inkwell::types::AnyTypeEnum::IntType(*types.booltp));
             }
             types::BasicDataType::Enum => {
-                return Some(inkwell::types::AnyTypeEnum::IntType(*types.i32tp));
+                return Some(inkwell::types::AnyTypeEnum::StructType(*types.enum_data_tp));
             }
             types::BasicDataType::Dyn => {
                 return Some(inkwell::types::AnyTypeEnum::StructType(*types.dynptrtp));
