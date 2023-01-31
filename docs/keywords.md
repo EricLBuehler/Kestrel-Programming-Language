@@ -204,7 +204,7 @@ trait t{
 ## ```dyn```
 The ```dyn``` keyword defines a dynamically-dispatched type. Types defined with the ```dyn``` keyword follow the following format:
 ```dyn trait```
-Only instances of structs may be used with the ```dyn``` keyword. Unlike other languages, the ```dyn``` keyword has a very low memory and performance footprint due to the constant ```vtable``` and the use of stack instead of heap allocation.
+Only instances of structs may be used with the ```dyn``` keyword. Unlike other languages, the ```dyn``` keyword has a very low memory and performance footprint due to the constant ```vtable``` and the use of stack instead of heap allocation. See [this](functions.md#generics) for an important note on the use of generics with dyn.
 
 ## ```is```
 The ```is``` keyword checks whether a constructed enum variant is a specific variant. It returns a ```bool```.
