@@ -115,6 +115,7 @@ fn main() {
                                             String::from("dyn"),
                                             String::from("void"),
                                             String::from("is"),
+                                            String::from("match"),
                                             ];
 
     let mut lexer: lexer::Lexer = lexer::Lexer {

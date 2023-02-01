@@ -800,7 +800,8 @@ impl<'life> Parser<'life> {
             if self.next_is_type(TokenType::LT) {
                 self.advance();
                 self.advance();
-                expr = Some(self.expr(Precedence::Lowest));
+
+                expr = Some(self.expr(Precedence::Comparison));
                 
                 if !self.current_is_type(TokenType::GT) {
                     self.raise_error("Expected right angle bracket.", ErrorType::InvalidTok);

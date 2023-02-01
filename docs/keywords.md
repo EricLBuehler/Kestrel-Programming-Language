@@ -168,7 +168,7 @@ enum name {
 Each line contains a name for a variant of the ```enum```.
 Access each variant using the [```::```](symbols.md#namespace-attribute-access--assignment).
 
-An ```enum``` may contain typed variants, that when constructed hold data.
+An ```enum``` may contain typed variants, that when constructed hold data. variants without types implicitly hold an ```i32``` type.
 
 ```
 enum name {
