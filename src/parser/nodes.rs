@@ -308,6 +308,7 @@ pub struct EnumNode{
     pub variants: Vec<String>,
     pub name: String,
     pub tps: Vec<Option<crate::parser::Type>>,
+    pub template_types: Vec<String>,
 }
 
 impl std::fmt::Display for EnumNode {

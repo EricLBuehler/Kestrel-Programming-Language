@@ -796,12 +796,11 @@ impl<'life> Parser<'life> {
             self.advance();
             let attr: String = self.current.data.clone();
             let expr: Option<Node>;
-
+            
             if self.next_is_type(TokenType::LT) {
                 self.advance();
                 self.advance();
-                
-                expr = Some(self.expr(Precedence::Comparison));
+                expr = Some(self.expr(Precedence::Lowest));
                 
                 if !self.current_is_type(TokenType::GT) {
                     self.raise_error("Expected right angle bracket.", ErrorType::InvalidTok);
@@ -2892,7 +2891,28 @@ impl<'life> Parser<'life> {
 
         let name = self.current.data.clone();
 
-        self.advance();
+        self.advance();     
+        
+        let mut template_types: Vec<String> = Vec::new();
+
+        if self.current_is_type(TokenType::LT) {
+            self.advance();
+            while self.current_is_type(TokenType::IDENTIFIER) {
+                template_types.push(self.current.data.clone());
+
+                self.advance();
+
+                if !self.current_is_type(TokenType::COMMA) && !self.current_is_type(TokenType::GT) {
+                    self.raise_error("Expected comma.", ErrorType::InvalidTok);
+                }
+                self.advance();
+
+                if self.current_is_type(TokenType::GT) {
+                    self.advance();
+                    break;
+                }
+            }
+        }
     
         if !self.current_is_type(TokenType::LCURLY) {
             self.raise_error("Expected left curly bracket.", ErrorType::InvalidTok);
@@ -2946,6 +2966,7 @@ impl<'life> Parser<'life> {
             name,
             variants,
             tps,
+            template_types,
         };
     
         let nodedat: nodes::NodeData = nodes::NodeData {
