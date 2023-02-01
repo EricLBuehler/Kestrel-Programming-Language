@@ -1937,6 +1937,11 @@ impl<'ctx> CodeGen<'ctx> {
             
             let mut tp: types::Type = self.types.get(structnm).unwrap().clone();
 
+            if tp.traits.contains_key(structnm) {
+                let fmt: String = format!("Struct '{}' already implements trait '{}'.", structnm, traitnm);
+                errors::raise_error(&fmt, errors::ErrorType::StructAlreadyImplements, &node.pos, self.info);
+            }
+
             let rettp: types::DataType = Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, node.data.impln.as_ref().unwrap().functions.last().unwrap().data.func.as_ref().unwrap().args.rettp.first().unwrap(), node).0;
 
             let traittp: Option<types::TraitType> = types::get_traittp_from_str(traitnm.to_owned());
@@ -1964,6 +1969,11 @@ impl<'ctx> CodeGen<'ctx> {
             }
             
             let mut tp: types::Type = self.types.get(structnm).unwrap().clone();
+
+            if tp.traits.contains_key(structnm) {
+                let fmt: String = format!("Struct '{}' already implements trait '{}'.", structnm, traitnm);
+                errors::raise_error(&fmt, errors::ErrorType::StructAlreadyImplements, &node.pos, self.info);
+            }
             
             tp.traits.insert(traitnm.to_owned(), builtin_types::create_empty_trait());  
             self.types.insert(structnm.to_owned(), tp);
@@ -2996,6 +3006,9 @@ impl<'ctx> CodeGen<'ctx> {
             }
             parser::NodeType::IS => {
                 self.build_is(node)
+            }
+            parser::NodeType::MATCH => {
+                unimplemented!()
             }
         }
     }

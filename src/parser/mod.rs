@@ -59,6 +59,7 @@ pub enum NodeType {
     TRAIT,
     VOID,
     IS,
+    MATCH,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -136,6 +137,7 @@ impl std::fmt::Display for Node {
             NodeType::TRAIT => write!(f, "{}", self.data.traitn.as_ref().unwrap() ),
             NodeType::VOID => write!(f, "void"),
             NodeType::IS => write!(f, "{}", self.data.is.as_ref().unwrap() ),
+            NodeType::MATCH => write!(f, "{}", self.data.matchn.as_ref().unwrap() ),
         }
     }    
 }
@@ -401,6 +403,9 @@ impl<'life> Parser<'life> {
         else if self.current.data == String::from("trait") {
             return self.parse_trait();
         }
+        else if self.current.data == String::from("match") {
+            return self.parse_match();
+        }
         
         self.raise_error("Invalid keyword.", ErrorType::InvalidTok);
     }
@@ -492,6 +497,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
 
         let pos = Position {
@@ -571,6 +577,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
     
         let n: Node = self.create_node(NodeType::BINARY, nodedat, pos);
@@ -606,6 +613,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
 
         let pos = Position {
@@ -660,6 +668,7 @@ impl<'life> Parser<'life> {
 
                 self.skip_newline();
             }
+            self.skip_newline();
             
             if !self.current_is_type(TokenType::RCURLY) {
                 self.raise_error("Expected right curly bracket.", ErrorType::InvalidTok);
@@ -695,6 +704,7 @@ impl<'life> Parser<'life> {
                 enumn: None,
                 traitn: None,
                 is: None,
+                matchn: None,
             };
         
             n = self.create_node(NodeType::INITSTRUCT, nodedat, pos);
@@ -745,6 +755,7 @@ impl<'life> Parser<'life> {
                     enumn: None,
                     traitn: None,
                     is: None,
+                    matchn: None,
                 };
             
                 n = self.create_node(NodeType::ATTRASSIGN, nodedat, pos.clone());
@@ -781,6 +792,7 @@ impl<'life> Parser<'life> {
                     enumn: None,
                     traitn: None,
                     is: None,
+                    matchn: None,
                 };
             
                 n = self.create_node(NodeType::ATTR, nodedat, pos.clone());
@@ -842,6 +854,7 @@ impl<'life> Parser<'life> {
                 enumn: None,
                 traitn: None,
                 is: None,
+                matchn: None,
             };
         
             n = self.create_node(NodeType::NAMESPACE, nodedat, pos.clone());
@@ -893,6 +906,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
     
         let n: Node = self.create_node(NodeType::ASSIGN, nodedat, pos);
@@ -975,6 +989,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
     
         let n: Node = self.create_node(NodeType::CALL, nodedat, pos);
@@ -1009,6 +1024,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
 
         let pos = Position {
@@ -1050,6 +1066,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
 
         let pos = Position {
@@ -1091,6 +1108,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
 
         let pos = Position {
@@ -1132,6 +1150,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
 
         let pos = Position {
@@ -1173,6 +1192,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
 
         let pos = Position {
@@ -1214,6 +1234,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
 
         let pos = Position {
@@ -1255,6 +1276,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
 
         let pos = Position {
@@ -1296,6 +1318,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
 
         let pos = Position {
@@ -1337,6 +1360,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
 
         let pos = Position {
@@ -1391,6 +1415,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
     
         let n: Node = self.create_node(NodeType::AS, nodedat, pos);
@@ -1426,6 +1451,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
 
         let pos = Position {
@@ -1467,6 +1493,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
 
         let pos = Position {
@@ -1517,6 +1544,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
 
         self.backadvance();
@@ -1574,6 +1602,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
     
         let n: Node = self.create_node(NodeType::UNARY, nodedat, pos);
@@ -1615,6 +1644,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
     
         let n: Node = self.create_node(NodeType::STRING, nodedat, pos);
@@ -1658,6 +1688,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
 
         let pos = Position {
@@ -1727,6 +1758,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
     
         let n: Node = self.create_node(NodeType::ARRAY, nodedat, pos);
@@ -1758,6 +1790,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
 
     
@@ -1811,6 +1844,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: Some(is),
+            matchn: None,
         };
     
         let n: Node = self.create_node(NodeType::IS, nodedat, pos);
@@ -1893,6 +1927,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
         
         if nodedat.letn.as_ref().unwrap().expr.is_some() {
@@ -2193,6 +2228,7 @@ impl<'life> Parser<'life> {
             });
         }
 
+        self.skip_newline();
 
         if !self.current_is_type(TokenType::LCURLY) {
             self.raise_error("Expected left curly bracket.", ErrorType::InvalidTok);
@@ -2241,6 +2277,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
 
         let n: Node = self.create_node(NodeType::FUNC, nodedat, pos);
@@ -2293,6 +2330,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
 
         if nodedat.ret.as_ref().unwrap().expr.is_some() {
@@ -2327,6 +2365,7 @@ impl<'life> Parser<'life> {
         self.advance();
 
         
+        self.skip_newline();
 
         if !self.current_is_type(TokenType::LCURLY) {
             self.raise_error("Expected left curly bracket.", ErrorType::InvalidTok);
@@ -2381,6 +2420,7 @@ impl<'life> Parser<'life> {
 
             self.skip_newline();
         }
+        self.skip_newline();
         
         if !self.current_is_type(TokenType::RCURLY) {
             self.raise_error("Expected right curly bracket.", ErrorType::InvalidTok);
@@ -2417,6 +2457,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
 
     
@@ -2458,6 +2499,7 @@ impl<'life> Parser<'life> {
 
         pos.endcol = self.current.endcol;
 
+        self.skip_newline();
     
         if !self.current_is_type(TokenType::LCURLY) {
             self.raise_error("Expected left curly bracket.", ErrorType::InvalidTok);
@@ -2522,6 +2564,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
 
     
@@ -2547,6 +2590,7 @@ impl<'life> Parser<'life> {
 
         pos.endcol = expr.pos.endcol;
 
+        self.skip_newline();
     
         if !self.current_is_type(TokenType::LCURLY) {
             self.raise_error("Expected left curly bracket.", ErrorType::InvalidTok);
@@ -2575,6 +2619,8 @@ impl<'life> Parser<'life> {
 
             let expr: Node = self.expr(Precedence::Lowest);    
         
+            self.skip_newline();
+
             if !self.current_is_type(TokenType::LCURLY) {
                 self.raise_error("Expected left curly bracket.", ErrorType::InvalidTok);
             }
@@ -2601,6 +2647,8 @@ impl<'life> Parser<'life> {
         if self.current_is_type(TokenType::KEYWORD) && self.current.data == "else" {
             self.advance(); 
         
+            self.skip_newline();
+
             if !self.current_is_type(TokenType::LCURLY) {
                 self.raise_error("Expected left curly bracket.", ErrorType::InvalidTok);
             }
@@ -2653,6 +2701,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
 
     
@@ -2670,6 +2719,8 @@ impl<'life> Parser<'life> {
 
         self.advance();
     
+        self.skip_newline();
+
         if !self.current_is_type(TokenType::LCURLY) {
             self.raise_error("Expected left curly bracket.", ErrorType::InvalidTok);
         }
@@ -2716,6 +2767,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
 
     
@@ -2752,6 +2804,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
 
         let pos = Position {
@@ -2795,6 +2848,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
 
         let pos = Position {
@@ -2822,6 +2876,8 @@ impl<'life> Parser<'life> {
         let expr: Node = self.expr(Precedence::Lowest);
         
         pos.endcol = expr.pos.endcol;
+        
+        self.skip_newline();
     
         if !self.current_is_type(TokenType::LCURLY) {
             self.raise_error("Expected left curly bracket.", ErrorType::InvalidTok);
@@ -2869,6 +2925,7 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: None,
             is: None,
+            matchn: None,
         };
 
     
@@ -2893,6 +2950,8 @@ impl<'life> Parser<'life> {
         let name = self.current.data.clone();
 
         self.advance();
+
+        self.skip_newline();
     
         if !self.current_is_type(TokenType::LCURLY) {
             self.raise_error("Expected left curly bracket.", ErrorType::InvalidTok);
@@ -2971,6 +3030,7 @@ impl<'life> Parser<'life> {
             enumn: Some(enumn),
             traitn: None,
             is: None,
+            matchn: None,
         };
 
     
@@ -2997,6 +3057,8 @@ impl<'life> Parser<'life> {
         pos.endcol = self.current.endcol;
 
         self.advance();
+
+        self.skip_newline();
     
         if !self.current_is_type(TokenType::LCURLY) {
             self.raise_error("Expected left curly bracket.", ErrorType::InvalidTok);
@@ -3180,12 +3242,113 @@ impl<'life> Parser<'life> {
             enumn: None,
             traitn: Some(traitn),
             is: None,
+            matchn: None,
         };
 
     
         let n: Node = self.create_node(NodeType::TRAIT, nodedat, pos);
 
         return n;     
+    }
+
+    fn parse_match(&mut self) -> Node{
+        let mut pos = Position {
+            line: self.current.line,
+            startcol: self.current.startcol,
+            endcol: 0,
+        };
+
+        self.advance();
+        
+        let expr: Node = self.expr(Precedence::Lowest);
+
+        pos.endcol = self.current.endcol;
+        
+        self.skip_newline();
+
+        if !self.current_is_type(TokenType::LCURLY) {
+            self.raise_error("Expected left curly bracket.", ErrorType::InvalidTok);
+        }
+
+        self.advance();
+
+        let mut patterns: Vec<(Node, Vec<Node>)> = Vec::new();
+
+        while self.current_is_type(TokenType::IDENTIFIER) {
+            let pattern: Node = self.generate_identifier(self.current.data.clone());
+        
+            self.skip_newline();
+
+            if !self.current_is_type(TokenType::FATARROW) {
+                self.raise_error("Expected fat arrow.", ErrorType::InvalidTok);
+            }
+    
+            self.advance();
+
+            self.skip_newline();
+
+            if !self.current_is_type(TokenType::LPAREN) {
+                self.raise_error("Expected left curly bracket.", ErrorType::InvalidTok);
+            }
+    
+            self.advance();
+
+            patterns.push((pattern, self.block()));
+
+            self.skip_newline();
+
+            if !self.current_is_type(TokenType::RPAREN) {
+                self.raise_error("Expected right curly bracket.", ErrorType::InvalidTok);
+            }
+    
+            self.advance();
+
+            self.skip_newline();
+        }
+        
+        self.skip_newline();
+
+        if !self.current_is_type(TokenType::RCURLY) {
+            self.raise_error("Expected right curly bracket.", ErrorType::InvalidTok);
+        }
+
+        self.advance();
+
+        let matchn: nodes::MatchNode = nodes::MatchNode{
+            expr,
+            patterns,
+        };
+        
+        let nodedat: nodes::NodeData = nodes::NodeData {
+            binary: None,
+            num: None,
+            letn: None,
+            identifier: None,
+            func: None,
+            assign: None,
+            call: None,
+            ret: None,
+            to: None,
+            unary: None,
+            st: None,
+            initst: None,
+            attr: None,
+            attrassign: None,
+            str: None,
+            arr: None,
+            impln: None,
+            ifn: None,
+            loopn: None,
+            enumn: None,
+            traitn: None,
+            is: None,
+            matchn: Some(matchn),
+        };
+
+    
+        let n: Node = self.create_node(NodeType::MATCH, nodedat, pos);
+
+        return n;        
     }
 
 }

@@ -45,6 +45,7 @@ pub enum TokenType {
     LTE,
     EQ,
     NE,
+    FATARROW,
 }
 
 pub struct Lexer<'life> {
@@ -118,6 +119,7 @@ impl std::fmt::Display for TokenType {
            TokenType::LTE => write!(f, "LTE"),
            TokenType::EQ => write!(f, "EQ"),
            TokenType::NE => write!(f, "NE"),
+           TokenType::FATARROW => write!(f, "FATARROW"),
        }
     }
 }
@@ -242,6 +244,17 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
                 tokens.push(Token {
                     data: String::from("=="),
                     tp: TokenType::EQ,
+                    line: popped.line,
+                    startcol: popped.startcol,
+                    endcol: popped.endcol+1,
+                });
+                advance(lexer);
+            }
+            if lexer.current == b'>' {     
+                let popped: Token = tokens.pop().unwrap();           
+                tokens.push(Token {
+                    data: String::from("->"),
+                    tp: TokenType::FATARROW,
                     line: popped.line,
                     startcol: popped.startcol,
                     endcol: popped.endcol+1,

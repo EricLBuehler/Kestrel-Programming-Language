@@ -56,6 +56,7 @@ pub enum ErrorType {
     TraitIsNotTraitObjSafe,
     ExpectedEnum,
     EnumTypeMismatch,
+    StructAlreadyImplements,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -120,6 +121,7 @@ pub fn repr_err(tp: ErrorType) -> &'static str {
         ErrorType::TraitIsNotTraitObjSafe => "trait is not trait object safe",
         ErrorType::ExpectedEnum => "expected enum variant",
         ErrorType::EnumTypeMismatch => "enum type mismatch",
+        ErrorType::StructAlreadyImplements => "struct already implements trait",
     }
 }
 

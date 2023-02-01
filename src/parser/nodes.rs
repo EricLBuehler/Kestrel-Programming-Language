@@ -342,6 +342,18 @@ impl std::fmt::Display for IsNode {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct MatchNode{
+    pub expr: crate::parser::Node,
+    pub patterns: Vec<(crate::parser::Node, Vec<crate::parser::Node>)>,
+}
+
+impl std::fmt::Display for MatchNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Match for '{}'", self.expr)
+    }    
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct NodeData {
     pub binary: Option<BinaryNode>,
     pub num: Option<NumNode>,
@@ -365,4 +377,5 @@ pub struct NodeData {
     pub enumn: Option<EnumNode>,
     pub traitn: Option<TraitNode>,
     pub is: Option<IsNode>,
+    pub matchn: Option<MatchNode>,
 }
