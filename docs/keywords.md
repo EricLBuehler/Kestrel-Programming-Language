@@ -224,3 +224,13 @@ match var {
     }
 }
 ```
+
+A value may be extracted from the variant if the variant is typed.
+
+```
+match var {
+    a::b<v> => {
+        ...
+    }
+}
+```
