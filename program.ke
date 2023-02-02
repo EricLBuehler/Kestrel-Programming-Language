@@ -25,7 +25,7 @@ fn main() {
     let var: e = e::b<String::new("Kestrel 🦅")>
 
     let v = match var {
-        e::b => {
+        e::b<v> => {
             123
         },
         e::a => {

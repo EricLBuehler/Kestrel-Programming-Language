@@ -33,7 +33,7 @@ _main:                                  # @_main
 	pushq	%r15
 	pushq	%r14
 	pushq	%rbx
-	subq	$104, %rsp
+	subq	$120, %rsp
 	.cfi_offset %rbx, -40
 	.cfi_offset %r14, -32
 	.cfi_offset %r15, -24
@@ -42,13 +42,13 @@ _main:                                  # @_main
 	movl	-80(%rbp), %eax
 	movl	%eax, -72(%rbp)
 	movl	-72(%rbp), %eax
-	movl	$0, -104(%rbp)
+	movl	$0, -112(%rbp)
 	movl	%eax, -64(%rbp)
 	leaq	-64(%rbp), %rax
-	movq	%rax, -96(%rbp)
-	movslq	-104(%rbp), %rdi
+	movq	%rax, -104(%rbp)
+	movslq	-112(%rbp), %rdi
 	movq	vtables(,%rdi,8), %rax
-	movq	-96(%rbp), %rsi
+	movq	-104(%rbp), %rsi
                                         # kill: def $edi killed $edi killed $rdi
 	movl	$2, %edx
 	callq	*%rax
@@ -76,7 +76,7 @@ _main:                                  # @_main
 	movb	-31(%rbp), %bl
 	movb	-30(%rbp), %al
 	movb	-29(%rbp), %cl
-	movl	$1, -120(%rbp)
+	movl	$1, -144(%rbp)
 	movb	%cl, -45(%rbp)
 	movb	%al, -46(%rbp)
 	movb	%bl, -47(%rbp)
@@ -90,18 +90,32 @@ _main:                                  # @_main
 	movb	%dil, -55(%rbp)
 	movb	%sil, -56(%rbp)
 	leaq	-56(%rbp), %rax
-	movq	%rax, -112(%rbp)
-	leaq	-120(%rbp), %rax
-	movq	%rax, -88(%rbp)
-	movq	-88(%rbp), %rax
+	movq	%rax, -136(%rbp)
+	leaq	-144(%rbp), %rax
+	movq	%rax, -96(%rbp)
+	movq	-96(%rbp), %rax
 	movl	(%rax), %eax
-	cmpl	$1, %eax
+	movl	$1, -128(%rbp)
+	movl	$1, -84(%rbp)
+	leaq	-84(%rbp), %rcx
+	movq	%rcx, -120(%rbp)
+	cmpl	-128(%rbp), %eax
 	jne	.LBB1_2
 # %bb.1:                                # %pattern_0
 	movl	$123, %eax
 	jmp	.LBB1_5
 .LBB1_2:                                # %pattern_check_1
-	cmpl	$0, %eax
+	movq	%rsp, %rcx
+	movq	%rcx, %rdx
+	addq	$-16, %rdx
+	movq	%rdx, %rsp
+	movl	$0, -16(%rcx)
+	movq	%rsp, %rcx
+	addq	$-16, %rcx
+	movq	%rcx, %rsp
+	movl	$0, (%rcx)
+	movq	%rcx, 8(%rdx)
+	cmpl	(%rdx), %eax
 	jne	.LBB1_4
 # %bb.3:                                # %pattern_1
 	movl	$456, %eax              # imm = 0x1C8

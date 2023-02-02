@@ -55,14 +55,36 @@ entry:
   %var4 = load { i32, %enum_st_data* }*, { i32, %enum_st_data* }** %var, !dbg !15
   %idptr5 = getelementptr inbounds { i32, %enum_st_data* }, { i32, %enum_st_data* }* %var4, i32 0, i32 0, !dbg !15
   %id6 = load i32, i32* %idptr5, !dbg !15
-  %compare_1 = icmp eq i32 %id6, 1, !dbg !15
+  %enum_st7 = alloca { i32, %enum_st_data* }, !dbg !15
+  %variant_id8 = getelementptr inbounds { i32, %enum_st_data* }, { i32, %enum_st_data* }* %enum_st7, i32 0, i32 0, !dbg !15
+  store i32 1, i32* %variant_id8, !dbg !15
+  %variant_data_ptr9 = alloca i32, !dbg !15
+  store i32 1, i32* %variant_data_ptr9, !dbg !15
+  %variant_data_bitcast10 = bitcast i32* %variant_data_ptr9 to %enum_st_data*, !dbg !15
+  %variant_data11 = getelementptr inbounds { i32, %enum_st_data* }, { i32, %enum_st_data* }* %enum_st7, i32 0, i32 1, !dbg !15
+  store %enum_st_data* %variant_data_bitcast10, %enum_st_data** %variant_data11, !dbg !15
+  %id_ptr12 = getelementptr inbounds { i32, %enum_st_data* }, { i32, %enum_st_data* }* %enum_st7, i32 0, i32 0, !dbg !15
+  %data_ptr = getelementptr inbounds { i32, %enum_st_data* }, { i32, %enum_st_data* }* %enum_st7, i32 0, i32 1, !dbg !15
+  %id13 = load i32, i32* %id_ptr12, !dbg !15
+  %compare_1 = icmp eq i32 %id6, %id13, !dbg !15
   br i1 %compare_1, label %pattern_0, label %pattern_check_1, !dbg !15
 
 pattern_0:                                        ; preds = %entry
   br label %end, !dbg !15
 
 pattern_check_1:                                  ; preds = %entry
-  %compare_2 = icmp eq i32 %id6, 0, !dbg !15
+  %enum_st14 = alloca { i32, %enum_st_data* }, !dbg !15
+  %variant_id15 = getelementptr inbounds { i32, %enum_st_data* }, { i32, %enum_st_data* }* %enum_st14, i32 0, i32 0, !dbg !15
+  store i32 0, i32* %variant_id15, !dbg !15
+  %variant_data_ptr16 = alloca i32, !dbg !15
+  store i32 0, i32* %variant_data_ptr16, !dbg !15
+  %variant_data_bitcast17 = bitcast i32* %variant_data_ptr16 to %enum_st_data*, !dbg !15
+  %variant_data18 = getelementptr inbounds { i32, %enum_st_data* }, { i32, %enum_st_data* }* %enum_st14, i32 0, i32 1, !dbg !15
+  store %enum_st_data* %variant_data_bitcast17, %enum_st_data** %variant_data18, !dbg !15
+  %id_ptr19 = getelementptr inbounds { i32, %enum_st_data* }, { i32, %enum_st_data* }* %enum_st14, i32 0, i32 0, !dbg !15
+  %data_ptr20 = getelementptr inbounds { i32, %enum_st_data* }, { i32, %enum_st_data* }* %enum_st14, i32 0, i32 1, !dbg !15
+  %id21 = load i32, i32* %id_ptr19, !dbg !15
+  %compare_2 = icmp eq i32 %id6, %id21, !dbg !15
   br i1 %compare_2, label %pattern_1, label %default, !dbg !15
 
 pattern_1:                                        ; preds = %pattern_check_1

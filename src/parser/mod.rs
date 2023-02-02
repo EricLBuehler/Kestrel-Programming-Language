@@ -3312,12 +3312,13 @@ impl<'a> Parser<'a> {
         self.advance();
         self.skip_newline();
 
-        let mut patterns: Vec<(Option<Node>, Vec<Node>)> = Vec::new();
+        let mut patterns: Vec<(Option<Node>, Option<String>, Vec<Node>)> = Vec::new();
 
         let mut have_default: bool = false;
 
         while self.current_is_type(TokenType::IDENTIFIER) {
-            let pattern: Option<Node>;
+            let mut pattern: Option<Node>;
+            let mut name: Option<String> = None;
             
             if self.current.data == "_" {
                 pattern = None;
@@ -3327,6 +3328,15 @@ impl<'a> Parser<'a> {
             else {
                 self.allow_init.set_disallow();
                 pattern = Some(self.generate_identifier(self.current.data.clone()));
+                if pattern.as_ref().unwrap().data.attr.as_ref().unwrap().expr.is_some() {
+                    if pattern.as_ref().unwrap().data.attr.as_ref().unwrap().expr.as_ref().unwrap().tp != NodeType::IDENTIFIER {
+                        self.raise_error_pos("Expected identifier.", ErrorType::InvalidTok, pattern.as_ref().unwrap().data.attr.as_ref().unwrap().expr.as_ref().unwrap().to_owned());
+                    }
+                    name = Some(pattern.as_ref().unwrap().data.attr.as_ref().unwrap().expr.as_ref().unwrap().data.identifier.as_ref().unwrap().name.to_owned());
+                    let mut alt_pattern: Option<Node> = pattern;
+                    alt_pattern.as_mut().unwrap().data.attr.as_mut().unwrap().expr = None;
+                    pattern = alt_pattern;
+                }
                 self.allow_init.restore();
                 self.advance();
             }
@@ -3347,7 +3357,7 @@ impl<'a> Parser<'a> {
     
             self.advance();
 
-            patterns.push((pattern, self.block()));
+            patterns.push((pattern, name, self.block()));
 
             self.skip_newline();
 
