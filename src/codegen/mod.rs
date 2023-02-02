@@ -2760,6 +2760,11 @@ impl<'ctx> CodeGen<'ctx> {
 
     fn build_match(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         let expr: types::Data = self.compile_expr(&node.data.matchn.as_ref().unwrap().expr, true, false, true);
+
+        if expr.tp.tp != types::BasicDataType::Enum {
+            let fmt: String = format!("Expected 'enum', got '{}'.", expr.tp);
+            errors::raise_error(&fmt, errors::ErrorType::ExpectedEnum, &node.data.is.as_ref().unwrap().variant.pos, self.info);
+        }
         
         let end_block = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "end");
         let default_block = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "default");
