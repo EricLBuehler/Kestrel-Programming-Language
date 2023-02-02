@@ -26,15 +26,7 @@ fn test_lexer() {
                                             String::from("false"),
                                             ];
 
-    let mut lexer: crate::lexer::Lexer = crate::lexer::Lexer {
-        idx: 0,
-        data: file_data_bytes,
-        current: file_data_bytes[0],
-        len: file_data_bytes.len(),
-        line: 0,
-        col: 0,
-        info: &file_info,
-    };
+    let mut lexer: crate::lexer::Lexer = crate::lexer::new(file_data_bytes, &file_info);
 
     let (_, tokens) = crate::lexer::generate_tokens(&mut lexer, &mut keywords);
     
@@ -80,25 +72,11 @@ fn test_parser() {
                                             String::from("false"),
                                             ];
 
-    let mut lexer: crate::lexer::Lexer = crate::lexer::Lexer {
-        idx: 0,
-        data: file_data_bytes,
-        current: file_data_bytes[0],
-        len: file_data_bytes.len(),
-        line: 0,
-        col: 0,
-        info: &file_info,
-    };
+    let mut lexer: crate::lexer::Lexer = crate::lexer::new(file_data_bytes, &file_info);
 
     let (_, tokens) = crate::lexer::generate_tokens(&mut lexer, &mut keywords);
 
-    let mut parser: crate::parser::Parser = crate::parser::Parser {
-        tokens: &tokens,
-        idx: 1,
-        current: tokens.first().unwrap().to_owned(),
-        info: &file_info,
-        allow_init: crate::parser::StructConstructionAllowance::new(),
-    };
+    let mut parser: crate::parser::Parser = crate::parser::Parser::new(tokens, &file_info);
 
     let nodes: Vec<crate::parser::Node> = parser.genreate_ast();
 

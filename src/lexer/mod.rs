@@ -55,7 +55,7 @@ pub struct Lexer<'life> {
     pub len: usize,
     pub line: usize,
     pub col: usize,
-    pub info: &'life crate::fileinfo::FileInfo<'life>,
+    pub info: crate::fileinfo::FileInfo<'life>,
 }
 
 #[derive(Clone, Debug)]
@@ -121,6 +121,18 @@ impl std::fmt::Display for TokenType {
            TokenType::NE => write!(f, "NE"),
            TokenType::FATARROW => write!(f, "FATARROW"),
        }
+    }
+}
+
+pub fn new<'a>(data: &'a [u8], info: &crate::fileinfo::FileInfo<'a>) -> Lexer<'a> {
+    return Lexer {
+        idx: 0,
+        data: data.clone(),
+        current: data[0],
+        len: data.len(),
+        line: 0,
+        col: 0,
+        info: info.clone(),
     }
 }
 
@@ -502,7 +514,7 @@ fn make_number(lexer: &mut Lexer) -> Token {
                 tp=TokenType::F64;
             }
             else {
-                crate::errors::raise_error(format!("Invalid specified type {}.", specified_tp).as_str(), crate::errors::ErrorType::UnknownType, &crate::parser::Position { line, startcol: start, endcol: end+1 }, lexer.info);
+                crate::errors::raise_error(format!("Invalid specified type {}.", specified_tp).as_str(), crate::errors::ErrorType::UnknownType, &crate::parser::Position { line, startcol: start, endcol: end+1 }, &lexer.info);
             }
         }
         else if lexer.current == b'u' || lexer.current == b'i' {
@@ -562,7 +574,7 @@ fn make_number(lexer: &mut Lexer) -> Token {
                 }
             }
             else {
-                crate::errors::raise_error(format!("Invalid specified type {}.", specified_tp).as_str(), crate::errors::ErrorType::UnknownType, &crate::parser::Position { line, startcol: start, endcol: end+1 }, lexer.info);
+                crate::errors::raise_error(format!("Invalid specified type {}.", specified_tp).as_str(), crate::errors::ErrorType::UnknownType, &crate::parser::Position { line, startcol: start, endcol: end+1 }, &lexer.info);
             }
 
             break;            

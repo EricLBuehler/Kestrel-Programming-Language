@@ -15,11 +15,11 @@ pub struct StructConstructionAllowance {
     pub old: Vec<bool>,
 }
 
-pub struct Parser<'life> {
-    pub tokens: &'life Vec<lexer::Token>,
+pub struct Parser<'a> {
+    pub tokens: Vec<lexer::Token>,
     pub idx: usize,
     pub current: lexer::Token,
-    pub info: &'life crate::fileinfo::FileInfo<'life>,
+    pub info: crate::fileinfo::FileInfo<'a>,
     pub allow_init: StructConstructionAllowance,
 }
 
@@ -185,7 +185,17 @@ impl StructConstructionAllowance {
 //Expressions + Keywords: leave off on next
 
 
-impl<'life> Parser<'life> { 
+impl<'a> Parser<'a> { 
+    pub fn new(tokens: Vec<crate::lexer::Token>, info: &crate::fileinfo::FileInfo<'a>) -> Parser<'a> {
+        return Parser {
+            tokens: tokens.clone(),
+            idx: 1,
+            current: tokens.first().unwrap().to_owned(),
+            info: info.clone(),
+            allow_init: StructConstructionAllowance::new(),
+        };
+    }
+
     pub fn genreate_ast(&mut self)  -> Vec<Node> {        
         self.block()
     }

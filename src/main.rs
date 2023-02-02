@@ -118,27 +118,13 @@ fn main() {
                                             String::from("match"),
                                             ];
 
-    let mut lexer: lexer::Lexer = lexer::Lexer {
-        idx: 0,
-        data: file_data_bytes,
-        current: file_data_bytes[0],
-        len: file_data_bytes.len(),
-        line: 0,
-        col: 0,
-        info: &file_info,
-    };
+    let mut lexer: lexer::Lexer = lexer::new(file_data_bytes, &file_info);
 
     let (_, tokens) = lexer::generate_tokens(&mut lexer, &mut keywords);
 
     //lexer::print_tokens(tokens.len(), &tokens);
 
-    let mut parser: parser::Parser = parser::Parser {
-        tokens: &tokens,
-        idx: 1,
-        current: tokens.first().unwrap().to_owned(),
-        info: &file_info,
-        allow_init: parser::StructConstructionAllowance::new(),
-    };
+    let mut parser: parser::Parser = parser::Parser::new(tokens, &file_info);
 
     let nodes: Vec<parser::Node> = parser.genreate_ast();
 
