@@ -137,6 +137,7 @@ fn main() {
         idx: 1,
         current: tokens.first().unwrap().to_owned(),
         info: &file_info,
+        allow_init: parser::StructConstructionAllowance::new(),
     };
 
     let nodes: Vec<parser::Node> = parser.genreate_ast();

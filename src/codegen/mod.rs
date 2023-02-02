@@ -636,7 +636,7 @@ impl<'ctx> CodeGen<'ctx> {
         return data;
     }
     
-    fn build_loadname(&mut self, node: &parser::Node, give_ownership: bool, get_ptr: bool) -> types::Data<'ctx> {
+    fn build_loadname(&mut self, node: &parser::Node, give_ownership: bool, get_ptr: bool, get_enum_id: bool) -> types::Data<'ctx> {
         let name: String = node.data.identifier.as_ref().unwrap().name.clone();
 
         let (ptr, tp) = match self.get_variable(&name).0 {
@@ -677,6 +677,19 @@ impl<'ctx> CodeGen<'ctx> {
 
             self.namespaces.locals.pop();
             self.namespaces.locals.push(locals);
+        }
+
+        if get_enum_id {
+            assert_eq!(tp.tp, types::BasicDataType::Enum);
+            
+            let idptr = self.builder.build_struct_gep(self.builder.build_load(ptr.unwrap(), name.as_str()).into_pointer_value(), 0, "idptr").expect("GEP Error");
+            
+            let data: types::Data = types::Data {
+                data: Some(inkwell::values::BasicValueEnum::IntValue(self.builder.build_load(idptr, "id").into_int_value())),
+                tp,
+                owned: true,
+            };
+            return data;
         }
 
         if ptr.is_some() {
@@ -2745,6 +2758,252 @@ impl<'ctx> CodeGen<'ctx> {
         return data;
     }
 
+    fn build_match(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        let expr: types::Data = self.compile_expr(&node.data.matchn.as_ref().unwrap().expr, true, false, true);
+        
+        let end_block = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "end");
+        let default_block = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "default");
+        
+        let mut pattern_block = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "pattern_0");
+        let _ = default_block.move_after(pattern_block);
+
+        let mut tp: Option<types::DataType> = None;
+
+        let inexpr: bool = node.data.matchn.as_ref().unwrap().inexpr;
+
+        let mut blocks: Vec<(Option<inkwell::values::BasicValueEnum>, inkwell::basic_block::BasicBlock)> = Vec::new();
+
+        let mut collected_locals: Vec<std::collections::HashMap<String, usize>> = Vec::new();
+
+        let mut else_block: inkwell::basic_block::BasicBlock = self.enclosing_block.unwrap();
+
+        let mut index: usize = 0;
+        for (pattern, block) in &node.data.matchn.as_ref().unwrap().patterns {
+            if pattern.is_some() {
+                self.builder.position_at_end(else_block);
+
+                let pattern_block_old = pattern_block.clone();
+
+                index += 1;
+
+                if index != node.data.matchn.as_ref().unwrap().patterns.len()-1 {
+                    let check_block = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), &("pattern_check_".to_owned()+&(index%2).to_string()));
+                    let _ = check_block.move_after(pattern_block_old);
+                    pattern_block = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), &("pattern_".to_owned()+&index.to_string()));
+                    let _ = pattern_block.move_after(check_block);
+                    else_block = check_block;
+                }
+                else {
+                    else_block = default_block;
+                }
+
+                let pattern_v: types::Data = self.compile_expr(&pattern.as_ref().unwrap(), true, false, true);
+                
+                self.builder.build_conditional_branch(self.builder.build_int_compare(inkwell::IntPredicate::EQ, expr.data.unwrap().into_int_value(), pattern_v.data.unwrap().into_int_value(), &("compare_".to_owned()+&index.to_string())), pattern_block_old, else_block);
+                
+                self.builder.position_at_end(pattern_block_old);
+    
+
+
+                self.namespaces.locals.push(std::collections::HashMap::new());
+
+
+                let mut start_locals: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+                let mut end_locals: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+                
+                let mut lvl: usize = 0;
+                for local in &self.namespaces.locals {
+                    for item in local {
+                        if item.1.5 == InitializationStatus::Uninitialized {
+                            start_locals.insert(item.0.clone(), lvl);
+                        }
+                    }
+                    lvl += 1;
+                }
+                
+                let loop_flow_broken_old = self.loop_flow_broken;
+
+                let data: types::Data = self.compile(block, true, false);
+
+                if tp.is_none() {
+                    tp = Some(data.tp.clone());
+                }
+
+                if tp.as_ref().unwrap() != &data.tp && inexpr {
+                    let fmt: String = format!("Expected '{}' type, got '{}' type.", tp.unwrap(), data.tp);
+                    errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+                }
+                
+                self.loop_flow_broken = loop_flow_broken_old;
+
+                let mut lvl: usize = 0;
+                for local in &self.namespaces.locals {
+                    for item in local {
+                        if  item.1.5 == InitializationStatus::Initialized && start_locals.get(item.0).is_some() &&
+                            start_locals.get(item.0).unwrap() == &lvl {
+                            
+                            end_locals.insert(item.0.clone(), lvl);
+
+                        }
+                    }
+                    lvl += 1;
+                }
+
+                for var in &end_locals {
+                    let mut var_val = self.namespaces.locals.get_mut(var.1.to_owned()).unwrap().get(&var.0.to_owned()).unwrap().to_owned();
+                    var_val.5 = InitializationStatus::Uninitialized;
+
+                    self.namespaces.locals.get_mut(var.1.to_owned()).unwrap().insert(var.0.to_owned(), var_val);
+                }
+
+                self.namespaces.locals.pop();
+
+                collected_locals.push(end_locals);
+
+
+                
+                self.builder.build_unconditional_branch(end_block);
+                    
+                self.builder.position_at_end(self.enclosing_block.unwrap());
+
+                blocks.push((data.data, pattern_block_old));
+            }
+            else {
+                self.builder.position_at_end(self.enclosing_block.unwrap());
+
+                if else_block != default_block {
+                    self.builder.build_unconditional_branch(default_block);
+                }
+                
+                self.builder.position_at_end(default_block);
+    
+
+
+                self.namespaces.locals.push(std::collections::HashMap::new());
+
+
+                let mut start_locals: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+                let mut end_locals: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+                
+                let mut lvl: usize = 0;
+                for local in &self.namespaces.locals {
+                    for item in local {
+                        if item.1.5 == InitializationStatus::Uninitialized {
+                            start_locals.insert(item.0.clone(), lvl);
+                        }
+                    }
+                    lvl += 1;
+                }
+                
+                let loop_flow_broken_old = self.loop_flow_broken;
+
+                let data: types::Data = self.compile(block, true, false);
+
+                if tp.is_none() {
+                    tp = Some(data.tp.clone());
+                }
+
+                if tp.as_ref().unwrap() != &data.tp && inexpr {
+                    let fmt: String = format!("Expected '{}' type, got '{}' type.", tp.unwrap(), data.tp);
+                    errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+                }
+                
+                self.loop_flow_broken = loop_flow_broken_old;
+
+                let mut lvl: usize = 0;
+                for local in &self.namespaces.locals {
+                    for item in local {
+                        if  item.1.5 == InitializationStatus::Initialized && start_locals.get(item.0).is_some() &&
+                            start_locals.get(item.0).unwrap() == &lvl {
+                            
+                            end_locals.insert(item.0.clone(), lvl);
+
+                        }
+                    }
+                    lvl += 1;
+                }
+
+                for var in &end_locals {
+                    let mut var_val = self.namespaces.locals.get_mut(var.1.to_owned()).unwrap().get(&var.0.to_owned()).unwrap().to_owned();
+                    var_val.5 = InitializationStatus::Uninitialized;
+
+                    self.namespaces.locals.get_mut(var.1.to_owned()).unwrap().insert(var.0.to_owned(), var_val);
+                }
+
+                self.namespaces.locals.pop();
+
+                collected_locals.push(end_locals);
+
+
+
+                self.builder.build_unconditional_branch(end_block);
+                self.enclosing_block = Some(end_block);
+                self.builder.position_at_end(self.enclosing_block.unwrap());
+
+                blocks.push((data.data, default_block));
+            }                  
+        }
+
+        let _ = end_block.move_after(default_block);
+
+        
+        let mut common: Vec<(String, usize)> = Vec::new();
+        let mut common_init: Vec<(String, usize)> = Vec::new();
+
+        //Get all of the initialized variables
+        for local_set in &collected_locals {
+            for item in local_set {
+                if !common.contains(&(item.0.to_owned(), item.1.to_owned())) {
+                    common.push((item.0.to_owned(), item.1.to_owned()));
+                }
+            }
+        }
+
+        //Get all of the initialized variables that all have been commonly init
+        'outer: for var in &common {
+            for local_set in &collected_locals {
+                if local_set.len() == 0 {
+                    continue 'outer;
+                }
+                for local in local_set {
+                    if local != (&var.0, &var.1) {
+                        continue 'outer;
+                    }
+                }
+            }
+            common_init.push((var.0.to_owned(), var.1.to_owned()));
+        }
+
+        for var in common_init {
+            let mut var_val = self.namespaces.locals.get_mut(var.1).unwrap().get(&var.0).unwrap().to_owned();
+            var_val.5 = InitializationStatus::Initialized;
+
+            self.namespaces.locals.get_mut(var.1).unwrap().insert(var.0, var_val);
+        }
+        
+        if tp.as_ref().unwrap().tp == types::BasicDataType::Void {
+            let data: types::Data = types::Data {
+                data: None,
+                tp: tp.unwrap().clone(),
+                owned: true,
+            };
+            return data;
+        }
+
+        let phi: inkwell::values::PhiValue = self.builder.build_phi(blocks.first().unwrap().0.unwrap().get_type(), "match_phi");
+
+        for block in blocks {
+            phi.add_incoming(&[(&block.0.unwrap(), block.1)]);
+        }
+        
+        let data: types::Data = types::Data {
+            data: Some(phi.as_basic_value()),
+            tp: tp.unwrap().clone(),
+            owned: true,
+        };
+        return data;
+    }
+
     fn compile_expr(&mut self, node: &parser::Node, give_ownership: bool, get_ptr: bool, get_enum_id: bool) -> types::Data<'ctx> {
         match node.tp {
             parser::NodeType::I32 => {
@@ -2770,7 +3029,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.build_let(node)
             }
             parser::NodeType::IDENTIFIER => {
-                self.build_loadname(node, give_ownership, get_ptr)
+                self.build_loadname(node, give_ownership, get_ptr, get_enum_id)
             }
             parser::NodeType::FUNC => {
                 self.build_func(node, None, None, None)
@@ -3008,7 +3267,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.build_is(node)
             }
             parser::NodeType::MATCH => {
-                unimplemented!()
+                self.build_match(node)
             }
         }
     }

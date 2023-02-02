@@ -97,6 +97,7 @@ fn test_parser() {
         idx: 1,
         current: tokens.first().unwrap().to_owned(),
         info: &file_info,
+        allow_init: crate::parser::StructConstructionAllowance::new(),
     };
 
     let nodes: Vec<crate::parser::Node> = parser.genreate_ast();

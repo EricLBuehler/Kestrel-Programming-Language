@@ -20,5 +20,6 @@ pub enum Precedence {
     Call,        
     Index,
     Unary,
-    Ternary,   
+    Ternary,  
+    Max, 
 }

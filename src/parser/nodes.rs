@@ -344,7 +344,8 @@ impl std::fmt::Display for IsNode {
 #[derive(Clone, Debug, PartialEq)]
 pub struct MatchNode{
     pub expr: crate::parser::Node,
-    pub patterns: Vec<(crate::parser::Node, Vec<crate::parser::Node>)>,
+    pub patterns: Vec<(Option<crate::parser::Node>, Vec<crate::parser::Node>)>,
+    pub inexpr: bool,
 }
 
 impl std::fmt::Display for MatchNode {

@@ -10,11 +10,17 @@ use crate::codegen::types::{self, DataMutablility};
 
 use self::nodes::NodeData;
 
+pub struct StructConstructionAllowance {
+    pub allowed: bool,
+    pub old: Vec<bool>,
+}
+
 pub struct Parser<'life> {
     pub tokens: &'life Vec<lexer::Token>,
     pub idx: usize,
     pub current: lexer::Token,
     pub info: &'life crate::fileinfo::FileInfo<'life>,
+    pub allow_init: StructConstructionAllowance,
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -153,6 +159,23 @@ pub fn print_nodes(nodes: &Vec<Node>) {
     println!("========================");
 }
 
+impl StructConstructionAllowance {
+    pub fn set_disallow(&mut self) {
+        self.old.push(self.allowed);
+        self.allowed = false;
+    }
+    pub fn restore(&mut self) {
+        assert!(self.old.len() > 0);
+        self.allowed = self.old.pop().unwrap();
+    }
+    pub fn check_allowed(&mut self) -> bool{
+        return self.allowed;
+    }
+    pub fn new() -> StructConstructionAllowance{
+        return StructConstructionAllowance {allowed: true, old: Vec::new()};
+    }
+}
+
 // ---------------------------------------------------------------------------------------------------------------
 //                                      Parser internal functions
 // ---------------------------------------------------------------------------------------------------------------
@@ -270,6 +293,7 @@ impl<'life> Parser<'life> {
             TokenType::NE => {
                 Precedence::Equals
             }
+            
             _ => {
                 Precedence::Lowest
             }
@@ -355,7 +379,7 @@ impl<'life> Parser<'life> {
             TokenType::STRING => Some(self.generate_str()),
             TokenType::CHAR => Some(self.generate_char(self.current.data.clone())),
             TokenType::LSQUARE => Some(self.generate_array()),
-            TokenType::KEYWORD => if self.current.data == "void" { Some(self.generate_void()) } else if self.current.data == "if" { let v: Option<Node> = Some(self.parse_if(true)); self.backadvance(); v }else { None },
+            TokenType::KEYWORD => if self.current.data == "void" { Some(self.generate_void()) } else if self.current.data == "if" { let v: Option<Node> = Some(self.parse_if(true)); self.backadvance(); v } else if self.current.data == "match" { let v: Option<Node> = Some(self.parse_match(true)); self.backadvance(); v } else { None },
             _ => None,
         }
     }
@@ -404,7 +428,7 @@ impl<'life> Parser<'life> {
             return self.parse_trait();
         }
         else if self.current.data == String::from("match") {
-            return self.parse_match();
+            return self.parse_match(false);
         }
         
         self.raise_error("Invalid keyword.", ErrorType::InvalidTok);
@@ -624,7 +648,7 @@ impl<'life> Parser<'life> {
     
         let mut n: Node = self.create_node(NodeType::IDENTIFIER, nodedat, pos.clone());
 
-        if self.next_is_type(TokenType::LCURLY) {
+        if self.next_is_type(TokenType::LCURLY) && self.allow_init.check_allowed() {
             let name: String = self.current.data.clone();
             self.advance();
             self.advance();
@@ -2585,8 +2609,9 @@ impl<'life> Parser<'life> {
         let mut ifs: Vec<(Node, Vec<Node>)> = Vec::new();
         let mut else_opt: Option<Vec<Node>> = None;
 
-
+        self.allow_init.set_disallow();
         let expr: Node = self.expr(Precedence::Lowest);
+        self.allow_init.restore();
 
         pos.endcol = expr.pos.endcol;
 
@@ -2617,7 +2642,9 @@ impl<'life> Parser<'life> {
         while self.current_is_type(TokenType::KEYWORD) && self.current.data == "elif" {
             self.advance(); 
 
-            let expr: Node = self.expr(Precedence::Lowest);    
+            self.allow_init.set_disallow();
+            let expr: Node = self.expr(Precedence::Lowest);
+            self.allow_init.restore();
         
             self.skip_newline();
 
@@ -3251,7 +3278,7 @@ impl<'life> Parser<'life> {
         return n;     
     }
 
-    fn parse_match(&mut self) -> Node{
+    fn parse_match(&mut self, inexpr: bool) -> Node{
         let mut pos = Position {
             line: self.current.line,
             startcol: self.current.startcol,
@@ -3259,9 +3286,11 @@ impl<'life> Parser<'life> {
         };
 
         self.advance();
-        
-        let expr: Node = self.expr(Precedence::Lowest);
 
+        self.allow_init.set_disallow();
+        let expr: Node = self.expr(Precedence::Lowest);
+        self.allow_init.restore();
+        
         pos.endcol = self.current.endcol;
         
         self.skip_newline();
@@ -3271,11 +3300,26 @@ impl<'life> Parser<'life> {
         }
 
         self.advance();
+        self.skip_newline();
 
-        let mut patterns: Vec<(Node, Vec<Node>)> = Vec::new();
+        let mut patterns: Vec<(Option<Node>, Vec<Node>)> = Vec::new();
+
+        let mut have_default: bool = false;
 
         while self.current_is_type(TokenType::IDENTIFIER) {
-            let pattern: Node = self.generate_identifier(self.current.data.clone());
+            let pattern: Option<Node>;
+            
+            if self.current.data == "_" {
+                pattern = None;
+                have_default = true;
+                self.advance();
+            }
+            else {
+                self.allow_init.set_disallow();
+                pattern = Some(self.generate_identifier(self.current.data.clone()));
+                self.allow_init.restore();
+                self.advance();
+            }
         
             self.skip_newline();
 
@@ -3287,7 +3331,7 @@ impl<'life> Parser<'life> {
 
             self.skip_newline();
 
-            if !self.current_is_type(TokenType::LPAREN) {
+            if !self.current_is_type(TokenType::LCURLY) {
                 self.raise_error("Expected left curly bracket.", ErrorType::InvalidTok);
             }
     
@@ -3297,16 +3341,32 @@ impl<'life> Parser<'life> {
 
             self.skip_newline();
 
-            if !self.current_is_type(TokenType::RPAREN) {
+            if !self.current_is_type(TokenType::RCURLY) {
                 self.raise_error("Expected right curly bracket.", ErrorType::InvalidTok);
             }
     
             self.advance();
 
             self.skip_newline();
+
+            if self.current_is_type(TokenType::RCURLY) {
+                break;
+            }
+
+            if !self.current_is_type(TokenType::COMMA) {
+                self.raise_error("Expected comma.", ErrorType::InvalidTok);
+            }
+    
+            self.advance();
+
+            self.skip_newline();
         }
-        
+
         self.skip_newline();
+
+        if !have_default {
+            self.raise_error("Expected default option.", ErrorType::InvalidTok);
+        }        
 
         if !self.current_is_type(TokenType::RCURLY) {
             self.raise_error("Expected right curly bracket.", ErrorType::InvalidTok);
@@ -3317,6 +3377,7 @@ impl<'life> Parser<'life> {
         let matchn: nodes::MatchNode = nodes::MatchNode{
             expr,
             patterns,
+            inexpr,
         };
         
         let nodedat: nodes::NodeData = nodes::NodeData {

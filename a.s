@@ -21,29 +21,105 @@ s.func:                                 # @s.func
 	.type	_main,@function
 _main:                                  # @_main
 .Lfunc_begin1:
-	.loc	1 15 0                  # program.ke:15:0
+	.loc	1 20 0                  # program.ke:20:0
 	.cfi_startproc
 # %bb.0:                                # %entry
-	subq	$40, %rsp
-	.cfi_def_cfa_offset 48
+	pushq	%rbp
+	.cfi_def_cfa_offset 16
+	.cfi_offset %rbp, -16
+	movq	%rsp, %rbp
+	.cfi_def_cfa_register %rbp
 .Ltmp1:
-	.loc	1 15 0 prologue_end     # program.ke:15:0
-	movl	$10, 16(%rsp)
-	movl	16(%rsp), %eax
-	movl	%eax, 8(%rsp)
-	movl	8(%rsp), %eax
-	movl	$0, 24(%rsp)
-	movl	%eax, (%rsp)
-	movq	%rsp, %rax
-	movq	%rax, 32(%rsp)
-	movslq	24(%rsp), %rdi
+	pushq	%r15
+	pushq	%r14
+	pushq	%rbx
+	subq	$104, %rsp
+	.cfi_offset %rbx, -40
+	.cfi_offset %r14, -32
+	.cfi_offset %r15, -24
+	.loc	1 20 0 prologue_end     # program.ke:20:0
+	movl	$10, -80(%rbp)
+	movl	-80(%rbp), %eax
+	movl	%eax, -72(%rbp)
+	movl	-72(%rbp), %eax
+	movl	$0, -104(%rbp)
+	movl	%eax, -64(%rbp)
+	leaq	-64(%rbp), %rax
+	movq	%rax, -96(%rbp)
+	movslq	-104(%rbp), %rdi
 	movq	vtables(,%rdi,8), %rax
-	movq	32(%rsp), %rsi
+	movq	-96(%rbp), %rsi
                                         # kill: def $edi killed $edi killed $rdi
 	movl	$2, %edx
 	callq	*%rax
-	addq	$40, %rsp
-	.cfi_def_cfa_offset 8
+	movb	$-123, -29(%rbp)
+	movb	$-90, -30(%rbp)
+	movb	$-97, -31(%rbp)
+	movb	$-16, -32(%rbp)
+	movb	$32, -33(%rbp)
+	movb	$108, -34(%rbp)
+	movb	$101, -35(%rbp)
+	movb	$114, -36(%rbp)
+	movb	$116, -37(%rbp)
+	movb	$115, -38(%rbp)
+	movb	$101, -39(%rbp)
+	movb	$75, -40(%rbp)
+	movb	-40(%rbp), %sil
+	movb	-39(%rbp), %dil
+	movb	-38(%rbp), %r8b
+	movb	-37(%rbp), %r9b
+	movb	-36(%rbp), %r10b
+	movb	-35(%rbp), %r11b
+	movb	-34(%rbp), %r14b
+	movb	-33(%rbp), %r15b
+	movb	-32(%rbp), %dl
+	movb	-31(%rbp), %bl
+	movb	-30(%rbp), %al
+	movb	-29(%rbp), %cl
+	movl	$1, -120(%rbp)
+	movb	%cl, -45(%rbp)
+	movb	%al, -46(%rbp)
+	movb	%bl, -47(%rbp)
+	movb	%dl, -48(%rbp)
+	movb	%r15b, -49(%rbp)
+	movb	%r14b, -50(%rbp)
+	movb	%r11b, -51(%rbp)
+	movb	%r10b, -52(%rbp)
+	movb	%r9b, -53(%rbp)
+	movb	%r8b, -54(%rbp)
+	movb	%dil, -55(%rbp)
+	movb	%sil, -56(%rbp)
+	leaq	-56(%rbp), %rax
+	movq	%rax, -112(%rbp)
+	leaq	-120(%rbp), %rax
+	movq	%rax, -88(%rbp)
+	movq	-88(%rbp), %rax
+	movl	(%rax), %eax
+	cmpl	$1, %eax
+	jne	.LBB1_2
+# %bb.1:                                # %pattern_0
+	movl	$123, %eax
+	jmp	.LBB1_5
+.LBB1_2:                                # %pattern_check_1
+	cmpl	$0, %eax
+	jne	.LBB1_4
+# %bb.3:                                # %pattern_1
+	movl	$146, %eax
+	jmp	.LBB1_5
+.LBB1_4:                                # %default
+	movl	$456, %eax              # imm = 0x1C8
+	jmp	.LBB1_5
+.LBB1_5:                                # %end
+	movq	%rsp, %rcx
+	addq	$-16, %rcx
+	movq	%rcx, %rsp
+	movl	%eax, (%rcx)
+	leaq	-24(%rbp), %rsp
+	popq	%rbx
+	popq	%r14
+	popq	%r15
+	popq	%rbp
+	.cfi_def_cfa %rsp, 8
 	retq
 .Ltmp2:
 .Lfunc_end1:
@@ -182,11 +258,11 @@ vtables:
 	.quad	.Lfunc_begin1           # DW_AT_low_pc
 	.long	.Lfunc_end1-.Lfunc_begin1 # DW_AT_high_pc
 	.byte	1                       # DW_AT_frame_base
-	.byte	87
+	.byte	86
 	.long	.Linfo_string5          # DW_AT_linkage_name
 	.long	.Linfo_string6          # DW_AT_name
 	.byte	1                       # DW_AT_decl_file
-	.byte	15                      # DW_AT_decl_line
+	.byte	20                      # DW_AT_decl_line
 	.long	102                     # DW_AT_type
 	.byte	1                       # DW_AT_accessibility
                                         # DW_ACCESS_public
