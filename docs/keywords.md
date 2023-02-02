@@ -213,3 +213,14 @@ The ```is``` keyword checks whether a constructed enum variant is a specific var
 let var = e::x
 (var is e::x) == true
 ```
+
+## ```match```
+The ```match``` keyword implements pattern matching for enums, with a required defualt case.
+
+```
+match var {
+    a::b => {
+        ...
+    }
+}
+```
