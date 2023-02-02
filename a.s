@@ -104,10 +104,10 @@ _main:                                  # @_main
 	cmpl	$0, %eax
 	jne	.LBB1_4
 # %bb.3:                                # %pattern_1
-	movl	$146, %eax
+	movl	$456, %eax              # imm = 0x1C8
 	jmp	.LBB1_5
 .LBB1_4:                                # %default
-	movl	$456, %eax              # imm = 0x1C8
+	movl	$789, %eax              # imm = 0x315
 	jmp	.LBB1_5
 .LBB1_5:                                # %end
 	movq	%rsp, %rcx

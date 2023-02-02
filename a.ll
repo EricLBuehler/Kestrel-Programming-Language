@@ -72,7 +72,7 @@ default:                                          ; preds = %pattern_check_1
   br label %end, !dbg !15
 
 end:                                              ; preds = %default, %pattern_1, %pattern_0
-  %match_phi = phi i32 [ 123, %pattern_0 ], [ 146, %pattern_1 ], [ 456, %default ], !dbg !15
+  %match_phi = phi i32 [ 123, %pattern_0 ], [ 456, %pattern_1 ], [ 789, %default ], !dbg !15
   %v = alloca i32, !dbg !15
   store i32 %match_phi, i32* %v, !dbg !15
   ret void, !dbg !15
