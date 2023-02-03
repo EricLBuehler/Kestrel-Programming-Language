@@ -151,6 +151,13 @@ impl<'a> PartialEq for DataType<'a> {
             }
         }
 
+        if self.tp==BasicDataType::Enum && self.tp==BasicDataType::Enum {
+            if  self.types != other.types ||
+                self.name != other.name {
+                return false;
+            }
+        }
+
         return self.name == other.name;
     }
     fn ne(&self, other: &DataType<'a>) -> bool {
@@ -182,6 +189,13 @@ impl<'a> PartialEq for DataType<'a> {
         if self.tp==BasicDataType::Struct && self.tp==BasicDataType::Struct {
             if  self.types == other.types &&
                 self.names.as_ref().unwrap() == other.names.as_ref().unwrap() &&
+                self.name == other.name {
+                return false;
+            }
+        }
+
+        if self.tp==BasicDataType::Enum && self.tp==BasicDataType::Enum {
+            if  self.types == other.types &&
                 self.name == other.name {
                 return false;
             }
