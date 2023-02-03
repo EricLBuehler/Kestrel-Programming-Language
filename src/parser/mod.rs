@@ -88,11 +88,13 @@ pub struct Type {
     pub isfn: bool,
     pub isarr: bool,
     pub isdyn: bool,
-    pub arrtp: Option<Box<Type>>,
+    pub isgenum: bool,
+    pub basetp: Option<Box<Type>>,
     pub arrlen: Option<Vec<String>>,
     pub data: Option<String>,
     pub args: Option<Args>,
     pub mutability: types::DataMutablility,
+    pub generic_tps: Option<Vec<Type>>,
 }
 #[derive(Clone, Debug, PartialEq)]
 pub struct Args {
@@ -131,7 +133,7 @@ impl std::fmt::Display for Node {
             NodeType::INITSTRUCT => write!(f, "{}", self.data.initst.as_ref().unwrap() ),
             NodeType::ATTR |
             NodeType::NAMESPACE |
-            NodeType::GENERICENUM => write!(f, "{}", self.data.attr.as_ref().unwrap() ),
+            NodeType::GENERICENUM  => write!(f, "{}", self.data.attr.as_ref().unwrap() ),
             NodeType::ATTRASSIGN => write!(f, "{}", self.data.attrassign.as_ref().unwrap() ),
             NodeType::STRING => write!(f, "{}", self.data.str.as_ref().unwrap() ),
             NodeType::ARRAY => write!(f, "{}", self.data.arr.as_ref().unwrap() ),
@@ -2071,11 +2073,13 @@ impl<'a> Parser<'a> {
                 isfn: false,
                 isarr: false,
                 isdyn: true,
-                arrtp: None,
+                isgenum: false,
+                basetp: None,
                 arrlen: None,
                 data: Some(name),
                 args: None,
                 mutability,
+                generic_tps: None,
             });
         }
 
@@ -2128,11 +2132,13 @@ impl<'a> Parser<'a> {
                     isfn: false,
                     isarr: false,
                     isdyn: false,
-                    arrtp: None,
+                    isgenum: false,
+                    basetp: None,
                     arrlen: None,
                     data: Some(String::from("void")),
                     args: None,
                     mutability: DataMutablility::Immutable,
+                    generic_tps: None,
                 });
             }
 
@@ -2140,11 +2146,13 @@ impl<'a> Parser<'a> {
                 isfn: true,
                 isarr: false,
                 isdyn: false,
-                arrtp: None,
+                isgenum: false,
+                basetp: None,
                 arrlen: None,
                 data: None,
                 args: Some(args_),
                 mutability,
+                generic_tps: None,
             });
         }
         else if self.next_is_type(TokenType::LSQUARE) {
@@ -2152,11 +2160,13 @@ impl<'a> Parser<'a> {
                 isfn: false,
                 isarr: false,
                 isdyn: false,
-                arrtp: None,
+                isgenum: false,
+                basetp: None,
                 arrlen: None,
                 data: Some(tp),
                 args: None,
                 mutability,
+                generic_tps: None,
             };
             
             self.advance();
@@ -2183,11 +2193,62 @@ impl<'a> Parser<'a> {
                 isfn: false,
                 isarr: true,
                 isdyn: false,
-                arrtp: Some(Box::new(basetp)),
+                isgenum: false,
+                basetp: Some(Box::new(basetp)),
                 arrlen: Some(len),
                 data: None,
                 args: None,
                 mutability,
+                generic_tps: None,
+            });
+        }
+        else if self.next_is_type(TokenType::LT) {
+            let basetp: Type = Type {
+                isfn: false,
+                isarr: false,
+                isdyn: false,
+                isgenum: false,
+                basetp: None,
+                arrlen: None,
+                data: Some(tp),
+                args: None,
+                mutability,
+                generic_tps: None,
+            };
+            
+            self.advance();
+            self.advance();
+
+            let mut tps: Vec<Type> = Vec::new();
+
+            while self.current_is_type(TokenType::IDENTIFIER) {
+                tps.push(self.parse_type(DataMutablility::Mutable).1);
+                if self.current_is_type(TokenType::GT) {
+                    break;
+                }
+                if !self.current_is_type(TokenType::COMMA) {
+                    self.raise_error("Expected comma.", ErrorType::InvalidTok);
+                }
+                self.advance();
+            }
+            if !self.current_is_type(TokenType::GT) {
+                self.raise_error("Expected right angle bracket.", ErrorType::InvalidTok);
+            }
+            self.advance();
+
+            let end: usize = self.current.endcol;
+
+            return (end, Type {
+                isfn: false,
+                isarr: false,
+                isdyn: false,
+                isgenum: true,
+                basetp: Some(Box::new(basetp)),
+                arrlen: None,
+                data: None,
+                args: None,
+                mutability,
+                generic_tps: Some(tps),
             });
         }
         else {
@@ -2197,11 +2258,13 @@ impl<'a> Parser<'a> {
                 isfn: false,
                 isarr: false,
                 isdyn: false,
-                arrtp: None,
+                isgenum: false,
+                basetp: None,
                 arrlen: None,
                 data: Some(tp),
                 args: None,
                 mutability,
+                generic_tps: None,
             });
         }
     }
@@ -2339,11 +2402,13 @@ impl<'a> Parser<'a> {
                 isfn: false,
                 isarr: false,
                 isdyn: false,
-                arrtp: None,
+                isgenum: false,
+                basetp: None,
                 arrlen: None,
                 data: Some(String::from("void")),
                 args: None,
                 mutability: DataMutablility::Immutable,
+                generic_tps: None,
             });
         }
 
@@ -3324,11 +3389,13 @@ impl<'a> Parser<'a> {
                     isfn: false,
                     isarr: false,
                     isdyn: false,
-                    arrtp: None,
+                    isgenum: false,
+                    basetp: None,
                     arrlen: None,
                     data: Some(String::from("void")),
                     args: None,
                     mutability: DataMutablility::Immutable,
+                    generic_tps: None,
                 });
             }
 

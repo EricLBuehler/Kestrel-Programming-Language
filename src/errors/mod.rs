@@ -58,6 +58,8 @@ pub enum ErrorType {
     EnumTypeMismatch,
     StructAlreadyImplements,
     EnumNotGeneric,
+    NamespaceLoadOfGenericEnum,
+    ExpectedGenericTypes,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -124,6 +126,8 @@ pub fn repr_err(tp: ErrorType) -> &'static str {
         ErrorType::EnumTypeMismatch => "enum type mismatch",
         ErrorType::StructAlreadyImplements => "struct already implements trait",
         ErrorType::EnumNotGeneric => "enum is not generic",
+        ErrorType::NamespaceLoadOfGenericEnum => "namespace load of generic enum is invalid",
+        ErrorType::ExpectedGenericTypes => "expected generic types for generic enum",
     }
 }
 

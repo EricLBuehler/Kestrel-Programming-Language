@@ -192,7 +192,7 @@ impl<'ctx> CodeGen<'ctx> {
         }
     }
 
-    pub fn get_llvm_from_type(ctx: &'ctx Context, structs: &std::collections::HashMap<String, (types::DataType<'ctx>, Option<inkwell::types::AnyTypeEnum<'ctx>>, std::collections::HashMap<String, i32>, ForwardDeclarationType)>, types: &InkwellTypes<'ctx>, datatypes: &std::collections::HashMap<String, types::DataType<'ctx>>, traits: &std::collections::HashMap<String, types::TraitSignature<'ctx>>, info: &fileinfo::FileInfo, arg: &parser::Type, node: &parser::Node) -> (types::DataType<'ctx>, inkwell::types::AnyTypeEnum<'ctx>) {
+    pub fn get_llvm_from_type(ctx: &'ctx Context, namespaces: &Namespaces, types: &InkwellTypes<'ctx>, datatypes: &std::collections::HashMap<String, types::DataType<'ctx>>, traits: &std::collections::HashMap<String, types::TraitSignature<'ctx>>, info: &fileinfo::FileInfo, arg: &parser::Type, node: &parser::Node) -> (types::DataType<'ctx>, inkwell::types::AnyTypeEnum<'ctx>) {
         if arg.isfn {
             let args: &Vec<parser::Type> = &arg.args.as_ref().unwrap().args;
             let mut datatypes_: Vec<types::DataType> = Vec::new();
@@ -200,7 +200,7 @@ impl<'ctx> CodeGen<'ctx> {
             let mut inktypes: Vec<inkwell::types::BasicMetadataTypeEnum> = Vec::new();
             
             for arg in args {
-                let (data, tp) = Self::get_llvm_from_type(ctx, structs, types, datatypes, traits, info, &arg, node);
+                let (data, tp) = Self::get_llvm_from_type(ctx, namespaces, types, datatypes, traits, info, &arg, node);
                 datatypes_.push(data);
                 mutability.push(arg.mutability);
                 let res: Option<inkwell::types::BasicMetadataTypeEnum> = Self::get_basicmeta_from_any(tp);
@@ -210,7 +210,7 @@ impl<'ctx> CodeGen<'ctx> {
                 }
             }
             
-            let rettp_full: (types::DataType, inkwell::types::AnyTypeEnum) = Self::get_llvm_from_type(ctx, structs, types, datatypes, traits, info, &arg.args.as_ref().unwrap().rettp.last().unwrap(), node);
+            let rettp_full: (types::DataType, inkwell::types::AnyTypeEnum) = Self::get_llvm_from_type(ctx, namespaces, types, datatypes, traits, info, &arg.args.as_ref().unwrap().rettp.last().unwrap(), node);
             let tp: inkwell::types::AnyTypeEnum = rettp_full.1;
             let fntp: inkwell::types::FunctionType;
             
@@ -246,7 +246,7 @@ impl<'ctx> CodeGen<'ctx> {
             return (tp.clone(), inkwell::types::AnyTypeEnum::FunctionType(fntp));
         }
         else if arg.isarr {
-            let (_, tp) = Self::get_llvm_from_type(ctx, structs, types, datatypes, traits, info, &arg.arrtp.as_ref().unwrap(), node);
+            let (_, tp) = Self::get_llvm_from_type(ctx, namespaces, types, datatypes, traits, info, &arg.basetp.as_ref().unwrap(), node);
             let len: u32 = match u32::from_str_radix(arg.arrlen.as_ref().unwrap().first().unwrap().as_str(), 10) {
                 Ok(v) => {
                     v
@@ -308,12 +308,56 @@ impl<'ctx> CodeGen<'ctx> {
             
             return (tp, inkwell::types::AnyTypeEnum::StructType(*types.dynptrtp));
         }
+        else if arg.isgenum {
+            let (mut tp, anytp) = Self::get_llvm_from_type(ctx, namespaces, types, datatypes, traits, info, &arg.basetp.as_ref().unwrap(), node);
+        
+            if tp.tp != types::BasicDataType::Enum {
+                let fmt: String = format!("Expected 'enum', got '{}'.", tp);
+                errors::raise_error(&fmt, errors::ErrorType::ExpectedEnum, &node.pos, info);
+            }
+
+            if !namespaces.generic_enums.contains_key(&tp.name) {
+                let fmt: String = format!("Enum '{}' is not generic.", tp.name);
+                errors::raise_error(&fmt, errors::ErrorType::EnumNotGeneric, &node.pos, info);
+            }
+
+            let (generics, tps) = namespaces.generic_enums.get(&tp.name).unwrap();
+            let generic_tps = arg.generic_tps.as_ref().unwrap();
+
+            let mut newtypes: Vec<types::DataType> = Vec::new();
+            let mut mutabilities: Vec<types::DataMutablility> = Vec::new();
+
+            for tp in tps {
+                if tp.is_some() {
+                    if  !tp.as_ref().unwrap().isarr && !tp.as_ref().unwrap().isfn && !tp.as_ref().unwrap().isdyn &&
+                        !tp.as_ref().unwrap().isgenum &&
+                        generics.contains(&tp.as_ref().unwrap().data.as_ref().unwrap()) {
+                        newtypes.push(Self::get_llvm_from_type(ctx, namespaces, types, datatypes, traits, info, generic_tps.get(generics.iter().position(|x| x == tp.as_ref().unwrap().data.as_ref().unwrap()).unwrap()).unwrap(), node).0);
+                        mutabilities.push(types::DataMutablility::Mutable);
+                    }
+                    else {
+                        newtypes.push(Self::get_llvm_from_type(ctx, namespaces, types, datatypes, traits, info, tp.as_ref().unwrap(), node).0);
+                        mutabilities.push(types::DataMutablility::Mutable);
+                    }
+                }
+                else {
+                    newtypes.push(datatypes.get(&types::BasicDataType::I32.to_string()).unwrap().clone());
+                    mutabilities.push(types::DataMutablility::Immutable);
+                }
+            }
+
+            tp.types = newtypes;
+            tp.mutability = mutabilities;
+
+            return (tp.clone(), anytp);
+        }
         else {
             let tp: Option<&types::DataType> = datatypes.get(arg.data.as_ref().unwrap());
             if tp.is_none() {
                 let fmt: String = format!("Unknown type '{}'.", &arg.data.as_ref().unwrap());
                 errors::raise_error(&fmt, errors::ErrorType::UnknownType, &node.pos, info);
             }
+
             let anytp: Option<inkwell::types::AnyTypeEnum> = Self::get_anytp_from_tp(ctx, &types, tp.unwrap().clone());
             if anytp.is_none() {
                 unimplemented!();
@@ -538,7 +582,7 @@ impl<'ctx> CodeGen<'ctx> {
                 let ptr: inkwell::values::PointerValue = self.builder.build_alloca(inkwell::types::BasicTypeEnum::StructType(*self.inkwell_types.dynptrtp), name.as_str());
 
                 let typ: types::Type = Self::get_type_from_data(self.types.clone(), &right);
-                let (dyntp, _) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
+                let (dyntp, _) = Self::get_llvm_from_type(&self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
                 
                 if !typ.traits.contains_key(&dyntp.name) {
                     let fmt: String = format!("'{}' type does not implement '{}' trait.", right.tp.to_string(), dyntp.name);
@@ -572,12 +616,18 @@ impl<'ctx> CodeGen<'ctx> {
                 let right: types::Data = self.compile_expr(&node.data.letn.as_ref().unwrap().expr.as_ref().unwrap(), true, false, false, false);
                 if right.data.is_some(){
                     let rt_tp: types::DataType = right.tp.clone();
+
                     if node.data.letn.as_ref().unwrap().tp != None {
-                        let (tp, _) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
+                        let (tp, _) = Self::get_llvm_from_type(&self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
                         if tp != rt_tp {
                             let fmt: String = format!("Expected '{}' type, got '{}' type.", tp.to_string(), rt_tp.to_string());
                             errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
                         }
+                    }
+
+                    if self.namespaces.generic_enums.contains_key(&right.tp.name) && right.tp.types.len() == 0 {
+                        let fmt: String = format!("Expected generic types for '{}'.", right.tp.name);
+                        errors::raise_error(&fmt, errors::ErrorType::ExpectedGenericTypes, &node.pos, &self.info);
                     }
 
                     
@@ -602,12 +652,12 @@ impl<'ctx> CodeGen<'ctx> {
                 node.data.letn.as_ref().unwrap().tp.as_ref().unwrap().isdyn {                
                 let ptr: inkwell::values::PointerValue = self.builder.build_alloca(inkwell::types::BasicTypeEnum::StructType(*self.inkwell_types.dynptrtp), name.as_str());
 
-                let (dyntp, _) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
+                let (dyntp, _) = Self::get_llvm_from_type(&self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
 
                 self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), dyntp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
             }
             else { 
-                let (tp, inktp) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
+                let (tp, inktp) = Self::get_llvm_from_type(&self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
 
                 if tp.tp != types::BasicDataType::Void{
                     let ptr: inkwell::values::PointerValue = self.builder.build_alloca(Self::get_basic_from_any(inktp).unwrap(), name.as_str());
@@ -772,7 +822,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         if template_types.is_none() {
             for arg in &args.args {
-                let (data, tp) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &arg, node);
+                let (data, tp) = Self::get_llvm_from_type(&self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &arg, node);
                 datatypes.push(data);
                 mutability.push(arg.mutability);
 
@@ -805,7 +855,7 @@ impl<'ctx> CodeGen<'ctx> {
         let rettp_any: inkwell::types::AnyTypeEnum;
         
         if rettp_opt.is_none() {
-            let rettp_full: (types::DataType, inkwell::types::AnyTypeEnum) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &args.rettp.last().unwrap(), node);
+            let rettp_full: (types::DataType, inkwell::types::AnyTypeEnum) = Self::get_llvm_from_type(&self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &args.rettp.last().unwrap(), node);
             rettp_tp = rettp_full.0;
             rettp_any = rettp_full.1;
         }
@@ -1094,7 +1144,7 @@ impl<'ctx> CodeGen<'ctx> {
             let ptr: inkwell::values::PointerValue = self.get_variable(&name).0.unwrap().0.unwrap().clone();
             if self.get_variable(&name).0.unwrap().1.is_dyn {
                 let typ: types::Type = Self::get_type_from_data(self.types.clone(), &right);
-                let (dyntp, _) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
+                let (dyntp, _) = Self::get_llvm_from_type(&self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
 
                 if !typ.traits.contains_key(&dyntp.name) {
                     let fmt: String = format!("'{}' type does not implement '{}' trait.", right.tp.to_string(), dyntp.name);
@@ -1179,7 +1229,7 @@ impl<'ctx> CodeGen<'ctx> {
                 let mut names: Vec<String> = Vec::new();
                 
                 for arg in &func_args.args {
-                    let (data, _) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &arg, node);
+                    let (data, _) = Self::get_llvm_from_type(&self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &arg, node);
                     
                     if data.tp != types::BasicDataType::Void {
                         names.push(String::from(""));
@@ -1188,7 +1238,7 @@ impl<'ctx> CodeGen<'ctx> {
                     datatypes.push(data);                  
                 }
                 
-                let rettp_full: (types::DataType, inkwell::types::AnyTypeEnum) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &func_args.rettp.last().unwrap(), node);
+                let rettp_full: (types::DataType, inkwell::types::AnyTypeEnum) = Self::get_llvm_from_type(&self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &func_args.rettp.last().unwrap(), node);
                 let rettp_tp: types::DataType = rettp_full.0;
 
                 mtp.types = datatypes;
@@ -1293,7 +1343,8 @@ impl<'ctx> CodeGen<'ctx> {
             for (data, arg) in izip![&args, &func.data.func.as_ref().unwrap().args.args] {
                 if  !arg.isarr &&
                     !arg.isfn &&
-                    !arg.isdyn && !self.datatypes.contains_key(&arg.data.as_ref().unwrap().clone()) {
+                    !arg.isdyn &&
+                    !arg.isgenum && !self.datatypes.contains_key(&arg.data.as_ref().unwrap().clone()) {
                     if !templates.contains_key(&arg.data.as_ref().unwrap().clone()) {
                         if !func.data.func.as_ref().unwrap().template_types.contains(&arg.data.as_ref().unwrap().clone()) {
                             let fmt: String = format!("Unknown type '{}'.", arg.data.as_ref().unwrap().clone());
@@ -1304,7 +1355,7 @@ impl<'ctx> CodeGen<'ctx> {
                     fn_types.push(templates.get(&arg.data.as_ref().unwrap().clone()).unwrap().to_owned());
                 }
                 else {
-                    fn_types.push(Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, arg, node).0.to_owned());
+                    fn_types.push(Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, arg, node).0.to_owned());
                 }
             }
 
@@ -1313,6 +1364,7 @@ impl<'ctx> CodeGen<'ctx> {
             if  !rettp.isarr &&
                 !rettp.isfn &&
                 !rettp.isdyn &&
+                !rettp.isgenum &&
                 !self.datatypes.contains_key(&rettp.data.as_ref().unwrap().clone()) {
                 if !templates.contains_key(&rettp.data.as_ref().unwrap().clone()) {
                     let fmt: String = format!("Unknown type '{}'.", rettp.data.as_ref().unwrap().clone());
@@ -1321,7 +1373,7 @@ impl<'ctx> CodeGen<'ctx> {
                 rettp_tp = templates.get(&rettp.data.as_ref().unwrap().clone()).unwrap().to_owned();
             }
             else {
-                rettp_tp = Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, rettp, node).0.to_owned();
+                rettp_tp = Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, rettp, node).0.to_owned();
             }
             
             let enclosing_block: inkwell::basic_block::BasicBlock = self.enclosing_block.unwrap();
@@ -1360,7 +1412,8 @@ impl<'ctx> CodeGen<'ctx> {
                 for arg in &func.data.func.as_ref().unwrap().args.args {
                     if  !arg.isarr &&
                         !arg.isfn &&
-                        !arg.isdyn && !self.datatypes.contains_key(&arg.data.as_ref().unwrap().clone()) && idx > 0 {
+                        !arg.isdyn &&
+                        !arg.isgenum && !self.datatypes.contains_key(&arg.data.as_ref().unwrap().clone()) && idx > 0 {
                         if !templates.contains_key(&arg.data.as_ref().unwrap().clone()) {
                             if !func.data.func.as_ref().unwrap().template_types.contains(&arg.data.as_ref().unwrap().clone()) {
                                 let fmt: String = format!("Unknown type '{}'.", arg.data.as_ref().unwrap().clone());
@@ -1373,6 +1426,7 @@ impl<'ctx> CodeGen<'ctx> {
                     else if !arg.isarr &&
                             !arg.isfn &&
                             !arg.isdyn &&
+                            !arg.isgenum &&
                             idx == 0 &&
                             !self.datatypes.contains_key(&arg.data.as_ref().unwrap().clone()) && instance_meth != TemplateFunctionInstance::Instance {
                         if !templates.contains_key(&arg.data.as_ref().unwrap().clone()) {
@@ -1389,7 +1443,7 @@ impl<'ctx> CodeGen<'ctx> {
                         errors::raise_error(&fmt, errors::ErrorType::MethodTemplateFunctionHasFirstTemplate, &node.pos, self.info);
                     }
                     else {
-                        fn_types.push(Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, arg, node).0.to_owned());
+                        fn_types.push(Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, arg, node).0.to_owned());
                     }
                     idx += 1;
                 }
@@ -1399,6 +1453,7 @@ impl<'ctx> CodeGen<'ctx> {
                 if  !rettp.isarr &&
                     !rettp.isfn &&
                     !rettp.isdyn &&
+                    !rettp.isgenum &&
                     !self.datatypes.contains_key(&rettp.data.as_ref().unwrap().clone()) {
                     if !templates.contains_key(&rettp.data.as_ref().unwrap().clone()) {
                         let fmt: String = format!("Unknown type '{}'.", rettp.data.as_ref().unwrap().clone());
@@ -1407,7 +1462,7 @@ impl<'ctx> CodeGen<'ctx> {
                     rettp_tp = templates.get(&rettp.data.as_ref().unwrap().clone()).unwrap().to_owned();
                 }
                 else {
-                    rettp_tp = Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, rettp, node).0.to_owned();
+                    rettp_tp = Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, rettp, node).0.to_owned();
                 }
                 
                 let enclosing_block: inkwell::basic_block::BasicBlock = self.enclosing_block.unwrap();
@@ -1630,8 +1685,8 @@ impl<'ctx> CodeGen<'ctx> {
                 errors::raise_error(&fmt, errors::ErrorType::FieldRedeclaration, &node.pos, self.info);
             }
             names.push(member.clone());
-            types.push(Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, node.data.st.as_ref().unwrap().members.get(member).unwrap(), node));
-            simpletypes.push(Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, node.data.st.as_ref().unwrap().members.get(member).unwrap(), node).0);
+            types.push(Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, node.data.st.as_ref().unwrap().members.get(member).unwrap(), node));
+            simpletypes.push(Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, node.data.st.as_ref().unwrap().members.get(member).unwrap(), node).0);
             mutabilitites.push(node.data.st.as_ref().unwrap().members.get(member).unwrap().mutability);
             idxmapping.insert(member.clone(), idx);
             idx+=1;
@@ -1956,7 +2011,7 @@ impl<'ctx> CodeGen<'ctx> {
                 errors::raise_error(&fmt, errors::ErrorType::StructAlreadyImplements, &node.pos, self.info);
             }
 
-            let rettp: types::DataType = Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, node.data.impln.as_ref().unwrap().functions.last().unwrap().data.func.as_ref().unwrap().args.rettp.first().unwrap(), node).0;
+            let rettp: types::DataType = Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, node.data.impln.as_ref().unwrap().functions.last().unwrap().data.func.as_ref().unwrap().args.rettp.first().unwrap(), node).0;
 
             let traittp: Option<types::TraitType> = types::get_traittp_from_str(traitnm.to_owned());
             if traittp.as_ref().unwrap() == &types::TraitType::Call {
@@ -1998,7 +2053,7 @@ impl<'ctx> CodeGen<'ctx> {
                     errors::raise_error(&fmt, errors::ErrorType::CannotImplementBuiltinTrait, &node.pos, self.info);                    
                 }
                 let idx = self.namespaces.structs.get(structnm).unwrap().0.names.as_ref().unwrap().iter().position(|x| x==var.0).unwrap();
-                if self.namespaces.structs.get(structnm).unwrap().0.types.get(idx).unwrap() != &Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, var.1, node).0 {
+                if self.namespaces.structs.get(structnm).unwrap().0.types.get(idx).unwrap() != &Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, var.1, node).0 {
                     let fmt: String = format!("Struct '{}' does not implement required member '{}' of type '{}'.", structnm, var.0, self.namespaces.structs.get(structnm).unwrap().0.types.get(idx).unwrap());
                     errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);     
                 }
@@ -2063,6 +2118,7 @@ impl<'ctx> CodeGen<'ctx> {
                         if  !arg.isarr &&
                             !arg.isfn &&
                             !arg.isdyn &&
+                            !arg.isgenum &&
                             !self.datatypes.contains_key(arg.data.as_ref().unwrap()) &&
                             sig.template_types.contains(arg.data.as_ref().unwrap()) &&
                             arg.data.as_ref().unwrap() == template {
@@ -2099,8 +2155,8 @@ impl<'ctx> CodeGen<'ctx> {
                 for idx in &standard_indices {
                     let tp: types::DataType = functp.types.get(idx.to_owned()).unwrap().to_owned();
 
-                    if tp != Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, sig.args.args.get(idx.to_owned()).as_ref().unwrap(), function).0 {
-                        let fmt: String = format!("Expected '{}' type, got '{}' type.", tp, Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, sig.args.args.get(idx.to_owned()).as_ref().unwrap(), function).0);
+                    if tp != Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, sig.args.args.get(idx.to_owned()).as_ref().unwrap(), function).0 {
+                        let fmt: String = format!("Expected '{}' type, got '{}' type.", tp, Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, sig.args.args.get(idx.to_owned()).as_ref().unwrap(), function).0);
                         errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
                     }
                 }
@@ -2108,6 +2164,7 @@ impl<'ctx> CodeGen<'ctx> {
                 if  !sig.args.rettp.first().unwrap().isarr &&
                     !sig.args.rettp.first().unwrap().isfn &&
                     !sig.args.rettp.first().unwrap().isdyn &&
+                    !sig.args.rettp.first().unwrap().isgenum &&
                     !self.datatypes.contains_key(sig.args.rettp.first().unwrap().data.as_ref().unwrap()) &&
                     sig.template_types.contains(sig.args.rettp.first().unwrap().data.as_ref().unwrap()) {
                     let tp: types::DataType = functp.types.get(template_indices.get(sig.args.rettp.first().unwrap().data.as_ref().unwrap()).unwrap().get(0).unwrap().to_owned()).unwrap().to_owned();
@@ -2159,6 +2216,11 @@ impl<'ctx> CodeGen<'ctx> {
         if  self.datatypes.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).is_some() &&
             self.datatypes.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().tp == types::BasicDataType::Enum{
             let mut tp: types::DataType = self.datatypes.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().clone();
+            if self.namespaces.generic_enums.contains_key(&tp.name) && !allow_enum_noinit {
+                let fmt: String = format!("Enum '{}' is generic, use a generic load.", tp.name);
+                errors::raise_error(&fmt, errors::ErrorType::NamespaceLoadOfGenericEnum, &node.pos, self.info);
+            }
+
             if alttp.is_some() {
                 tp = alttp.unwrap().to_owned();
             }
@@ -2693,7 +2755,7 @@ impl<'ctx> CodeGen<'ctx> {
         if node.data.enumn.as_ref().unwrap().template_types.len() == 0 {
             for tp in &node.data.enumn.as_ref().unwrap().tps {
                 if tp.is_some() {
-                    types.push(Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, tp.as_ref().unwrap(), node).0);
+                    types.push(Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, tp.as_ref().unwrap(), node).0);
                     mutabilities.push(types::DataMutablility::Mutable);
                 }
                 else {
@@ -3050,12 +3112,13 @@ impl<'ctx> CodeGen<'ctx> {
         for tp in tps {
             if tp.is_some() {
                 if  !tp.as_ref().unwrap().isarr && !tp.as_ref().unwrap().isfn && !tp.as_ref().unwrap().isdyn &&
+                    !tp.as_ref().unwrap().isgenum &&
                     generics.contains(&tp.as_ref().unwrap().data.as_ref().unwrap()) {
-                    types.push(Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, generic_tps.get(generics.iter().position(|x| x == tp.as_ref().unwrap().data.as_ref().unwrap()).unwrap()).unwrap(), node).0);
+                    types.push(Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, generic_tps.get(generics.iter().position(|x| x == tp.as_ref().unwrap().data.as_ref().unwrap()).unwrap()).unwrap(), node).0);
                     mutabilities.push(types::DataMutablility::Mutable);
                 }
                 else {
-                    types.push(Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, tp.as_ref().unwrap(), node).0);
+                    types.push(Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, tp.as_ref().unwrap(), node).0);
                     mutabilities.push(types::DataMutablility::Mutable);
                 }
             }
@@ -3490,7 +3553,7 @@ impl<'ctx> CodeGen<'ctx> {
                 let mut inktypes: Vec<inkwell::types::BasicMetadataTypeEnum> = Vec::new();
 
                 for arg in &args.args {
-                    let (data, tp) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &arg, node);
+                    let (data, tp) = Self::get_llvm_from_type(&self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &arg, node);
                     datatypes.push(data);
                     mutability.push(arg.mutability);
 
@@ -3502,7 +3565,7 @@ impl<'ctx> CodeGen<'ctx> {
                     }
                 }
                 
-                let rettp_full: (types::DataType, inkwell::types::AnyTypeEnum) = Self::get_llvm_from_type(&self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &args.rettp.last().unwrap(), node);
+                let rettp_full: (types::DataType, inkwell::types::AnyTypeEnum) = Self::get_llvm_from_type(&self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &args.rettp.last().unwrap(), node);
 
                 self.expected_rettp = Some(rettp_full.0.clone());
                 
@@ -3585,8 +3648,8 @@ impl<'ctx> CodeGen<'ctx> {
                         errors::raise_error(&fmt, errors::ErrorType::FieldRedeclaration, &node.pos, self.info);
                     }
                     names.push(member.0.clone());
-                    types.push(Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, member.1, node));
-                    simpletypes.push(Self::get_llvm_from_type(self.context, &self.namespaces.structs, &self.inkwell_types, &self.datatypes, &self.traits, self.info, member.1, node).0);
+                    types.push(Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, member.1, node));
+                    simpletypes.push(Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, member.1, node).0);
                     mutabilitites.push(types::DataMutablility::Mutable);
                     idxmapping.insert(member.0.clone(), idx);
                     idx+=1;
