@@ -16,6 +16,8 @@ The Kestrel Programming Language is a multi-paradigm, statically and strongly ty
 
 - **Memory safe** - Data ownership and [references](https://github.com/EricLBuehler/Kestrel-Programming-Language/blob/master/docs/references.md) enforce what are good practices in other languages and eliminate an entire class of errors.
 
+- **Algebraic type system** - Algebraic types allow less code to represent powerful constructs.
+
 ## Depenendencies
 See [more](https://github.com/EricLBuehler/Kestrel-Programming-Language/blob/master/Cargo.toml) details.
 - ```inkwell``` (using ```llvm10-0```)
