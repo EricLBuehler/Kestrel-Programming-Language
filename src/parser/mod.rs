@@ -10,8 +10,8 @@ use crate::codegen::types::{self, DataMutablility};
 
 use self::nodes::NodeData;
 
-pub struct StructConstructionAllowance {
-    pub allowed: bool,
+pub struct ParserFlagArbiter {
+    pub stinit_allowed: bool,
     pub old: Vec<bool>,
 }
 
@@ -20,7 +20,7 @@ pub struct Parser<'a> {
     pub idx: usize,
     pub current: lexer::Token,
     pub info: crate::fileinfo::FileInfo<'a>,
-    pub allow_init: StructConstructionAllowance,
+    pub allow_init: ParserFlagArbiter,
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -66,6 +66,7 @@ pub enum NodeType {
     VOID,
     IS,
     MATCH,
+    GENERICENUM,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -129,7 +130,8 @@ impl std::fmt::Display for Node {
             NodeType::STRUCT => write!(f, "{}", self.data.st.as_ref().unwrap() ),
             NodeType::INITSTRUCT => write!(f, "{}", self.data.initst.as_ref().unwrap() ),
             NodeType::ATTR |
-            NodeType::NAMESPACE => write!(f, "{}", self.data.attr.as_ref().unwrap() ),
+            NodeType::NAMESPACE |
+            NodeType::GENERICENUM => write!(f, "{}", self.data.attr.as_ref().unwrap() ),
             NodeType::ATTRASSIGN => write!(f, "{}", self.data.attrassign.as_ref().unwrap() ),
             NodeType::STRING => write!(f, "{}", self.data.str.as_ref().unwrap() ),
             NodeType::ARRAY => write!(f, "{}", self.data.arr.as_ref().unwrap() ),
@@ -159,20 +161,20 @@ pub fn print_nodes(nodes: &Vec<Node>) {
     println!("========================");
 }
 
-impl StructConstructionAllowance {
-    pub fn set_disallow(&mut self) {
-        self.old.push(self.allowed);
-        self.allowed = false;
+impl ParserFlagArbiter {
+    pub fn set_structinit_disallow(&mut self) {
+        self.old.push(self.stinit_allowed);
+        self.stinit_allowed = false;
     }
     pub fn restore(&mut self) {
         assert!(self.old.len() > 0);
-        self.allowed = self.old.pop().unwrap();
+        self.stinit_allowed = self.old.pop().unwrap();
     }
-    pub fn check_allowed(&mut self) -> bool{
-        return self.allowed;
+    pub fn check_structinit_allowed(&mut self) -> bool{
+        return self.stinit_allowed;
     }
-    pub fn new() -> StructConstructionAllowance{
-        return StructConstructionAllowance {allowed: true, old: Vec::new()};
+    pub fn new() -> ParserFlagArbiter{
+        return ParserFlagArbiter {stinit_allowed: true, old: Vec::new()};
     }
 }
 
@@ -192,7 +194,7 @@ impl<'a> Parser<'a> {
             idx: 1,
             current: tokens.first().unwrap().to_owned(),
             info: info.clone(),
-            allow_init: StructConstructionAllowance::new(),
+            allow_init: ParserFlagArbiter::new(),
         };
     }
 
@@ -658,7 +660,7 @@ impl<'a> Parser<'a> {
     
         let mut n: Node = self.create_node(NodeType::IDENTIFIER, nodedat, pos.clone());
 
-        if self.next_is_type(TokenType::LCURLY) && self.allow_init.check_allowed() {
+        if self.next_is_type(TokenType::LCURLY) && self.allow_init.check_structinit_allowed() {
             let name: String = self.current.data.clone();
             self.advance();
             self.advance();
@@ -801,6 +803,7 @@ impl<'a> Parser<'a> {
                     name: n,
                     attr,
                     expr: None,
+                    template_types: None,
                 };
             
                 let nodedat: nodes::NodeData = nodes::NodeData {
@@ -863,6 +866,7 @@ impl<'a> Parser<'a> {
                 name: n,
                 attr,
                 expr,
+                template_types: None,
             };
         
             let nodedat: nodes::NodeData = nodes::NodeData {
@@ -892,6 +896,87 @@ impl<'a> Parser<'a> {
             };
         
             n = self.create_node(NodeType::NAMESPACE, nodedat, pos.clone());
+        }
+        else if self.next_is_type(TokenType::LT) {
+            let mut pos = Position {
+                line: self.current.line,
+                startcol: self.current.startcol,
+                endcol: 0,
+            };
+
+            self.advance();
+            self.advance();
+
+            let mut typs: Vec<Type> = Vec::new();
+            
+            while self.current_is_type(TokenType::IDENTIFIER) {
+                typs.push(self.parse_type(types::DataMutablility::Immutable).1);
+
+                if !self.current_is_type(TokenType::GT) {
+                    self.raise_error("Expected right angle bracket.", ErrorType::InvalidTok);
+                }
+                self.advance();
+
+                if self.current_is_type(TokenType::GT) {
+                    self.advance();
+                    break;
+                }
+            }
+
+            if !self.current_is_type(TokenType::DOUBLECOLON) {
+                self.raise_error("Expected doublecolon.", ErrorType::InvalidTok);
+            }
+            self.advance();
+
+            if !self.current_is_type(TokenType::IDENTIFIER) {
+                self.raise_error("Expected identifier.", ErrorType::InvalidTok);
+            }
+            let attr: String = self.current.data.clone();
+            self.advance();
+            pos.endcol = self.current.endcol;
+            if !self.current_is_type(TokenType::LT) {
+                self.raise_error("Expected left angle bracket.", ErrorType::InvalidTok);
+            }
+            self.advance();
+            let expr: Node = self.expr(Precedence::Comparison);
+            if !self.current_is_type(TokenType::GT) {
+                self.raise_error("Expected left angle bracket.", ErrorType::InvalidTok);
+            }
+
+            let attr: nodes::AttrNode = nodes::AttrNode{
+                name: n,
+                attr,
+                expr: Some(expr),
+                template_types: Some(typs),
+            };
+        
+            let nodedat: nodes::NodeData = nodes::NodeData {
+                binary: None,
+                num: None,
+                letn: None,
+                identifier: None,
+                func: None,
+                assign: None,
+                call: None,
+                ret: None,
+                to: None,
+                unary: None,
+                st: None,
+                initst: None,
+                attr: Some(attr),
+                attrassign: None,
+                str: None,
+                arr: None,
+                impln: None,
+                ifn: None,
+                loopn: None,
+                enumn: None,
+                traitn: None,
+                is: None,
+                matchn: None,
+            };
+        
+            n = self.create_node(NodeType::GENERICENUM, nodedat, pos.clone());
         }
     
         return n;
@@ -2619,7 +2704,7 @@ impl<'a> Parser<'a> {
         let mut ifs: Vec<(Node, Vec<Node>)> = Vec::new();
         let mut else_opt: Option<Vec<Node>> = None;
 
-        self.allow_init.set_disallow();
+        self.allow_init.set_structinit_disallow();
         let expr: Node = self.expr(Precedence::Lowest);
         self.allow_init.restore();
 
@@ -2652,7 +2737,7 @@ impl<'a> Parser<'a> {
         while self.current_is_type(TokenType::KEYWORD) && self.current.data == "elif" {
             self.advance(); 
 
-            self.allow_init.set_disallow();
+            self.allow_init.set_structinit_disallow();
             let expr: Node = self.expr(Precedence::Lowest);
             self.allow_init.restore();
         
@@ -2988,6 +3073,26 @@ impl<'a> Parser<'a> {
 
         self.advance();
 
+        let mut template_types: Vec<String> = Vec::new();
+        if self.current_is_type(TokenType::LT) {
+            self.advance();
+            while self.current_is_type(TokenType::IDENTIFIER) {
+                template_types.push(self.current.data.clone());
+
+                self.advance();
+
+                if !self.current_is_type(TokenType::COMMA) && !self.current_is_type(TokenType::GT) {
+                    self.raise_error("Expected comma.", ErrorType::InvalidTok);
+                }
+                self.advance();
+
+                if self.current_is_type(TokenType::GT) {
+                    self.advance();
+                    break;
+                }
+            }
+        }
+
         self.skip_newline();
     
         if !self.current_is_type(TokenType::LCURLY) {
@@ -3042,6 +3147,7 @@ impl<'a> Parser<'a> {
             name,
             variants,
             tps,
+            template_types,
         };
     
         let nodedat: nodes::NodeData = nodes::NodeData {
@@ -3297,7 +3403,7 @@ impl<'a> Parser<'a> {
 
         self.advance();
 
-        self.allow_init.set_disallow();
+        self.allow_init.set_structinit_disallow();
         let expr: Node = self.expr(Precedence::Lowest);
         self.allow_init.restore();
         
@@ -3326,8 +3432,9 @@ impl<'a> Parser<'a> {
                 self.advance();
             }
             else {
-                self.allow_init.set_disallow();
+                self.allow_init.set_structinit_disallow();
                 pattern = Some(self.generate_identifier(self.current.data.clone()));
+                self.allow_init.restore();
                 if pattern.as_ref().unwrap().data.attr.as_ref().unwrap().expr.is_some() {
                     if pattern.as_ref().unwrap().data.attr.as_ref().unwrap().expr.as_ref().unwrap().tp != NodeType::IDENTIFIER {
                         self.raise_error_pos("Expected identifier.", ErrorType::InvalidTok, pattern.as_ref().unwrap().data.attr.as_ref().unwrap().expr.as_ref().unwrap().to_owned());
@@ -3337,7 +3444,6 @@ impl<'a> Parser<'a> {
                     alt_pattern.as_mut().unwrap().data.attr.as_mut().unwrap().expr = None;
                     pattern = alt_pattern;
                 }
-                self.allow_init.restore();
                 self.advance();
             }
         
