@@ -190,6 +190,17 @@ The value is optional, depending on the variant:
 name::variant
 ```
 
+In addition, an ```enum``` may be generic. The syntax is similar to the ```C++``` syntax for calling generic functions.
+
+```
+enum name<T> {
+    variant<T>
+}
+...
+let var: name
+var = name<i32>::name<100>
+```
+
 ## ```trait```
 The ```trait``` keyword creates a new trait.
 A trait defines functions (may be template), and may define required members for each struct.
