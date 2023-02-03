@@ -13,16 +13,16 @@ impl t for s {
     }
 }
 
-enum e {
+enum e<T> {
     a,
-    b<String>,
+    b<T>,
 }
 
 fn main() {
     let st = s{x = 10u32}
     let x: dyn t = st
     x.func(2)
-    let var: e = e::b<String::new("Kestrel 🦅")>
+    let var: e = e<String>::b<String::new("Kestrel 🦅")>
 
     let v = match var {
         e::b<v> => {

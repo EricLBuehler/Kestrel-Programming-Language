@@ -57,6 +57,7 @@ pub enum ErrorType {
     ExpectedEnum,
     EnumTypeMismatch,
     StructAlreadyImplements,
+    EnumNotGeneric,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -122,6 +123,7 @@ pub fn repr_err(tp: ErrorType) -> &'static str {
         ErrorType::ExpectedEnum => "expected enum variant",
         ErrorType::EnumTypeMismatch => "enum type mismatch",
         ErrorType::StructAlreadyImplements => "struct already implements trait",
+        ErrorType::EnumNotGeneric => "enum is not generic",
     }
 }
 

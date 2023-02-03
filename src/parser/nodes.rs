@@ -218,6 +218,7 @@ pub struct AttrNode{
     pub name: crate::parser::Node,
     pub attr: String,
     pub expr: Option<crate::parser::Node>,
+    pub template_types: Option<Vec<crate::parser::Type>>,
 }
 
 impl std::fmt::Display for AttrNode {
@@ -308,6 +309,7 @@ pub struct EnumNode{
     pub variants: Vec<String>,
     pub name: String,
     pub tps: Vec<Option<crate::parser::Type>>,
+    pub template_types: Vec<String>,
 }
 
 impl std::fmt::Display for EnumNode {
