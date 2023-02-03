@@ -190,14 +190,14 @@ The value is optional, depending on the variant:
 name::variant
 ```
 
-In addition, an ```enum``` may be generic. The syntax is similar to the ```C++``` syntax for calling generic functions.
+In addition, an ```enum``` may be generic. The syntax is similar to the ```C++``` syntax for calling generic functions. In addition, there is also syntax for representing generic enums.
 
 ```
 enum name<T> {
     variant<T>
 }
 ...
-let var: name
+let var: name<String>
 var = name<i32>::name<100>
 ```
 
