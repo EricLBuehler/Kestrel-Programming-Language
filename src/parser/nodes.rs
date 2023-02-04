@@ -350,6 +350,7 @@ pub struct MatchNode{
     pub expr: crate::parser::Node,
     pub patterns: Vec<(Option<crate::parser::Node>, Option<String>, Vec<crate::parser::Node>)>,
     pub inexpr: bool,
+    pub have_default: bool,
 }
 
 impl std::fmt::Display for MatchNode {

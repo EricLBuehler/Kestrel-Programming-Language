@@ -3616,10 +3616,6 @@ impl<'a> Parser<'a> {
 
         self.skip_newline();
 
-        if !have_default {
-            self.raise_error("Expected default option.", ErrorType::InvalidTok);
-        }        
-
         if !self.current_is_type(TokenType::RCURLY) {
             self.raise_error("Expected right curly bracket.", ErrorType::InvalidTok);
         }
@@ -3630,6 +3626,7 @@ impl<'a> Parser<'a> {
             expr,
             patterns,
             inexpr,
+            have_default,
         };
         
         let nodedat: nodes::NodeData = nodes::NodeData {

@@ -2853,6 +2853,10 @@ impl<'ctx> CodeGen<'ctx> {
                     types.push(self.datatypes.get(&types::BasicDataType::I32.to_string()).unwrap().clone());
                     mutabilities.push(types::DataMutablility::Immutable);
                 }
+                if types.last().unwrap().is_ref {
+                    let fmt: String = format!("Enums may not contain references.");
+                    errors::raise_error(&fmt, errors::ErrorType::ReferenceVariantEnum, &node.pos, self.info);
+                }
             }
         }   
 
@@ -2928,7 +2932,7 @@ impl<'ctx> CodeGen<'ctx> {
         
         if expr.tp.tp != types::BasicDataType::Enum {
             let fmt: String = format!("Expected 'enum', got '{}'.", expr.tp);
-            errors::raise_error(&fmt, errors::ErrorType::ExpectedEnum, &node.data.is.as_ref().unwrap().variant.pos, self.info);
+            errors::raise_error(&fmt, errors::ErrorType::ExpectedEnum, &node.pos, self.info);
         }
         
         let end_block = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "end");
@@ -2946,6 +2950,27 @@ impl<'ctx> CodeGen<'ctx> {
         let mut collected_locals: Vec<std::collections::HashMap<String, usize>> = Vec::new();
 
         let mut else_block: inkwell::basic_block::BasicBlock = self.enclosing_block.unwrap();
+
+        let mut names: Vec<String> = Vec::new();
+        for (_, name, _) in &node.data.matchn.as_ref().unwrap().patterns {
+            if name.is_some() {
+                names.push(name.as_ref().unwrap().to_owned());
+            }
+        }
+
+        if expr.tp.names.as_ref().unwrap() != &names && !node.data.matchn.as_ref().unwrap().have_default {
+            let mut missed: String = String::from("");
+            for name in expr.tp.names.as_ref().unwrap() {
+                if !names.contains(name) {
+                    missed.push_str(name.as_str());
+                    missed.push_str(", ");
+                }
+            }
+            missed.pop();
+            missed.pop();
+            let fmt: String = format!("Match does not cover the following cases: {}.", missed);
+            errors::raise_error(&fmt, errors::ErrorType::ExpectedEnum, &node.pos, self.info);
+        }
 
         let mut index: usize = 0;
         for (pattern, name, block) in &node.data.matchn.as_ref().unwrap().patterns {
