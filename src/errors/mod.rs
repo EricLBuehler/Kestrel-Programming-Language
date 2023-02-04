@@ -60,6 +60,11 @@ pub enum ErrorType {
     EnumNotGeneric,
     NamespaceLoadOfGenericEnum,
     ExpectedGenericTypes,
+    CannotTakeReferenceOfAttr,
+    NameMutableBorrowed,
+    ReferenceMemberStruct,
+    ImmutableRefAttr,
+    RefNonStruct,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -128,6 +133,11 @@ pub fn repr_err(tp: ErrorType) -> &'static str {
         ErrorType::EnumNotGeneric => "enum is not generic",
         ErrorType::NamespaceLoadOfGenericEnum => "namespace load of generic enum is invalid",
         ErrorType::ExpectedGenericTypes => "expected generic types for generic enum",
+        ErrorType::CannotTakeReferenceOfAttr => "cannot take reference of attribute",
+        ErrorType::NameMutableBorrowed => "name is already mutable borrowed",
+        ErrorType::ReferenceMemberStruct => "reference member in struct is not allowed",
+        ErrorType::ImmutableRefAttr => "immutable reference attr",
+        ErrorType::RefNonStruct => "cannot have reference to non-struct"
     }
 }
 

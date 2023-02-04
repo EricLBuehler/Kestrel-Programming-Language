@@ -1,19 +1,21 @@
 	.text
 	.file	"program.ke"
-	.globl	s.func                  # -- Begin function s.func
+	.globl	f                       # -- Begin function f
 	.p2align	4, 0x90
-	.type	s.func,@function
-s.func:                                 # @s.func
+	.type	f,@function
+f:                                      # @f
 .Lfunc_begin0:
 	.file	1 "./program.ke"
-	.loc	1 10 0                  # program.ke:10:0
+	.loc	1 3 0                   # program.ke:3:0
+	.cfi_sections .debug_frame
 	.cfi_startproc
 # %bb.0:                                # %entry
-	.loc	1 10 4 prologue_end     # program.ke:10:4
+	.loc	1 3 0 prologue_end      # program.ke:3:0
+	movl	$100, (%rdi)
 	retq
 .Ltmp0:
 .Lfunc_end0:
-	.size	s.func, .Lfunc_end0-s.func
+	.size	f, .Lfunc_end0-f
 	.cfi_endproc
                                         # -- End function
 	.globl	_main                   # -- Begin function _main
@@ -21,119 +23,20 @@ s.func:                                 # @s.func
 	.type	_main,@function
 _main:                                  # @_main
 .Lfunc_begin1:
-	.loc	1 20 0                  # program.ke:20:0
+	.loc	1 6 0                   # program.ke:6:0
 	.cfi_startproc
 # %bb.0:                                # %entry
-	pushq	%rbp
-	.cfi_def_cfa_offset 16
-	.cfi_offset %rbp, -16
-	movq	%rsp, %rbp
-	.cfi_def_cfa_register %rbp
+	subq	$24, %rsp
+	.cfi_def_cfa_offset 32
 .Ltmp1:
-	pushq	%r15
-	pushq	%r14
-	pushq	%rbx
-	subq	$120, %rsp
-	.cfi_offset %rbx, -40
-	.cfi_offset %r14, -32
-	.cfi_offset %r15, -24
-	.loc	1 20 0 prologue_end     # program.ke:20:0
-	movl	$10, -80(%rbp)
-	movl	-80(%rbp), %eax
-	movl	%eax, -72(%rbp)
-	movl	-72(%rbp), %eax
-	movl	$0, -112(%rbp)
-	movl	%eax, -64(%rbp)
-	leaq	-64(%rbp), %rax
-	movq	%rax, -104(%rbp)
-	movslq	-112(%rbp), %rdi
-	movq	vtables(,%rdi,8), %rax
-	movq	-104(%rbp), %rsi
-                                        # kill: def $edi killed $edi killed $rdi
-	movl	$2, %edx
-	callq	*%rax
-	movb	$-123, -29(%rbp)
-	movb	$-90, -30(%rbp)
-	movb	$-97, -31(%rbp)
-	movb	$-16, -32(%rbp)
-	movb	$32, -33(%rbp)
-	movb	$108, -34(%rbp)
-	movb	$101, -35(%rbp)
-	movb	$114, -36(%rbp)
-	movb	$116, -37(%rbp)
-	movb	$115, -38(%rbp)
-	movb	$101, -39(%rbp)
-	movb	$75, -40(%rbp)
-	movb	-40(%rbp), %sil
-	movb	-39(%rbp), %dil
-	movb	-38(%rbp), %r8b
-	movb	-37(%rbp), %r9b
-	movb	-36(%rbp), %r10b
-	movb	-35(%rbp), %r11b
-	movb	-34(%rbp), %r14b
-	movb	-33(%rbp), %r15b
-	movb	-32(%rbp), %dl
-	movb	-31(%rbp), %bl
-	movb	-30(%rbp), %al
-	movb	-29(%rbp), %cl
-	movl	$1, -144(%rbp)
-	movb	%cl, -45(%rbp)
-	movb	%al, -46(%rbp)
-	movb	%bl, -47(%rbp)
-	movb	%dl, -48(%rbp)
-	movb	%r15b, -49(%rbp)
-	movb	%r14b, -50(%rbp)
-	movb	%r11b, -51(%rbp)
-	movb	%r10b, -52(%rbp)
-	movb	%r9b, -53(%rbp)
-	movb	%r8b, -54(%rbp)
-	movb	%dil, -55(%rbp)
-	movb	%sil, -56(%rbp)
-	leaq	-56(%rbp), %rax
-	movq	%rax, -136(%rbp)
-	leaq	-144(%rbp), %rax
-	movq	%rax, -96(%rbp)
-	movq	-96(%rbp), %rax
-	movl	(%rax), %eax
-	movl	$1, -128(%rbp)
-	movl	$1, -84(%rbp)
-	leaq	-84(%rbp), %rcx
-	movq	%rcx, -120(%rbp)
-	cmpl	-128(%rbp), %eax
-	jne	.LBB1_2
-# %bb.1:                                # %pattern_0
-	movl	$123, %eax
-	jmp	.LBB1_5
-.LBB1_2:                                # %pattern_check_1
-	movq	%rsp, %rcx
-	movq	%rcx, %rdx
-	addq	$-16, %rdx
-	movq	%rdx, %rsp
-	movl	$0, -16(%rcx)
-	movq	%rsp, %rcx
-	addq	$-16, %rcx
-	movq	%rcx, %rsp
-	movl	$0, (%rcx)
-	movq	%rcx, 8(%rdx)
-	cmpl	(%rdx), %eax
-	jne	.LBB1_4
-# %bb.3:                                # %pattern_1
-	movl	$456, %eax              # imm = 0x1C8
-	jmp	.LBB1_5
-.LBB1_4:                                # %default
-	movl	$789, %eax              # imm = 0x315
-	jmp	.LBB1_5
-.LBB1_5:                                # %end
-	movq	%rsp, %rcx
-	addq	$-16, %rcx
-	movq	%rcx, %rsp
-	movl	%eax, (%rcx)
-	leaq	-24(%rbp), %rsp
-	popq	%rbx
-	popq	%r14
-	popq	%r15
-	popq	%rbp
-	.cfi_def_cfa %rsp, 8
+	.loc	1 6 0 prologue_end      # program.ke:6:0
+	movl	$10, 16(%rsp)
+	movl	16(%rsp), %eax
+	movl	%eax, 8(%rsp)
+	leaq	8(%rsp), %rdi
+	callq	f
+	addq	$24, %rsp
+	.cfi_def_cfa_offset 8
 	retq
 .Ltmp2:
 .Lfunc_end1:
@@ -160,14 +63,6 @@ main:                                   # @main
 	.size	main, .Lfunc_end2-main
 	.cfi_endproc
                                         # -- End function
-	.type	vtables,@object         # @vtables
-	.section	.rodata,"a",@progbits
-	.globl	vtables
-	.p2align	3
-vtables:
-	.quad	s.func
-	.size	vtables, 8
-
 	.section	.debug_str,"MS",@progbits,1
 .Linfo_string0:
 	.asciz	"Kestrel"               # string offset=0
@@ -176,13 +71,13 @@ vtables:
 .Linfo_string2:
 	.asciz	"."                     # string offset=19
 .Linfo_string3:
-	.asciz	"s.func"                # string offset=21
+	.asciz	"f"                     # string offset=21
 .Linfo_string4:
-	.asciz	"void"                  # string offset=28
+	.asciz	"void"                  # string offset=23
 .Linfo_string5:
-	.asciz	"_main"                 # string offset=33
+	.asciz	"_main"                 # string offset=28
 .Linfo_string6:
-	.asciz	"main"                  # string offset=39
+	.asciz	"main"                  # string offset=34
 	.section	.debug_abbrev,"",@progbits
 	.byte	1                       # Abbreviation Code
 	.byte	17                      # DW_TAG_compile_unit
@@ -264,7 +159,7 @@ vtables:
 	.long	.Linfo_string3          # DW_AT_linkage_name
 	.long	.Linfo_string3          # DW_AT_name
 	.byte	1                       # DW_AT_decl_file
-	.byte	10                      # DW_AT_decl_line
+	.byte	3                       # DW_AT_decl_line
 	.long	102                     # DW_AT_type
 	.byte	1                       # DW_AT_accessibility
                                         # DW_ACCESS_public
@@ -272,11 +167,11 @@ vtables:
 	.quad	.Lfunc_begin1           # DW_AT_low_pc
 	.long	.Lfunc_end1-.Lfunc_begin1 # DW_AT_high_pc
 	.byte	1                       # DW_AT_frame_base
-	.byte	86
+	.byte	87
 	.long	.Linfo_string5          # DW_AT_linkage_name
 	.long	.Linfo_string6          # DW_AT_name
 	.byte	1                       # DW_AT_decl_file
-	.byte	20                      # DW_AT_decl_line
+	.byte	6                       # DW_AT_decl_line
 	.long	102                     # DW_AT_type
 	.byte	1                       # DW_AT_accessibility
                                         # DW_ACCESS_public
@@ -295,7 +190,7 @@ vtables:
 	.long	72                      # DIE offset
 	.asciz	"main"                  # External Name
 	.long	42                      # DIE offset
-	.asciz	"s.func"                # External Name
+	.asciz	"f"                     # External Name
 	.long	0                       # End Mark
 .LpubNames_end0:
 	.section	.debug_pubtypes,"",@progbits

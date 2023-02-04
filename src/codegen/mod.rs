@@ -337,7 +337,7 @@ impl<'ctx> CodeGen<'ctx> {
             for tp in tps {
                 if tp.is_some() {
                     if  !tp.as_ref().unwrap().isarr && !tp.as_ref().unwrap().isfn && !tp.as_ref().unwrap().isdyn &&
-                        !tp.as_ref().unwrap().isgenum &&
+                        !tp.as_ref().unwrap().isgenum && !tp.as_ref().unwrap().isref &&
                         generics.contains(&tp.as_ref().unwrap().data.as_ref().unwrap()) {
                         newtypes.push(Self::get_llvm_from_type(ctx, namespaces, types, datatypes, traits, info, generic_tps.get(generics.iter().position(|x| x == tp.as_ref().unwrap().data.as_ref().unwrap()).unwrap()).unwrap(), node).0);
                         mutabilities.push(types::DataMutablility::Mutable);
@@ -355,6 +355,35 @@ impl<'ctx> CodeGen<'ctx> {
 
             tp.types = newtypes;
             tp.mutability = mutabilities;
+
+            return (tp.clone(), anytp);
+        }
+        else if arg.isref {
+            let (mut tp, anytp_raw) = Self::get_llvm_from_type(ctx, namespaces, types, datatypes, traits, info, &arg.basetp.as_ref().unwrap(), node);
+            tp.is_ref = true;
+            tp.mutability = vec![arg.refmutability.unwrap()];
+
+            let anytp: inkwell::types::AnyTypeEnum = if anytp_raw.is_int_type() {
+                inkwell::types::AnyTypeEnum::PointerType(anytp_raw.into_int_type().ptr_type(inkwell::AddressSpace::from(0u16)))
+            }
+            else if anytp_raw.is_float_type() {
+                inkwell::types::AnyTypeEnum::PointerType(anytp_raw.into_float_type().ptr_type(inkwell::AddressSpace::from(0u16)))
+            }
+            else if anytp_raw.is_function_type() {
+                inkwell::types::AnyTypeEnum::PointerType(anytp_raw.into_function_type().ptr_type(inkwell::AddressSpace::from(0u16)))
+            }
+            else if anytp_raw.is_void_type() {
+                anytp_raw
+            }
+            else if anytp_raw.is_struct_type() {
+                inkwell::types::AnyTypeEnum::PointerType(anytp_raw.into_struct_type().ptr_type(inkwell::AddressSpace::from(0u16)))
+            }
+            else if anytp_raw.is_array_type() {
+                inkwell::types::AnyTypeEnum::PointerType(anytp_raw.into_array_type().ptr_type(inkwell::AddressSpace::from(0u16)))
+            }
+            else {
+                panic!("Unexpected type");
+            };
 
             return (tp.clone(), anytp);
         }
@@ -404,6 +433,9 @@ impl<'ctx> CodeGen<'ctx> {
         else if tp.is_array_type() {
             return Some(inkwell::types::BasicMetadataTypeEnum::ArrayType(tp.into_array_type()));
         }
+        else if tp.is_pointer_type() {
+            return Some(inkwell::types::BasicMetadataTypeEnum::PointerType(tp.into_pointer_type()));
+        }
         else {
             panic!("Unexpected type");
         }
@@ -427,6 +459,9 @@ impl<'ctx> CodeGen<'ctx> {
         }
         else if tp.is_array_type() {
             return Some(inkwell::types::BasicTypeEnum::ArrayType(tp.into_array_type()));
+        }
+        else if tp.is_pointer_type() {
+            return Some(inkwell::types::BasicTypeEnum::PointerType(tp.into_pointer_type()));
         }
         else {
             panic!("Unexpected type");
@@ -552,7 +587,7 @@ impl<'ctx> CodeGen<'ctx> {
             if ptr.is_some() {
                 self.builder.build_store(ptr.unwrap(), data.data.unwrap());
 
-                self.namespaces.locals.last_mut().unwrap().insert(name.to_owned(), (ptr, data.tp.clone(), types::DataMutablility::Mutable, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
+                self.namespaces.locals.last_mut().unwrap().insert(name.to_owned(), (ptr, data.tp.clone(), types::DataMutablility::Mutable, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
             }
         }
 
@@ -617,7 +652,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.builder.build_store(itmptr, self.builder.build_pointer_cast(structptr, itmptr.get_type().get_element_type().into_pointer_type(), "st_bitcast"));
 
 
-                self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), dyntp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
+                self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), dyntp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
             }
             else { 
                 let right: types::Data = self.compile_expr(&node.data.letn.as_ref().unwrap().expr.as_ref().unwrap(), BorrowOptions{ give_ownership: true, get_ptr: false, mut_borrow: false}, false, false);
@@ -642,10 +677,10 @@ impl<'ctx> CodeGen<'ctx> {
                         
                     self.builder.build_store(ptr, right.data.unwrap());
 
-                    self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), right.tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
+                    self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), right.tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
                 }
                 else {
-                    self.namespaces.locals.last_mut().unwrap().insert(name, (None, right.tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));            
+                    self.namespaces.locals.last_mut().unwrap().insert(name, (None, right.tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));            
                 }
             }
         }
@@ -661,7 +696,7 @@ impl<'ctx> CodeGen<'ctx> {
 
                 let (dyntp, _) = Self::get_llvm_from_type(&self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
 
-                self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), dyntp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
+                self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), dyntp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
             }
             else { 
                 let (tp, inktp) = Self::get_llvm_from_type(&self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
@@ -678,10 +713,10 @@ impl<'ctx> CodeGen<'ctx> {
                         }
                     }
     
-                    self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Uninitialized));
+                    self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Uninitialized));
                 }
                 else {
-                    self.namespaces.locals.last_mut().unwrap().insert(name, (None, tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Uninitialized));            
+                    self.namespaces.locals.last_mut().unwrap().insert(name, (None, tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Uninitialized));            
                 }
             }
         }
@@ -697,7 +732,7 @@ impl<'ctx> CodeGen<'ctx> {
     fn build_loadname(&mut self, node: &parser::Node, borrow_options: BorrowOptions, get_enum_id: bool) -> types::Data<'ctx> {
         let name: String = node.data.identifier.as_ref().unwrap().name.clone();
 
-        let (ptr, tp) = match self.get_variable(&name).0 {
+        let (ptr, mut tp) = match self.get_variable(&name).0 {
             None => {
                 let res: Option<(inkwell::values::PointerValue, types::DataType, ForwardDeclarationType)> = self.get_function(&name);
                 if res==None {
@@ -712,7 +747,7 @@ impl<'ctx> CodeGen<'ctx> {
                 return data;
             }
             Some(v) => {
-                if !self.get_variable(&name).0.unwrap().3.owned {
+                if !self.get_variable(&name).0.unwrap().3.owned && !self.get_variable(&name).0.unwrap().1.is_ref {
                     let transferred: String = String::from(format!("'{}' was transferred here.", name));
                     let fmt: String = format!("Name '{}' is not owned.", name);
                     errors::raise_error_multi(errors::ErrorType::NameNotOwned, vec![transferred, fmt], vec![&self.get_variable(&name).0.unwrap().3.transferred.as_ref().unwrap(), &node.pos], self.info);
@@ -731,7 +766,13 @@ impl<'ctx> CodeGen<'ctx> {
         if borrow_options.give_ownership {
             let var = self.get_variable(&name);
             let mut locals = self.namespaces.locals.last().unwrap().clone();
-            locals.insert(name.clone(), (var.0.unwrap().0.clone(), var.0.unwrap().1.clone(), var.0.unwrap().2.clone(), types::DataOwnership {owned: false, transferred: Some(node.pos.clone())}, var.0.unwrap().4.clone(), var.0.unwrap().5.clone()));
+            if  borrow_options.mut_borrow &&
+                locals.get(&name).unwrap().3.mut_borrowed {
+                let transferred: String = String::from(format!("'{}' was transferred here.", name));
+                let fmt: String = format!("Name '{}' cannot be mutable borrowed more than once.", name);
+                errors::raise_error_multi(errors::ErrorType::NameMutableBorrowed, vec![transferred, fmt], vec![&self.get_variable(&name).0.unwrap().3.transferred.as_ref().unwrap(), &node.pos], self.info);
+            }
+            locals.insert(name.clone(), (var.0.unwrap().0.clone(), var.0.unwrap().1.clone(), var.0.unwrap().2.clone(), types::DataOwnership {owned: false, transferred: Some(node.pos.clone()), mut_borrowed: borrow_options.mut_borrow}, var.0.unwrap().4.clone(), var.0.unwrap().5.clone()));
 
             self.namespaces.locals.pop();
             self.namespaces.locals.push(locals);
@@ -751,7 +792,10 @@ impl<'ctx> CodeGen<'ctx> {
         }
 
         if ptr.is_some() {
-            if borrow_options.get_ptr {
+            if borrow_options.get_ptr || borrow_options.mut_borrow || !borrow_options.give_ownership {
+                if borrow_options.mut_borrow || !borrow_options.give_ownership {
+                    tp.is_ref = true;
+                }
                 let data: types::Data = types::Data {
                     data: Some(inkwell::values::BasicValueEnum::PointerValue(ptr.unwrap())),
                     tp,
@@ -833,7 +877,6 @@ impl<'ctx> CodeGen<'ctx> {
                 datatypes.push(data);
                 mutability.push(arg.mutability);
 
-
                 let res: Option<inkwell::types::BasicMetadataTypeEnum> = Self::get_basicmeta_from_any(tp);
 
                 if res.is_some() {
@@ -846,6 +889,7 @@ impl<'ctx> CodeGen<'ctx> {
                 mutability.push(tp.1.mutability);
 
                 datatypes.push(tp.0.clone());
+
                 let any = Self::get_anytp_from_tp(self.context, &self.inkwell_types, tp.0.clone());
                 if any.is_none() {
                     unimplemented!();
@@ -1061,14 +1105,20 @@ impl<'ctx> CodeGen<'ctx> {
             }
 
             let ptr: inkwell::values::PointerValue;
-        if argv.is_some() {
-                ptr = self.builder.build_alloca(argv.unwrap().get_type(), name.as_str());
-            
-                self.builder.build_store(ptr, argv.unwrap());
-                self.namespaces.locals.last_mut().unwrap().insert(name.to_string(), (Some(ptr), tp.clone(), mutability.get(idx_mut).unwrap().clone(), types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
+            if argv.is_some() {
+                if tp.is_ref && tp.mutability.last().unwrap() == &types::DataMutablility::Mutable{
+                    self.namespaces.locals.last_mut().unwrap().insert(name.to_string(), (Some(argv.unwrap().into_pointer_value()), tp.clone(), mutability.get(idx_mut).unwrap().clone(), types::DataOwnership {owned: false, transferred: Some(node.pos.clone()), mut_borrowed: tp.mutability.last().unwrap() == &types::DataMutablility::Mutable}, node.pos.clone(), InitializationStatus::Initialized));
+                }
+                else {
+                    ptr = self.builder.build_alloca(argv.unwrap().get_type(), name.as_str());
+                
+                    self.builder.build_store(ptr, argv.unwrap());
+
+                    self.namespaces.locals.last_mut().unwrap().insert(name.to_string(), (Some(ptr), tp.clone(), mutability.get(idx_mut).unwrap().clone(), types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
+                }
             }
             else {
-                self.namespaces.locals.last_mut().unwrap().insert(name.to_string(), (None, tp.clone(), types::DataMutablility::Immutable, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
+                self.namespaces.locals.last_mut().unwrap().insert(name.to_string(), (None, tp.clone(), types::DataMutablility::Immutable, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
             }
             idx_mut += 1;
         }
@@ -1180,14 +1230,14 @@ impl<'ctx> CodeGen<'ctx> {
                 
                 let idx: usize = self.get_variable(&name).1;
 
-                self.namespaces.locals.get_mut(idx).unwrap().insert(name, (Some(ptr), dyntp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
+                self.namespaces.locals.get_mut(idx).unwrap().insert(name, (Some(ptr), dyntp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
             }
             else {
                 self.builder.build_store(ptr, right.data.unwrap());
 
                 let idx: usize = self.get_variable(&name).1;
                 
-                self.namespaces.locals.get_mut(idx).unwrap().insert(name, (Some(ptr), right.tp.clone(), types::DataMutablility::Mutable, types::DataOwnership {owned: true, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
+                self.namespaces.locals.get_mut(idx).unwrap().insert(name, (Some(ptr), right.tp.clone(), types::DataMutablility::Mutable, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
             }
         }
 
@@ -1329,7 +1379,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         for arg in &node.data.call.as_ref().unwrap().args{
             let v: types::Data = self.compile_expr(arg, BorrowOptions{ give_ownership: true, get_ptr: false, mut_borrow: false}, false, false); 
-            if v.tp.tp != types::BasicDataType::Struct {
+            if v.tp.tp != types::BasicDataType::Struct || v.tp.is_ref {
                 args.push(v);
             }
             else {
@@ -1351,7 +1401,8 @@ impl<'ctx> CodeGen<'ctx> {
                 if  !arg.isarr &&
                     !arg.isfn &&
                     !arg.isdyn &&
-                    !arg.isgenum && !self.datatypes.contains_key(&arg.data.as_ref().unwrap().clone()) {
+                    !arg.isgenum &&
+                    !arg.isref && !self.datatypes.contains_key(&arg.data.as_ref().unwrap().clone()) {
                     if !templates.contains_key(&arg.data.as_ref().unwrap().clone()) {
                         if !func.data.func.as_ref().unwrap().template_types.contains(&arg.data.as_ref().unwrap().clone()) {
                             let fmt: String = format!("Unknown type '{}'.", arg.data.as_ref().unwrap().clone());
@@ -1372,6 +1423,7 @@ impl<'ctx> CodeGen<'ctx> {
                 !rettp.isfn &&
                 !rettp.isdyn &&
                 !rettp.isgenum &&
+                !rettp.isref &&
                 !self.datatypes.contains_key(&rettp.data.as_ref().unwrap().clone()) {
                 if !templates.contains_key(&rettp.data.as_ref().unwrap().clone()) {
                     let fmt: String = format!("Unknown type '{}'.", rettp.data.as_ref().unwrap().clone());
@@ -1420,7 +1472,8 @@ impl<'ctx> CodeGen<'ctx> {
                     if  !arg.isarr &&
                         !arg.isfn &&
                         !arg.isdyn &&
-                        !arg.isgenum && !self.datatypes.contains_key(&arg.data.as_ref().unwrap().clone()) && idx > 0 {
+                        !arg.isgenum &&
+                        !arg.isref && !self.datatypes.contains_key(&arg.data.as_ref().unwrap().clone()) && idx > 0 {
                         if !templates.contains_key(&arg.data.as_ref().unwrap().clone()) {
                             if !func.data.func.as_ref().unwrap().template_types.contains(&arg.data.as_ref().unwrap().clone()) {
                                 let fmt: String = format!("Unknown type '{}'.", arg.data.as_ref().unwrap().clone());
@@ -1434,6 +1487,7 @@ impl<'ctx> CodeGen<'ctx> {
                             !arg.isfn &&
                             !arg.isdyn &&
                             !arg.isgenum &&
+                            !arg.isref &&
                             idx == 0 &&
                             !self.datatypes.contains_key(&arg.data.as_ref().unwrap().clone()) && instance_meth != TemplateFunctionInstance::Instance {
                         if !templates.contains_key(&arg.data.as_ref().unwrap().clone()) {
@@ -1461,6 +1515,7 @@ impl<'ctx> CodeGen<'ctx> {
                     !rettp.isfn &&
                     !rettp.isdyn &&
                     !rettp.isgenum &&
+                    !rettp.isref &&
                     !self.datatypes.contains_key(&rettp.data.as_ref().unwrap().clone()) {
                     if !templates.contains_key(&rettp.data.as_ref().unwrap().clone()) {
                         let fmt: String = format!("Unknown type '{}'.", rettp.data.as_ref().unwrap().clone());
@@ -1618,6 +1673,10 @@ impl<'ctx> CodeGen<'ctx> {
         return self.compile_expr(&node.data.unary.as_ref().unwrap().right, BorrowOptions{ give_ownership: false, get_ptr: false, mut_borrow: false}, false, false);
     }
 
+    fn build_mutref(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        return self.compile_expr(&node.data.unary.as_ref().unwrap().right, BorrowOptions{ give_ownership: false, get_ptr: false, mut_borrow: true}, false, false);
+    }
+
     fn build_unary(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         let unary: &parser::nodes::UnaryNode = node.data.unary.as_ref().unwrap();
 
@@ -1693,6 +1752,10 @@ impl<'ctx> CodeGen<'ctx> {
             }
             names.push(member.clone());
             types.push(Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, node.data.st.as_ref().unwrap().members.get(member).unwrap(), node));
+            if types.last().unwrap().0.is_ref {
+                let fmt: String = format!("Structs may not contain references.");
+                errors::raise_error(&fmt, errors::ErrorType::ReferenceMemberStruct, &node.pos, self.info);
+            }
             simpletypes.push(Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, node.data.st.as_ref().unwrap().members.get(member).unwrap(), node).0);
             mutabilitites.push(node.data.st.as_ref().unwrap().members.get(member).unwrap().mutability);
             idxmapping.insert(member.clone(), idx);
@@ -1772,6 +1835,10 @@ impl<'ctx> CodeGen<'ctx> {
     }
 
     fn build_attrload(&mut self, node: &parser::Node, borrow_options: BorrowOptions) -> types::Data<'ctx> {
+        if !borrow_options.give_ownership {
+            let fmt: String = format!("Cannot take reference of attribute.");
+            errors::raise_error(&fmt, errors::ErrorType::CannotTakeReferenceOfAttr, &node.pos, self.info);
+        }
         let base: types::Data = self.compile_expr(&node.data.attr.as_ref().unwrap().name, BorrowOptions{ give_ownership: false, get_ptr: true, mut_borrow: false}, false, false);
 
         if base.tp.tp != types::BasicDataType::Struct {
@@ -1838,6 +1905,11 @@ impl<'ctx> CodeGen<'ctx> {
         if !base.tp.names.as_ref().unwrap().contains(&attr) {
             let fmt: String = format!("Struct '{}' has no attribute '{}'.", base.tp, attr);
             errors::raise_error(&fmt, errors::ErrorType::StructAttrNotFound, &node.pos, self.info);
+        }
+
+        if base.tp.is_ref && base.tp.mutability.first().unwrap() == &types::DataMutablility::Immutable{
+            let fmt: String = format!("Cannot assign attribute to immutable reference");
+            errors::raise_error(&fmt, errors::ErrorType::ImmutableRefAttr, &node.pos, self.info);
         }
 
         let mut idx: u32 = 0;
@@ -2126,6 +2198,7 @@ impl<'ctx> CodeGen<'ctx> {
                             !arg.isfn &&
                             !arg.isdyn &&
                             !arg.isgenum &&
+                            !arg.isref &&
                             !self.datatypes.contains_key(arg.data.as_ref().unwrap()) &&
                             sig.template_types.contains(arg.data.as_ref().unwrap()) &&
                             arg.data.as_ref().unwrap() == template {
@@ -2172,6 +2245,7 @@ impl<'ctx> CodeGen<'ctx> {
                     !sig.args.rettp.first().unwrap().isfn &&
                     !sig.args.rettp.first().unwrap().isdyn &&
                     !sig.args.rettp.first().unwrap().isgenum &&
+                    !sig.args.rettp.first().unwrap().isref &&
                     !self.datatypes.contains_key(sig.args.rettp.first().unwrap().data.as_ref().unwrap()) &&
                     sig.template_types.contains(sig.args.rettp.first().unwrap().data.as_ref().unwrap()) {
                     let tp: types::DataType = functp.types.get(template_indices.get(sig.args.rettp.first().unwrap().data.as_ref().unwrap()).unwrap().get(0).unwrap().to_owned()).unwrap().to_owned();
@@ -2915,7 +2989,7 @@ impl<'ctx> CodeGen<'ctx> {
                 //Store optional data
                 let dtp: types::DataType = pattern_v.tp.types.get(pattern_v.tp.names.as_ref().unwrap().iter().position(|x| x == &pattern.as_ref().unwrap().data.attr.as_ref().unwrap().attr).unwrap() as usize).unwrap().clone();
                 if dtp.tp != types::BasicDataType::Void && name.is_some(){
-                    self.namespaces.locals.last_mut().unwrap().insert(name.as_ref().unwrap().to_owned(), (Some(data_ptr), dtp, types::DataMutablility::Immutable, types::DataOwnership {owned: false, transferred: None}, node.pos.clone(), InitializationStatus::Initialized));
+                    self.namespaces.locals.last_mut().unwrap().insert(name.as_ref().unwrap().to_owned(), (Some(data_ptr), dtp, types::DataMutablility::Immutable, types::DataOwnership {owned: false, transferred: None, mut_borrowed: true,}, node.pos.clone(), InitializationStatus::Initialized));
                 }
 
                 let data: types::Data = self.compile(block, true, false);
@@ -3119,7 +3193,7 @@ impl<'ctx> CodeGen<'ctx> {
         for tp in tps {
             if tp.is_some() {
                 if  !tp.as_ref().unwrap().isarr && !tp.as_ref().unwrap().isfn && !tp.as_ref().unwrap().isdyn &&
-                    !tp.as_ref().unwrap().isgenum &&
+                    !tp.as_ref().unwrap().isgenum && !tp.as_ref().unwrap().isref &&
                     generics.contains(&tp.as_ref().unwrap().data.as_ref().unwrap()) {
                     types.push(Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, generic_tps.get(generics.iter().position(|x| x == tp.as_ref().unwrap().data.as_ref().unwrap()).unwrap()).unwrap(), node).0);
                     mutabilities.push(types::DataMutablility::Mutable);
@@ -3462,6 +3536,9 @@ impl<'ctx> CodeGen<'ctx> {
             }
             parser::NodeType::GENERICENUM => {
                 self.build_genericenum(node, get_enum_id)
+            }
+            parser::NodeType::MUTREF => {
+                self.build_mutref(node)
             }
         }
     }

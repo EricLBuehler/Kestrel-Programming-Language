@@ -145,13 +145,13 @@ fn advance(lexer: &mut Lexer) {
         lexer.current = b'\0';
         return;
     }
-    
-    lexer.current = lexer.data[lexer.idx];
 
-    if lexer.current == b'\n' || lexer.current == b'\r' {
+    if lexer.current == b'\n' || lexer.current == b'\r' || lexer.current == b';' {
         lexer.line+=1;
         lexer.col=0;
     }
+    
+    lexer.current = lexer.data[lexer.idx];
 }
 
 #[allow(dead_code)]
@@ -161,7 +161,7 @@ pub fn print_tokens(len: usize, tokens: &Vec<Token>) {
     println!("------------------------");
     let mut idx: usize = 1;
     for tok in tokens{
-        println!("{} | {}", idx, tok);
+        println!("{} | {} {}", idx, tok, tok.line);
         idx+=1;
     }
     println!("========================");
@@ -352,8 +352,8 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
                 line: lexer.line,
                 startcol: lexer.col,
                 endcol: lexer.col+1,
-            });
-            advance(lexer);
+            }); 
+            advance(lexer); 
             lexer.col = 0;
         }
         else if cur == '&' {

@@ -127,7 +127,7 @@ impl<'a> PartialEq for DataType<'a> {
             return false;
         }
 
-        if self.tp==BasicDataType::Func && self.tp==BasicDataType::Func {
+        if self.tp==BasicDataType::Func && other.tp==BasicDataType::Func {
             if  self.types != other.types || 
                 self.rettp != other.rettp ||
                 self.mutability != other.mutability {
@@ -143,7 +143,7 @@ impl<'a> PartialEq for DataType<'a> {
             return true;
         }
 
-        if self.tp==BasicDataType::Struct && self.tp==BasicDataType::Struct {
+        if self.tp==BasicDataType::Struct && other.tp==BasicDataType::Struct {
             if  self.types != other.types ||
                 self.names.as_ref().unwrap() != other.names.as_ref().unwrap() ||
                 self.name != other.name {
@@ -151,9 +151,16 @@ impl<'a> PartialEq for DataType<'a> {
             }
         }
 
-        if self.tp==BasicDataType::Enum && self.tp==BasicDataType::Enum {
+        if self.tp==BasicDataType::Enum && other.tp==BasicDataType::Enum {
             if  self.types != other.types ||
                 self.name != other.name {
+                return false;
+            }
+        }
+
+        if self.is_ref == other.is_ref {
+            if  self.name != other.name &&
+                self.mutability != other.mutability {
                 return false;
             }
         }
@@ -172,7 +179,7 @@ impl<'a> PartialEq for DataType<'a> {
             return false;
         }
 
-        if self.tp==BasicDataType::Func && self.tp==BasicDataType::Func {
+        if self.tp==BasicDataType::Func && other.tp==BasicDataType::Func {
             if  self.types == other.types && 
                 self.rettp == other.rettp &&
                 self.mutability == other.mutability {
@@ -186,7 +193,7 @@ impl<'a> PartialEq for DataType<'a> {
             return false;
         }
 
-        if self.tp==BasicDataType::Struct && self.tp==BasicDataType::Struct {
+        if self.tp==BasicDataType::Struct && other.tp==BasicDataType::Struct {
             if  self.types == other.types &&
                 self.names.as_ref().unwrap() == other.names.as_ref().unwrap() &&
                 self.name == other.name {
@@ -194,9 +201,16 @@ impl<'a> PartialEq for DataType<'a> {
             }
         }
 
-        if self.tp==BasicDataType::Enum && self.tp==BasicDataType::Enum {
+        if self.tp==BasicDataType::Enum && other.tp==BasicDataType::Enum {
             if  self.types == other.types &&
                 self.name == other.name {
+                return false;
+            }
+        }
+
+        if self.is_ref == other.is_ref {
+            if  self.name == other.name &&
+                self.mutability == other.mutability {
                 return false;
             }
         }
@@ -298,6 +312,7 @@ pub enum DataMutablility{
 pub struct DataOwnership{
     pub owned: bool,
     pub transferred: Option<crate::parser::Position>,
+    pub mut_borrowed: bool,
 }
 
 pub fn new_datatype<'a>(tp: BasicDataType, name: String, names: Option<Vec<String>>, types: Vec<DataType<'a>>, mutability: Vec<DataMutablility>, rettp_opt: Option<DataType<'a>>, is_ref: bool, arrtp: Option<inkwell::types::ArrayType<'a>>, methods: std::collections::HashMap<String, Method<'a>>) -> DataType<'a> {

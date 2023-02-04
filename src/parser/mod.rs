@@ -67,6 +67,7 @@ pub enum NodeType {
     IS,
     MATCH,
     GENERICENUM,
+    MUTREF,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -89,11 +90,13 @@ pub struct Type {
     pub isarr: bool,
     pub isdyn: bool,
     pub isgenum: bool,
+    pub isref: bool,
     pub basetp: Option<Box<Type>>,
     pub arrlen: Option<Vec<String>>,
     pub data: Option<String>,
     pub args: Option<Args>,
     pub mutability: types::DataMutablility,
+    pub refmutability: Option<types::DataMutablility>,
     pub generic_tps: Option<Vec<Type>>,
 }
 #[derive(Clone, Debug, PartialEq)]
@@ -128,7 +131,8 @@ impl std::fmt::Display for Node {
             NodeType::CHAR => write!(f, "{}", self.data.num.as_ref().unwrap() ),
             NodeType::AS => write!(f, "{}", self.data.to.as_ref().unwrap() ),
             NodeType::UNARY |
-            NodeType::REF => write!(f, "{}", self.data.unary.as_ref().unwrap() ),
+            NodeType::REF |
+            NodeType::MUTREF => write!(f, "{}", self.data.unary.as_ref().unwrap() ),
             NodeType::STRUCT => write!(f, "{}", self.data.st.as_ref().unwrap() ),
             NodeType::INITSTRUCT => write!(f, "{}", self.data.initst.as_ref().unwrap() ),
             NodeType::ATTR |
@@ -1637,6 +1641,8 @@ impl<'a> Parser<'a> {
 
         self.advance();
 
+        let ismutref: bool = if self.current_is_type(TokenType::KEYWORD) && self.current.data == "mut" { self.advance(); true } else { false };
+
         let refn: nodes::UnaryNode = nodes::UnaryNode{
             op: nodes::UnaryOpType::REF,
             right: self.expr(Precedence::Lowest),
@@ -1672,7 +1678,7 @@ impl<'a> Parser<'a> {
 
         pos.endcol = nodedat.unary.as_ref().unwrap().right.pos.endcol;
     
-        let n: Node = self.create_node(NodeType::REF, nodedat, pos);
+        let n: Node = self.create_node(if ismutref { NodeType::MUTREF } else { NodeType::REF}, nodedat, pos);
     
         return n;
     }
@@ -2074,11 +2080,35 @@ impl<'a> Parser<'a> {
                 isarr: false,
                 isdyn: true,
                 isgenum: false,
+                isref: false,
                 basetp: None,
                 arrlen: None,
                 data: Some(name),
                 args: None,
                 mutability,
+                refmutability: None,
+                generic_tps: None,
+            });
+        }
+        else if self.current_is_type(TokenType::AMPERSAND) && mutability == DataMutablility::Immutable {
+            self.advance();
+            let mutability: DataMutablility = if self.current_is_type(TokenType::KEYWORD) && self.current.data == "mut" { self.advance(); DataMutablility::Mutable } else { DataMutablility::Immutable };
+            
+            let tp: Type = self.parse_type(DataMutablility::Immutable).1;
+            let end: usize = self.current.endcol;
+            
+            return (end, Type {
+                isfn: false,
+                isarr: false,
+                isdyn: false,
+                isgenum: false,
+                isref: true,
+                basetp: Some(Box::new(tp)),
+                arrlen: None,
+                data: None,
+                args: None,
+                mutability: DataMutablility::Immutable,
+                refmutability: Some(mutability),
                 generic_tps: None,
             });
         }
@@ -2133,11 +2163,13 @@ impl<'a> Parser<'a> {
                     isarr: false,
                     isdyn: false,
                     isgenum: false,
+                    isref: false,
                     basetp: None,
                     arrlen: None,
                     data: Some(String::from("void")),
                     args: None,
                     mutability: DataMutablility::Immutable,
+                    refmutability: None,
                     generic_tps: None,
                 });
             }
@@ -2147,11 +2179,13 @@ impl<'a> Parser<'a> {
                 isarr: false,
                 isdyn: false,
                 isgenum: false,
+                isref: false,
                 basetp: None,
                 arrlen: None,
                 data: None,
                 args: Some(args_),
                 mutability,
+                refmutability: None,
                 generic_tps: None,
             });
         }
@@ -2161,11 +2195,13 @@ impl<'a> Parser<'a> {
                 isarr: false,
                 isdyn: false,
                 isgenum: false,
+                isref: false,
                 basetp: None,
                 arrlen: None,
                 data: Some(tp),
                 args: None,
                 mutability,
+                refmutability: None,
                 generic_tps: None,
             };
             
@@ -2194,11 +2230,13 @@ impl<'a> Parser<'a> {
                 isarr: true,
                 isdyn: false,
                 isgenum: false,
+                isref: false,
                 basetp: Some(Box::new(basetp)),
                 arrlen: Some(len),
                 data: None,
                 args: None,
                 mutability,
+                refmutability: None,
                 generic_tps: None,
             });
         }
@@ -2208,11 +2246,13 @@ impl<'a> Parser<'a> {
                 isarr: false,
                 isdyn: false,
                 isgenum: false,
+                isref: false,
                 basetp: None,
                 arrlen: None,
                 data: Some(tp),
                 args: None,
                 mutability,
+                refmutability: None,
                 generic_tps: None,
             };
             
@@ -2243,11 +2283,13 @@ impl<'a> Parser<'a> {
                 isarr: false,
                 isdyn: false,
                 isgenum: true,
+                isref: false,
                 basetp: Some(Box::new(basetp)),
                 arrlen: None,
                 data: None,
                 args: None,
                 mutability,
+                refmutability: None,
                 generic_tps: Some(tps),
             });
         }
@@ -2259,11 +2301,13 @@ impl<'a> Parser<'a> {
                 isarr: false,
                 isdyn: false,
                 isgenum: false,
+                isref: false,
                 basetp: None,
                 arrlen: None,
                 data: Some(tp),
                 args: None,
                 mutability,
+                refmutability: None,
                 generic_tps: None,
             });
         }
@@ -2275,7 +2319,7 @@ impl<'a> Parser<'a> {
             startcol: self.current.startcol,
             endcol: 0,
         };
-
+        
         self.advance();
 
         if !self.current_is_type(TokenType::IDENTIFIER) {
@@ -2403,11 +2447,13 @@ impl<'a> Parser<'a> {
                 isarr: false,
                 isdyn: false,
                 isgenum: false,
+                isref: false,
                 basetp: None,
                 arrlen: None,
                 data: Some(String::from("void")),
                 args: None,
                 mutability: DataMutablility::Immutable,
+                refmutability: None,
                 generic_tps: None,
             });
         }
@@ -3390,11 +3436,13 @@ impl<'a> Parser<'a> {
                     isarr: false,
                     isdyn: false,
                     isgenum: false,
+                    isref: false,
                     basetp: None,
                     arrlen: None,
                     data: Some(String::from("void")),
                     args: None,
                     mutability: DataMutablility::Immutable,
+                    refmutability: None,
                     generic_tps: None,
                 });
             }

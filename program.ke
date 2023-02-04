@@ -1,38 +1,10 @@
 struct s {
-    x: u32,
+    mut a: i32,
 }
-
-trait t {
-    x: u32
-    fn func(dyn t, i32)
+fn f(s: &mut s) {
+    s.a=100
 }
-
-impl t for s {
-    fn func(_a: dyn t, _b: i32) {
-
-    }
-}
-
-enum e<T> {
-    a,
-    b<T>,
-}
-
 fn main() {
-    let st = s{x = 10u32}
-    let x: dyn t = st
-    x.func(2)
-    let var: e<String> = e<String>::b<String::new("Kestrel 🦅")>
-
-    let v = match var {
-        e::b<v> => {
-            123
-        },
-        e::a => {
-            456
-        },
-        _ => {
-            789
-        }
-    }
+    let a = s{a=10} 
+    f(&mut a)
 }
