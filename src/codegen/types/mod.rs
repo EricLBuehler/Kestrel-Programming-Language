@@ -108,7 +108,7 @@ impl<'a> std::fmt::Display for DataType<'a> {
         if self.is_dyn {
             prefix = String::from("dyn ");
         }
-        else if self.is_ref {
+        else if self.is_ref && self.mutability.len() > 0 {
             if self.mutability.last().unwrap() == &DataMutablility::Mutable {
                 prefix = String::from("&mut ");
             }

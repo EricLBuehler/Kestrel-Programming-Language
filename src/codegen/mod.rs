@@ -2426,9 +2426,10 @@ impl<'ctx> CodeGen<'ctx> {
 
         let mut idx: usize = 0;
         for ifn in &node.data.ifn.as_ref().unwrap().ifs {
-            self.builder.position_at_end(enclosing_block);            
+            self.builder.position_at_end(enclosing_block);      
+            println!("A");      
             let right: types::Data = self.compile_expr(&ifn.0, BorrowOptions{ give_ownership: false, get_ptr: false, mut_borrow: false}, false, false);
-            
+            dbg!(&right.tp);
             let mut args: Vec<types::Data> = Vec::new();
 
             let tp: types::Type = Self::get_type_from_data(self.types.clone(), &right);
@@ -2924,7 +2925,7 @@ impl<'ctx> CodeGen<'ctx> {
 
     fn build_match(&mut self, node: &parser::Node) -> types::Data<'ctx> {
         let expr: types::Data = self.compile_expr(&node.data.matchn.as_ref().unwrap().expr, BorrowOptions{ give_ownership: true, get_ptr: false, mut_borrow: false}, true, false);
-
+        
         if expr.tp.tp != types::BasicDataType::Enum {
             let fmt: String = format!("Expected 'enum', got '{}'.", expr.tp);
             errors::raise_error(&fmt, errors::ErrorType::ExpectedEnum, &node.data.is.as_ref().unwrap().variant.pos, self.info);
@@ -2967,7 +2968,7 @@ impl<'ctx> CodeGen<'ctx> {
                 }
 
                 let pattern_v: types::Data = self.build_namespaceload(&pattern.as_ref().unwrap(), false, true, Some(expr.tp.clone()));
-
+                
                 let id_ptr: inkwell::values::PointerValue = self.builder.build_struct_gep(pattern_v.data.unwrap().into_pointer_value(), 0, "id_ptr").expect("GEP Error");
                 let data_ptr: inkwell::values::PointerValue = self.builder.build_struct_gep(pattern_v.data.unwrap().into_pointer_value(), 1, "data_ptr").expect("GEP Error");
                 
