@@ -39,6 +39,7 @@ pub struct DataType<'a> {
     pub arrtp: Option<inkwell::types::ArrayType<'a>>,
     pub wrapperfn: Option<fn(&codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>>,
     pub methods: std::collections::HashMap<String, Method<'a>>,
+    pub lifetime: Option<DataLifetime>,
 }
 
 impl<'a> std::fmt::Debug for DataType<'a> {
@@ -309,6 +310,14 @@ pub enum DataMutablility{
 }
 
 #[derive(Clone, PartialEq, Debug)]
+#[allow(dead_code)]
+pub enum DataLifetime{
+    Local,
+    Heap(String),
+    None,
+}
+
+#[derive(Clone, PartialEq, Debug)]
 pub struct DataOwnership{
     pub owned: bool,
     pub transferred: Option<crate::parser::Position>,
@@ -328,6 +337,7 @@ pub fn new_datatype<'a>(tp: BasicDataType, name: String, names: Option<Vec<Strin
         arrtp,
         wrapperfn: None,
         methods,
+        lifetime: None,
     };
 }
 
@@ -344,6 +354,7 @@ pub fn new_dyn_datatype<'a>(traitnm: String, mutability: DataMutablility) -> Dat
         arrtp: None,
         wrapperfn: None,
         methods: std::collections::HashMap::new(),
+        lifetime: None,
     };
 }
 

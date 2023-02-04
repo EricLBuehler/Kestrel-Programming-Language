@@ -362,6 +362,7 @@ impl<'ctx> CodeGen<'ctx> {
             let (mut tp, anytp_raw) = Self::get_llvm_from_type(ctx, namespaces, types, datatypes, traits, info, &arg.basetp.as_ref().unwrap(), node);
             tp.is_ref = true;
             tp.mutability = vec![arg.refmutability.unwrap()];
+            tp.lifetime = Some(types::DataLifetime::Local);
 
             let anytp: inkwell::types::AnyTypeEnum = if anytp_raw.is_int_type() {
                 inkwell::types::AnyTypeEnum::PointerType(anytp_raw.into_int_type().ptr_type(inkwell::AddressSpace::from(0u16)))
