@@ -3274,6 +3274,17 @@ impl<'ctx> CodeGen<'ctx> {
         };
     }
 
+    fn build_stmt(&mut self, node: &parser::Node) -> types::Data<'ctx> {
+        let _: types::Data = self.compile_expr(&node.data.unary.as_ref().unwrap().right, BorrowOptions{ give_ownership: true, get_ptr: false, mut_borrow: false}, false, false);
+
+        let data: types::Data = types::Data {
+            data: None,
+            tp: self.datatypes.get(&types::BasicDataType::Void.to_string()).unwrap().clone(),
+            owned: true,
+        };
+        return data;
+    }
+
     fn compile_expr(&mut self, node: &parser::Node, borrow_options: BorrowOptions, get_enum_id: bool, allow_enum_noinit: bool,) -> types::Data<'ctx> {
         match node.tp {
             parser::NodeType::I32 => {
@@ -3544,6 +3555,9 @@ impl<'ctx> CodeGen<'ctx> {
             }
             parser::NodeType::MUTREF => {
                 self.build_mutref(node)
+            }
+            parser::NodeType::STMT => {
+                self.build_stmt(node)
             }
         }
     }

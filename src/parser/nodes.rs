@@ -34,6 +34,7 @@ pub enum UnaryOpType {
     POS,
     NEG,
     REF,
+    STMT,
 }
 
 impl std::fmt::Display for UnaryOpType {
@@ -42,6 +43,7 @@ impl std::fmt::Display for UnaryOpType {
             UnaryOpType::NEG => write!(f, "-"),
             UnaryOpType::REF => write!(f, "&"),
             UnaryOpType::POS => write!(f, "+"),
+            UnaryOpType::STMT => write!(f, ";"),
         }
     }    
 }

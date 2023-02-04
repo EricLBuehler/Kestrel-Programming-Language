@@ -46,6 +46,7 @@ pub enum TokenType {
     EQ,
     NE,
     FATARROW,
+    SEMICOLON,
 }
 
 pub struct Lexer<'life> {
@@ -120,6 +121,7 @@ impl std::fmt::Display for TokenType {
            TokenType::EQ => write!(f, "EQ"),
            TokenType::NE => write!(f, "NE"),
            TokenType::FATARROW => write!(f, "FATARROW"),
+           TokenType::SEMICOLON => write!(f, "SEMICOLON"),
        }
     }
 }
@@ -146,7 +148,7 @@ fn advance(lexer: &mut Lexer) {
         return;
     }
 
-    if lexer.current == b'\n' || lexer.current == b'\r' || lexer.current == b';' {
+    if lexer.current == b'\n' || lexer.current == b'\r' {
         lexer.line+=1;
         lexer.col=0;
     }
@@ -345,7 +347,7 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
             });
             advance(lexer);
         }
-        else if cur == ';' as char || cur == '\r' as char || cur == '\n' as char {
+        else if cur == '\r' as char || cur == '\n' as char {
             tokens.push(Token {
                 data: String::from("\\n"),
                 tp: TokenType::NEWLINE,
@@ -450,6 +452,16 @@ pub fn generate_tokens(lexer: &mut Lexer, kwds: &Vec<String>) -> (usize, Vec<Tok
                 });
                 advance(lexer);
             }
+        }
+        else if cur == ';' {
+            tokens.push(Token {
+                data: String::from(";"),
+                tp: TokenType::SEMICOLON,
+                line: lexer.line,
+                startcol: lexer.col,
+                endcol: lexer.col+1,
+            });
+            advance(lexer);
         }
         else if cur.is_whitespace() {
             advance(lexer);

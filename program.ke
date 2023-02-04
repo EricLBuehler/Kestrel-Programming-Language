@@ -1,8 +1,7 @@
 fn f(s: &mut i32) {
-    s=10
-    void
+    s=10;
 }
 fn main() {
-    let a = 1 
-    f(&mut a)
+    let a = 1;
+    f(&mut a);
 }

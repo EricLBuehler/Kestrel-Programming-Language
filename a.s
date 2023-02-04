@@ -22,13 +22,13 @@ f:                                      # @f
 	.type	_main,@function
 _main:                                  # @_main
 .Lfunc_begin1:
-	.loc	1 4 0                   # program.ke:4:0
+	.loc	1 3 0                   # program.ke:3:0
 	.cfi_startproc
 # %bb.0:                                # %entry
 	pushq	%rax
 	.cfi_def_cfa_offset 16
 .Ltmp1:
-	.loc	1 4 0 prologue_end      # program.ke:4:0
+	.loc	1 3 0 prologue_end      # program.ke:3:0
 	movl	$1, 4(%rsp)
 	leaq	4(%rsp), %rdi
 	callq	f
@@ -185,7 +185,7 @@ main:                                   # @main
 	.long	.Linfo_string5          # DW_AT_linkage_name
 	.long	.Linfo_string6          # DW_AT_name
 	.byte	1                       # DW_AT_decl_file
-	.byte	4                       # DW_AT_decl_line
+	.byte	3                       # DW_AT_decl_line
 	.long	100                     # DW_AT_type
 	.byte	1                       # DW_AT_accessibility
                                         # DW_ACCESS_public

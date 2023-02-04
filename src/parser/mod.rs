@@ -68,6 +68,7 @@ pub enum NodeType {
     MATCH,
     GENERICENUM,
     MUTREF,
+    STMT,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -132,7 +133,8 @@ impl std::fmt::Display for Node {
             NodeType::AS => write!(f, "{}", self.data.to.as_ref().unwrap() ),
             NodeType::UNARY |
             NodeType::REF |
-            NodeType::MUTREF => write!(f, "{}", self.data.unary.as_ref().unwrap() ),
+            NodeType::MUTREF |
+            NodeType::STMT => write!(f, "{}", self.data.unary.as_ref().unwrap() ),
             NodeType::STRUCT => write!(f, "{}", self.data.st.as_ref().unwrap() ),
             NodeType::INITSTRUCT => write!(f, "{}", self.data.initst.as_ref().unwrap() ),
             NodeType::ATTR |
@@ -340,15 +342,19 @@ impl<'a> Parser<'a> {
     }
     
     fn statement(&mut self) -> Node{
-        match self.current.tp {
+        let mut left: Node = match self.current.tp {
             lexer::TokenType::KEYWORD => {
-                return self.keyword();
+                self.keyword()
             }
             _ => {
-                return self.expr(Precedence::Lowest);
+                self.expr(Precedence::Lowest)
             }
-        }
+        };
         
+        if self.current_is_type(TokenType::SEMICOLON) {
+            left = self.parse_semicolon(left);
+        }
+        return left;        
     }
 
     fn is_atomic(&mut self) -> bool{
@@ -3656,6 +3662,44 @@ impl<'a> Parser<'a> {
         let n: Node = self.create_node(NodeType::MATCH, nodedat, pos);
 
         return n;        
+    }
+    
+    fn parse_semicolon(&mut self, left: Node) -> Node{
+        self.advance();
+        let semi: nodes::UnaryNode = nodes::UnaryNode{
+            op: nodes::UnaryOpType::STMT,
+            right: left.to_owned(),
+        };
+    
+        let nodedat: nodes::NodeData = nodes::NodeData {
+            binary: None,
+            num: None,
+            letn: None,
+            identifier: None,
+            func: None,
+            assign: None,
+            call: None,
+            ret: None,
+            to: None,
+            unary: Some(semi),
+            st: None,
+            initst: None,
+            attr: None,
+            attrassign: None,
+            str: None,
+            arr: None,
+            impln: None,
+            ifn: None,
+            loopn: None,
+            enumn: None,
+            traitn: None,
+            is: None,
+            matchn: None,
+        };
+    
+        let n: Node = self.create_node(NodeType::STMT, nodedat, left.pos);
+    
+        return n;
     }
 
 }
