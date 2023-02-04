@@ -1,10 +1,8 @@
-struct s {
-    mut a: i32,
-}
-fn f(s: &mut s) {
-    s.a=100
+fn f(s: &mut i32) {
+    s=10
+    void
 }
 fn main() {
-    let a = s{a=10} 
+    let a = 1 
     f(&mut a)
 }

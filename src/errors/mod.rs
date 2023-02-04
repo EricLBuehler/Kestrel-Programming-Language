@@ -65,6 +65,7 @@ pub enum ErrorType {
     ReferenceMemberStruct,
     ImmutableRefAttr,
     RefNonStruct,
+    ReferenceUnownedData,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -137,7 +138,8 @@ pub fn repr_err(tp: ErrorType) -> &'static str {
         ErrorType::NameMutableBorrowed => "name is already mutable borrowed",
         ErrorType::ReferenceMemberStruct => "reference member in struct is not allowed",
         ErrorType::ImmutableRefAttr => "immutable reference attr",
-        ErrorType::RefNonStruct => "cannot have reference to non-struct"
+        ErrorType::RefNonStruct => "cannot have reference to non-struct",
+        ErrorType::ReferenceUnownedData => "cannot have reference to unowned data",
     }
 }
 

@@ -792,6 +792,10 @@ impl<'ctx> CodeGen<'ctx> {
         }
 
         if ptr.is_some() {
+            if (borrow_options.mut_borrow || !borrow_options.give_ownership) && !owner.owned {
+                let fmt: String = format!("Cannot take reference of unowned data..");
+                errors::raise_error(&fmt, errors::ErrorType::ReferenceUnownedData, &node.pos, self.info);
+            }
             if borrow_options.get_ptr || borrow_options.mut_borrow || !borrow_options.give_ownership {
                 if borrow_options.mut_borrow || !borrow_options.give_ownership {
                     tp.is_ref = true;
@@ -1185,7 +1189,8 @@ impl<'ctx> CodeGen<'ctx> {
         }
 
         if  self.get_variable(&name).0.unwrap().2 == types::DataMutablility::Immutable &&
-            self.get_variable(&name).0.unwrap().5 == InitializationStatus::Initialized {
+            self.get_variable(&name).0.unwrap().5 == InitializationStatus::Initialized &&
+            !self.get_variable(&name).0.unwrap().3.mut_borrowed {
             let fmt: String = format!("Cannot assign to immutable variable.");
             errors::raise_error(&fmt, errors::ErrorType::ImmutableAssign, &node.pos, self.info);
         }
