@@ -226,7 +226,7 @@ let var = e::x
 ```
 
 ## ```match```
-The ```match``` keyword implements pattern matching for enums, with a required defualt case.
+The ```match``` keyword implements pattern matching for enums, with an optional defualt case.
 
 ```
 match var {
