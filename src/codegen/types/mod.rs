@@ -108,6 +108,14 @@ impl<'a> std::fmt::Display for DataType<'a> {
         if self.is_dyn {
             prefix = String::from("dyn ");
         }
+        else if self.is_ref {
+            if self.mutability.last().unwrap() == &DataMutablility::Mutable {
+                prefix = String::from("&mut ");
+            }
+            else {                
+                prefix = String::from("& ");
+            }
+        }
         else {
             prefix = String::from("");
         }
@@ -159,14 +167,15 @@ impl<'a> PartialEq for DataType<'a> {
             }
         }
 
-        if self.is_ref == other.is_ref {
-            if  self.name != other.name &&
-                self.mutability != other.mutability {
+        if self.is_ref {
+            if  self.name != other.name ||
+                self.mutability != other.mutability ||
+                self.is_ref != other.is_ref {
                 return false;
             }
         }
 
-        return self.name == other.name;
+        return self.name == other.name && self.is_ref == other.is_ref;
     }
     fn ne(&self, other: &DataType<'a>) -> bool {
         if self.arrtp.is_some() && other.arrtp.is_some() {
@@ -209,14 +218,15 @@ impl<'a> PartialEq for DataType<'a> {
             }
         }
 
-        if self.is_ref == other.is_ref {
+        if self.is_ref {
             if  self.name == other.name &&
-                self.mutability == other.mutability {
+                self.mutability == other.mutability &&
+                self.is_ref == other.is_ref {
                 return false;
             }
         }
 
-        return self.name != other.name;
+        return self.name != other.name || self.is_ref != other.is_ref;
     }
 }
 
