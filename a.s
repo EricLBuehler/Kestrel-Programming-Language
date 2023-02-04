@@ -6,12 +6,11 @@
 f:                                      # @f
 .Lfunc_begin0:
 	.file	1 "./program.ke"
-	.loc	1 3 0                   # program.ke:3:0
+	.loc	1 0 0                   # program.ke:0:0
 	.cfi_sections .debug_frame
 	.cfi_startproc
 # %bb.0:                                # %entry
-	.loc	1 3 0 prologue_end      # program.ke:3:0
-	movl	$100, (%rdi)
+	movl	$10, (%rdi)
 	retq
 .Ltmp0:
 .Lfunc_end0:
@@ -23,19 +22,17 @@ f:                                      # @f
 	.type	_main,@function
 _main:                                  # @_main
 .Lfunc_begin1:
-	.loc	1 6 0                   # program.ke:6:0
+	.loc	1 4 0                   # program.ke:4:0
 	.cfi_startproc
 # %bb.0:                                # %entry
-	subq	$24, %rsp
-	.cfi_def_cfa_offset 32
+	pushq	%rax
+	.cfi_def_cfa_offset 16
 .Ltmp1:
-	.loc	1 6 0 prologue_end      # program.ke:6:0
-	movl	$10, 16(%rsp)
-	movl	16(%rsp), %eax
-	movl	%eax, 8(%rsp)
-	leaq	8(%rsp), %rdi
+	.loc	1 4 0 prologue_end      # program.ke:4:0
+	movl	$1, 4(%rsp)
+	leaq	4(%rsp), %rdi
 	callq	f
-	addq	$24, %rsp
+	popq	%rax
 	.cfi_def_cfa_offset 8
 	retq
 .Ltmp2:
@@ -113,6 +110,25 @@ main:                                   # @main
 	.byte	14                      # DW_FORM_strp
 	.byte	3                       # DW_AT_name
 	.byte	14                      # DW_FORM_strp
+	.byte	73                      # DW_AT_type
+	.byte	19                      # DW_FORM_ref4
+	.byte	50                      # DW_AT_accessibility
+	.byte	11                      # DW_FORM_data1
+	.byte	0                       # EOM(1)
+	.byte	0                       # EOM(2)
+	.byte	3                       # Abbreviation Code
+	.byte	46                      # DW_TAG_subprogram
+	.byte	0                       # DW_CHILDREN_no
+	.byte	17                      # DW_AT_low_pc
+	.byte	1                       # DW_FORM_addr
+	.byte	18                      # DW_AT_high_pc
+	.byte	6                       # DW_FORM_data4
+	.byte	64                      # DW_AT_frame_base
+	.byte	24                      # DW_FORM_exprloc
+	.byte	110                     # DW_AT_linkage_name
+	.byte	14                      # DW_FORM_strp
+	.byte	3                       # DW_AT_name
+	.byte	14                      # DW_FORM_strp
 	.byte	58                      # DW_AT_decl_file
 	.byte	11                      # DW_FORM_data1
 	.byte	59                      # DW_AT_decl_line
@@ -123,7 +139,7 @@ main:                                   # @main
 	.byte	11                      # DW_FORM_data1
 	.byte	0                       # EOM(1)
 	.byte	0                       # EOM(2)
-	.byte	3                       # Abbreviation Code
+	.byte	4                       # Abbreviation Code
 	.byte	36                      # DW_TAG_base_type
 	.byte	0                       # DW_CHILDREN_no
 	.byte	3                       # DW_AT_name
@@ -142,7 +158,7 @@ main:                                   # @main
 	.short	4                       # DWARF version number
 	.long	.debug_abbrev           # Offset Into Abbrev. Section
 	.byte	8                       # Address Size (in bytes)
-	.byte	1                       # Abbrev [1] 0xb:0x63 DW_TAG_compile_unit
+	.byte	1                       # Abbrev [1] 0xb:0x61 DW_TAG_compile_unit
 	.long	.Linfo_string0          # DW_AT_producer
 	.short	2                       # DW_AT_language
 	.long	.Linfo_string1          # DW_AT_name
@@ -151,19 +167,17 @@ main:                                   # @main
                                         # DW_AT_GNU_pubnames
 	.quad	.Lfunc_begin0           # DW_AT_low_pc
 	.long	.Lfunc_end1-.Lfunc_begin0 # DW_AT_high_pc
-	.byte	2                       # Abbrev [2] 0x2a:0x1e DW_TAG_subprogram
+	.byte	2                       # Abbrev [2] 0x2a:0x1c DW_TAG_subprogram
 	.quad	.Lfunc_begin0           # DW_AT_low_pc
 	.long	.Lfunc_end0-.Lfunc_begin0 # DW_AT_high_pc
 	.byte	1                       # DW_AT_frame_base
 	.byte	87
 	.long	.Linfo_string3          # DW_AT_linkage_name
 	.long	.Linfo_string3          # DW_AT_name
-	.byte	1                       # DW_AT_decl_file
-	.byte	3                       # DW_AT_decl_line
-	.long	102                     # DW_AT_type
+	.long	100                     # DW_AT_type
 	.byte	1                       # DW_AT_accessibility
                                         # DW_ACCESS_public
-	.byte	2                       # Abbrev [2] 0x48:0x1e DW_TAG_subprogram
+	.byte	3                       # Abbrev [3] 0x46:0x1e DW_TAG_subprogram
 	.quad	.Lfunc_begin1           # DW_AT_low_pc
 	.long	.Lfunc_end1-.Lfunc_begin1 # DW_AT_high_pc
 	.byte	1                       # DW_AT_frame_base
@@ -171,11 +185,11 @@ main:                                   # @main
 	.long	.Linfo_string5          # DW_AT_linkage_name
 	.long	.Linfo_string6          # DW_AT_name
 	.byte	1                       # DW_AT_decl_file
-	.byte	6                       # DW_AT_decl_line
-	.long	102                     # DW_AT_type
+	.byte	4                       # DW_AT_decl_line
+	.long	100                     # DW_AT_type
 	.byte	1                       # DW_AT_accessibility
                                         # DW_ACCESS_public
-	.byte	3                       # Abbrev [3] 0x66:0x7 DW_TAG_base_type
+	.byte	4                       # Abbrev [4] 0x64:0x7 DW_TAG_base_type
 	.long	.Linfo_string4          # DW_AT_name
 	.byte	0                       # DW_AT_encoding
 	.byte	2                       # DW_AT_byte_size
@@ -186,8 +200,8 @@ main:                                   # @main
 .LpubNames_begin0:
 	.short	2                       # DWARF Version
 	.long	.Lcu_begin0             # Offset of Compilation Unit Info
-	.long	110                     # Compilation Unit Length
-	.long	72                      # DIE offset
+	.long	108                     # Compilation Unit Length
+	.long	70                      # DIE offset
 	.asciz	"main"                  # External Name
 	.long	42                      # DIE offset
 	.asciz	"f"                     # External Name
@@ -198,8 +212,8 @@ main:                                   # @main
 .LpubTypes_begin0:
 	.short	2                       # DWARF Version
 	.long	.Lcu_begin0             # Offset of Compilation Unit Info
-	.long	110                     # Compilation Unit Length
-	.long	102                     # DIE offset
+	.long	108                     # Compilation Unit Length
+	.long	100                     # DIE offset
 	.asciz	"void"                  # External Name
 	.long	0                       # End Mark
 .LpubTypes_end0:

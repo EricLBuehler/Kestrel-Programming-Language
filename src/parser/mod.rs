@@ -448,6 +448,11 @@ impl<'a> Parser<'a> {
         else if self.current.data == String::from("match") {
             return self.parse_match(false);
         }
+        else if self.current.data == "void" {
+            let expr: Node = self.generate_void();
+            self.advance();
+            return expr;
+        } 
         
         self.raise_error("Invalid keyword.", ErrorType::InvalidTok);
     }
