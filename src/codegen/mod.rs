@@ -1196,7 +1196,10 @@ impl<'ctx> CodeGen<'ctx> {
             errors::raise_error(&fmt, errors::ErrorType::ImmutableAssign, &node.pos, self.info);
         }
 
-        if self.get_variable(&name).0.unwrap().1 != right.tp {
+        let mut alttp: types::DataType = self.get_variable(&name).0.unwrap().1.to_owned();
+        alttp.is_ref = false;
+
+        if self.get_variable(&name).0.unwrap().1 != right.tp && alttp != right.tp {
             let fmt: String = format!("Expected '{}' type, got '{}' type.", self.get_variable(&name).0.unwrap().1.tp.to_string(), right.tp.to_string());
             errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
         }
