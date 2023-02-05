@@ -112,7 +112,7 @@ fn string_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: 
     return Data {
         data: Some(phi.as_basic_value()),
         tp: codegen.datatypes.get(&String::from("Optional")).unwrap().clone(),
-        owned: false,
+        owned: true,
     };
 }
 
