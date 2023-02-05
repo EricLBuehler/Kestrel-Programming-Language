@@ -507,7 +507,7 @@ impl<'ctx> CodeGen<'ctx> {
         if t.function.is_some() {
             let func = t.function.unwrap();
 
-            return (func)(&self, args, &node.pos);
+            return (func)(self, args, &node.pos);
         }
         else {
             let func: inkwell::values::PointerValue = t.inkfunc.unwrap();
@@ -3217,6 +3217,8 @@ impl<'ctx> CodeGen<'ctx> {
         for block in blocks {
             phi.add_incoming(&[(&block.0.unwrap(), block.1)]);
         }
+
+        self.enclosing_block = Some(end_block);
         
         let data: types::Data = types::Data {
             data: Some(phi.as_basic_value()),

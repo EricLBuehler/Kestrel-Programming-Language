@@ -12,7 +12,7 @@ pub fn check_overflow_literal<'a>(codegen: &codegen::CodeGen<'a>, data: &String,
     }
 }
 
-fn u32_add<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
+fn u32_add<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
     if args.get(1).unwrap().tp != BasicDataType::U32 {
         let fmt: String = format!("invalid types for u32 +, got '{}' and '{}'.", BasicDataType::U32, args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -30,7 +30,7 @@ fn u32_add<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
     };
 }
 
-fn u32_mul<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
+fn u32_mul<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
     if args.get(1).unwrap().tp != BasicDataType::U32 {
         let fmt: String = format!("invalid types for u32 *, got '{}' and '{}'.", BasicDataType::U32, args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -48,7 +48,7 @@ fn u32_mul<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
     };
 }
 
-fn u32_sub<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
+fn u32_sub<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
     if args.get(1).unwrap().tp != BasicDataType::U32 {
         let fmt: String = format!("invalid types for u32 -, got '{}' and '{}'.", BasicDataType::U32, args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -67,7 +67,7 @@ fn u32_sub<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
     };
 }
 
-fn u32_div<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
+fn u32_div<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
     if args.get(1).unwrap().tp != BasicDataType::U32 {
         let fmt: String = format!("invalid types for u32 /, got '{}' and '{}'.", BasicDataType::U32, args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -85,11 +85,11 @@ fn u32_div<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
     };
 }
 
-fn u32_pos<'a>(_codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {
+fn u32_pos<'a>(_codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {
     return args.get(0).unwrap().clone();
 }
 
-fn u32_bool<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {  
+fn u32_bool<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {  
     let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();
 
     let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::NE, selfv, codegen.inkwell_types.i8tp.const_zero(), "u32bool");
@@ -101,7 +101,7 @@ fn u32_bool<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &pars
     };
 }
 
-fn u32_eq<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
+fn u32_eq<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
     if args.get(1).unwrap().tp != BasicDataType::U32 {
         let fmt: String = format!("invalid types for u32 Eq, got '{}'.", args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -119,7 +119,7 @@ fn u32_eq<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
     };
 }
 
-fn u32_lt<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
+fn u32_lt<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
     if args.get(1).unwrap().tp != BasicDataType::U32 {
         let fmt: String = format!("invalid types for u32 Lt, got '{}'.", args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -137,7 +137,7 @@ fn u32_lt<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
     };
 }
 
-fn u32_gt<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
+fn u32_gt<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
     if args.get(1).unwrap().tp != BasicDataType::U32 {
         let fmt: String = format!("invalid types for u32 Gt, got '{}'.", args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -155,7 +155,7 @@ fn u32_gt<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
     };
 }
 
-fn u32_le<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
+fn u32_le<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
     if args.get(1).unwrap().tp != BasicDataType::U32 {
         let fmt: String = format!("invalid types for u32 Le, got '{}'.", args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -173,7 +173,7 @@ fn u32_le<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
     };
 }
 
-fn u32_ge<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
+fn u32_ge<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
     if args.get(1).unwrap().tp != BasicDataType::U32 {
         let fmt: String = format!("invalid types for u32 Ge, got '{}'.", args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -191,7 +191,7 @@ fn u32_ge<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
     };
 }
 
-fn u32_ne<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
+fn u32_ne<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
     if args.get(1).unwrap().tp != BasicDataType::U8 {
         let fmt: String = format!("invalid types for u32 Ne, got '{}'.", args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);

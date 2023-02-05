@@ -37,7 +37,7 @@ pub struct DataType<'a> {
     pub is_ref: bool,
     pub is_dyn: bool,
     pub arrtp: Option<inkwell::types::ArrayType<'a>>,
-    pub wrapperfn: Option<fn(&codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>>,
+    pub wrapperfn: Option<fn(&mut codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>>,
     pub methods: std::collections::HashMap<String, Method<'a>>,
     pub lifetime: Option<DataLifetime>,
 }
@@ -270,7 +270,7 @@ pub struct Type<'a> {
 #[derive(Clone)]
 pub struct Trait<'a> {
     pub nargs: usize,
-    pub function: Option<fn(&codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>>,
+    pub function: Option<fn(&mut codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>>,
     pub inkfunc: Option<inkwell::values::PointerValue<'a>>,
     pub traittype: TraitType,
     pub rettp: Option<DataType<'a>>,
@@ -394,7 +394,7 @@ pub enum MethodType {
 #[derive(Clone)]
 pub struct Method<'a> {
     pub tp: MethodType,
-    pub builtin: Option<fn(&codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>>,
+    pub builtin: Option<fn(&mut codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>>,
     pub func: Option<inkwell::values::PointerValue<'a>>,
     pub functp: DataType<'a>,
     pub isinstance: bool,

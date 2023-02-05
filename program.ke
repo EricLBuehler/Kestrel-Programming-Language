@@ -1,3 +1,5 @@
 fn main() {
-    let opt: Optional<i32> = Optional<i32>::Some<100>
+    let str: String = String::new("Kestrel")
+
+    str.get(100usize);
 }

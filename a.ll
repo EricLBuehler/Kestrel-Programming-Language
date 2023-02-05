@@ -7,16 +7,23 @@ target triple = "x86_64-unknown-linux-gnu"
 ; Function Attrs: noinline nounwind optnone
 define void @_main() local_unnamed_addr #0 !dbg !4 {
 entry:
-  %enum_st = alloca { i32, %enum_st_data* }, !dbg !8
-  %variant_id = getelementptr inbounds { i32, %enum_st_data* }, { i32, %enum_st_data* }* %enum_st, i32 0, i32 0, !dbg !8
-  store i32 0, i32* %variant_id, !dbg !8
-  %variant_data_ptr = alloca i32, !dbg !8
-  store i32 100, i32* %variant_data_ptr, !dbg !8
-  %variant_data_bitcast = bitcast i32* %variant_data_ptr to %enum_st_data*, !dbg !8
-  %variant_data = getelementptr inbounds { i32, %enum_st_data* }, { i32, %enum_st_data* }* %enum_st, i32 0, i32 1, !dbg !8
-  store %enum_st_data* %variant_data_bitcast, %enum_st_data** %variant_data, !dbg !8
-  %opt = alloca { i32, %enum_st_data* }*, !dbg !8
-  store { i32, %enum_st_data* }* %enum_st, { i32, %enum_st_data* }** %opt, !dbg !8
+  %String = alloca { [7 x i8] }, !dbg !8
+  %arr = getelementptr inbounds { [7 x i8] }, { [7 x i8] }* %String, i32 0, i32 0, !dbg !8
+  store [7 x i8] c"Kestrel", [7 x i8]* %arr, !dbg !8
+  %string = load { [7 x i8] }, { [7 x i8] }* %String, !dbg !8
+  %str = alloca { [7 x i8] }, !dbg !8
+  store { [7 x i8] } %string, { [7 x i8] }* %str, !dbg !8
+  %arr1 = getelementptr inbounds { [7 x i8] }, { [7 x i8] }* %str, i32 0, i32 0, !dbg !8
+  %load_arr = load [7 x i8], [7 x i8]* %arr1, !dbg !8
+  br label %else, !dbg !8
+
+else:                                             ; preds = %entry
+  %enum_st2 = alloca { i32, %enum_st_data* }, !dbg !8
+  %variant_id3 = getelementptr inbounds { i32, %enum_st_data* }, { i32, %enum_st_data* }* %enum_st2, i32 0, i32 0, !dbg !8
+  store i32 1, i32* %variant_id3, !dbg !8
+  br label %end, !dbg !8
+
+end:                                              ; preds = %else
   ret void, !dbg !8
 }
 

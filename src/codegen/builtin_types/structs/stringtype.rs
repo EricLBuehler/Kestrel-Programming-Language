@@ -1,9 +1,10 @@
 use crate::codegen;
+use crate::codegen::builtin_types::enums;
 use std::collections::HashMap;
 use crate::codegen::types::*;
 use crate::errors;
 
-fn string_length<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &crate::parser::Position) -> Data<'a> {
+fn string_length<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &crate::parser::Position) -> Data<'a> {
     if args.len()!=1 {
         let fmt: String = format!("Expected 1 argument, got {}.", args.len());
         errors::raise_error(&fmt, errors::ErrorType::ArgumentCountMismatch, pos, codegen.info);
@@ -26,7 +27,7 @@ fn string_length<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &
     };
 }
 
-fn string_get_array<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &crate::parser::Position) -> Data<'a> {
+fn string_get_array<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &crate::parser::Position) -> Data<'a> {
     if args.len()!=1 {
         let fmt: String = format!("Expected 1 argument, got {}.", args.len());
         errors::raise_error(&fmt, errors::ErrorType::ArgumentCountMismatch, pos, codegen.info);
@@ -47,7 +48,7 @@ fn string_get_array<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos
     };
 }
 
-fn string_get<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &crate::parser::Position) -> Data<'a> {
+fn string_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &crate::parser::Position) -> Data<'a> {
     if args.len()!=2 {
         let fmt: String = format!("Expected 2 arguments, got {}.", args.len());
         errors::raise_error(&fmt, errors::ErrorType::ArgumentCountMismatch, pos, codegen.info);
@@ -57,21 +58,65 @@ fn string_get<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &cra
         let fmt: String = format!("Invalid types for String.get, expected 'usize', got '{}'.", args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
     }
-    
+
     let ptr: inkwell::values::PointerValue = codegen.builder.build_struct_gep(args.get(0).unwrap().data.unwrap().into_pointer_value(), 0 as u32, "arr").expect("GEP Error");
+    let arr: inkwell::values::ArrayValue = codegen.builder.build_load(ptr, "load_arr").into_array_value();
+
+    let len: u32 = arr.get_type().len();
+
+    let end_block: inkwell::basic_block::BasicBlock = codegen.context.append_basic_block(codegen.enclosing_block.unwrap().get_parent().unwrap(), "end");
+    let then_block: inkwell::basic_block::BasicBlock = codegen.context.append_basic_block(codegen.enclosing_block.unwrap().get_parent().unwrap(), "then");
+    let else_block: inkwell::basic_block::BasicBlock = codegen.context.append_basic_block(codegen.enclosing_block.unwrap().get_parent().unwrap(), "else");
+
+    let lhs: inkwell::values::IntValue = if std::mem::size_of::<usize>() == std::mem::size_of::<u32>() {
+        codegen.inkwell_types.i32tp.const_int(len.into(), false)
+    }
+    else {
+        codegen.inkwell_types.i64tp.const_int(len.into(), false)
+    };
+
+    codegen.builder.build_conditional_branch(codegen.builder.build_int_compare(inkwell::IntPredicate::UGT, lhs, args.get(1).unwrap().data.unwrap().into_int_value(), "size_check"), then_block, else_block);
+
+    //
     
+    codegen.builder.position_at_end(then_block);
+
     let itmptr: inkwell::values::PointerValue = unsafe { codegen.builder.build_in_bounds_gep(ptr, &[codegen.inkwell_types.i32tp.const_zero(), args.get(1).unwrap().data.unwrap().into_int_value()], "itmptr") };
     
     let itm: inkwell::values::IntValue = codegen.builder.build_load(itmptr, "item").into_int_value();
+
+    let res_some: Data = enums::optionaltype::optional_some(codegen, Some(inkwell::values::BasicValueEnum::IntValue(itm)));
+
+    codegen.builder.build_unconditional_branch(end_block);
     
+    //
+
+    codegen.builder.position_at_end(else_block);
+
+    let res_none: Data = enums::optionaltype::optional_none(codegen);
+    
+    codegen.builder.build_unconditional_branch(end_block);
+
+    //
+
+    let _ = end_block.move_after(else_block);
+    codegen.builder.position_at_end(end_block);
+
+    codegen.enclosing_block = Some(end_block);
+
+    let phi: inkwell::values::PhiValue = codegen.builder.build_phi(inkwell::types::BasicTypeEnum::StructType(*codegen.inkwell_types.enum_data_tp), "check_phi");
+
+    phi.add_incoming(&[(&res_some.data.unwrap(), then_block)]);
+    phi.add_incoming(&[(&res_none.data.unwrap(), else_block)]);
+
     return Data {
-        data: Some(inkwell::values::BasicValueEnum::IntValue(itm)),
-        tp: codegen.datatypes.get(&crate::codegen::types::BasicDataType::U8.to_string()).unwrap().clone(),
+        data: Some(phi.as_basic_value()),
+        tp: codegen.datatypes.get(&String::from("Optional")).unwrap().clone(),
         owned: false,
     };
 }
 
-fn string_new<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &crate::parser::Position) -> Data<'a> {
+fn string_new<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &crate::parser::Position) -> Data<'a> {
     if args.len()!=1 {
         let fmt: String = format!("Expected 1 argument, got {}.", args.len());
         errors::raise_error(&fmt, errors::ErrorType::ArgumentCountMismatch, pos, codegen.info);

@@ -10,14 +10,45 @@ _main:                                  # @_main
 	.cfi_sections .debug_frame
 	.cfi_startproc
 # %bb.0:                                # %entry
-	movl	$0, -24(%rsp)
-	movl	$100, -28(%rsp)
-	leaq	-28(%rsp), %rax
-	movq	%rax, -16(%rsp)
-	leaq	-24(%rsp), %rax
-	movq	%rax, -8(%rsp)
-	retq
+	pushq	%rbp
+	.cfi_def_cfa_offset 16
+	.cfi_offset %rbp, -16
+	movq	%rsp, %rbp
+	.cfi_def_cfa_register %rbp
+	subq	$16, %rsp
 .Ltmp0:
+	movb	$108, -2(%rbp)
+	movb	$101, -3(%rbp)
+	movb	$114, -4(%rbp)
+	movb	$116, -5(%rbp)
+	movb	$115, -6(%rbp)
+	movb	$101, -7(%rbp)
+	movb	$75, -8(%rbp)
+	movb	-8(%rbp), %sil
+	movb	-7(%rbp), %dil
+	movb	-6(%rbp), %r8b
+	movb	-5(%rbp), %r9b
+	movb	-4(%rbp), %cl
+	movb	-3(%rbp), %dl
+	movb	-2(%rbp), %al
+	movb	%al, -10(%rbp)
+	movb	%dl, -11(%rbp)
+	movb	%cl, -12(%rbp)
+	movb	%r9b, -13(%rbp)
+	movb	%r8b, -14(%rbp)
+	movb	%dil, -15(%rbp)
+	movb	%sil, -16(%rbp)
+# %bb.1:                                # %else
+	movq	%rsp, %rax
+	addq	$-16, %rax
+	movq	%rax, %rsp
+	movl	$1, (%rax)
+# %bb.2:                                # %end
+	movq	%rbp, %rsp
+	popq	%rbp
+	.cfi_def_cfa %rsp, 8
+	retq
+.Ltmp1:
 .Lfunc_end0:
 	.size	_main, .Lfunc_end0-_main
 	.cfi_endproc
@@ -128,7 +159,7 @@ main:                                   # @main
 	.quad	.Lfunc_begin0           # DW_AT_low_pc
 	.long	.Lfunc_end0-.Lfunc_begin0 # DW_AT_high_pc
 	.byte	1                       # DW_AT_frame_base
-	.byte	87
+	.byte	86
 	.long	.Linfo_string3          # DW_AT_linkage_name
 	.long	.Linfo_string4          # DW_AT_name
 	.long	70                      # DW_AT_type

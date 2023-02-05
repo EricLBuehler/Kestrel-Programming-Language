@@ -4,7 +4,7 @@ use crate::codegen::builtin_types;
 use crate::parser;
 use std::collections::HashMap;
 
-fn void_bool<'a>(codegen: &codegen::CodeGen<'a>, _args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {    
+fn void_bool<'a>(codegen: &mut codegen::CodeGen<'a>, _args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {    
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(codegen.inkwell_types.booltp.const_int(0, false))),
         tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),

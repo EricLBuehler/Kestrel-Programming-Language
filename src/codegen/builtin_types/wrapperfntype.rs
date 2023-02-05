@@ -4,11 +4,11 @@ use crate::codegen::builtin_types;
 use crate::parser;
 use std::collections::HashMap;
 
-fn wrapperfn_call<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
+fn wrapperfn_call<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
     return args.get(0).unwrap().tp.wrapperfn.unwrap()(codegen, args[1..].to_vec(), pos);
 }
 
-fn wrapperfn_bool<'a>(codegen: &codegen::CodeGen<'a>, _args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {  
+fn wrapperfn_bool<'a>(codegen: &mut codegen::CodeGen<'a>, _args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {  
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(codegen.inkwell_types.booltp.const_int(0, false))),
         tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),

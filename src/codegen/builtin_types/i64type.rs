@@ -12,7 +12,7 @@ pub fn check_overflow_literal<'a>(codegen: &codegen::CodeGen<'a>, data: &String,
     }
 }
 
-fn i64_add<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
+fn i64_add<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
     if args.get(1).unwrap().tp != BasicDataType::I64 {
         let fmt: String = format!("invalid types for i64 +, got '{}' and '{}'.", BasicDataType::I64, args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -30,7 +30,7 @@ fn i64_add<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
     };
 }
 
-fn i64_mul<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
+fn i64_mul<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
     if args.get(1).unwrap().tp != BasicDataType::I64 {
         let fmt: String = format!("invalid types for i64 *, got '{}' and '{}'.", BasicDataType::I64, args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -48,7 +48,7 @@ fn i64_mul<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
     };
 }
 
-fn i64_sub<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
+fn i64_sub<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
     if args.get(1).unwrap().tp != BasicDataType::I64 {
         let fmt: String = format!("invalid types for i64 -, got '{}' and '{}'.", BasicDataType::I64, args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -66,7 +66,7 @@ fn i64_sub<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
     };
 }
 
-fn i64_div<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
+fn i64_div<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
     if args.get(1).unwrap().tp != BasicDataType::I64 {
         let fmt: String = format!("invalid types for i64 /, got '{}' and '{}'.", BasicDataType::I64, args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -84,11 +84,11 @@ fn i64_div<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
     };
 }
 
-fn i64_pos<'a>(_codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {
+fn i64_pos<'a>(_codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {
     return args.get(0).unwrap().clone();
 }
 
-fn i64_neg<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {    
+fn i64_neg<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {    
     let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();
     let otherv: inkwell::values::IntValue = codegen.inkwell_types.i64tp.const_int_from_string("-1", inkwell::types::StringRadix::Decimal).unwrap();
 
@@ -101,7 +101,7 @@ fn i64_neg<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parse
     };
 }
 
-fn i64_bool<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {  
+fn i64_bool<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {  
     let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();
 
     let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::NE, selfv, codegen.inkwell_types.i8tp.const_zero(), "i64bool");
@@ -113,7 +113,7 @@ fn i64_bool<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &pars
     };
 }
 
-fn i64_eq<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
+fn i64_eq<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
     if args.get(1).unwrap().tp != BasicDataType::I64 {
         let fmt: String = format!("invalid types for i64 Eq, got '{}'.", args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -131,7 +131,7 @@ fn i64_eq<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
     };
 }
 
-fn i64_lt<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
+fn i64_lt<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
     if args.get(1).unwrap().tp != BasicDataType::I64 {
         let fmt: String = format!("invalid types for i64 Lt, got '{}'.", args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -149,7 +149,7 @@ fn i64_lt<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
     };
 }
 
-fn i64_gt<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
+fn i64_gt<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
     if args.get(1).unwrap().tp != BasicDataType::I64 {
         let fmt: String = format!("invalid types for i64 Gt, got '{}'.", args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -167,7 +167,7 @@ fn i64_gt<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
     };
 }
 
-fn i64_le<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
+fn i64_le<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
     if args.get(1).unwrap().tp != BasicDataType::I64 {
         let fmt: String = format!("invalid types for i64 Le, got '{}'.", args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -185,7 +185,7 @@ fn i64_le<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
     };
 }
 
-fn i64_ge<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
+fn i64_ge<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
     if args.get(1).unwrap().tp != BasicDataType::I64 {
         let fmt: String = format!("invalid types for i64 Ge, got '{}'.", args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -203,7 +203,7 @@ fn i64_ge<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser:
     };
 }
 
-fn i64_ne<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
+fn i64_ne<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
     if args.get(1).unwrap().tp != BasicDataType::I64 {
         let fmt: String = format!("invalid types for i64 Ne, got '{}'.", args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);

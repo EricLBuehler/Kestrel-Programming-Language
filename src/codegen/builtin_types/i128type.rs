@@ -12,7 +12,7 @@ pub fn check_overflow_literal<'a>(codegen: &codegen::CodeGen<'a>, data: &String,
     }
 }
 
-fn i128_add<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
+fn i128_add<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
     if args.get(1).unwrap().tp != BasicDataType::I128 {
         let fmt: String = format!("invalid types for i128 +, got '{}' and '{}'.", BasicDataType::I128, args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -30,7 +30,7 @@ fn i128_add<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parse
     };
 }
 
-fn i128_mul<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
+fn i128_mul<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
     if args.get(1).unwrap().tp != BasicDataType::I128 {
         let fmt: String = format!("invalid types for i128 *, got '{}' and '{}'.", BasicDataType::I128, args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -48,7 +48,7 @@ fn i128_mul<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parse
     };
 }
 
-fn i128_sub<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
+fn i128_sub<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
     if args.get(1).unwrap().tp != BasicDataType::I128 {
         let fmt: String = format!("invalid types for i128 -, got '{}' and '{}'.", BasicDataType::I128, args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -66,7 +66,7 @@ fn i128_sub<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parse
     };
 }
 
-fn i128_div<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
+fn i128_div<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
     if args.get(1).unwrap().tp != BasicDataType::I128 {
         let fmt: String = format!("invalid types for i128 /, got '{}' and '{}'.", BasicDataType::I128, args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -84,11 +84,11 @@ fn i128_div<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parse
     };
 }
 
-fn i128_pos<'a>(_codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {
+fn i128_pos<'a>(_codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {
     return args.get(0).unwrap().clone();
 }
 
-fn i128_neg<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {    
+fn i128_neg<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {    
     let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();
     let otherv: inkwell::values::IntValue = codegen.inkwell_types.i128tp.const_int_from_string("-1", inkwell::types::StringRadix::Decimal).unwrap();
 
@@ -101,7 +101,7 @@ fn i128_neg<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &pars
     };
 }
 
-fn i128_bool<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {  
+fn i128_bool<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {  
     let selfv: inkwell::values::IntValue = args.first().unwrap().data.unwrap().into_int_value();
 
     let res: inkwell::values::IntValue = codegen.builder.build_int_compare(inkwell::IntPredicate::NE, selfv, codegen.inkwell_types.i8tp.const_zero(), "i128bool");
@@ -113,7 +113,7 @@ fn i128_bool<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &par
     };
 }
 
-fn i128_eq<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
+fn i128_eq<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
     if args.get(1).unwrap().tp != BasicDataType::I128 {
         let fmt: String = format!("invalid types for i128 Eq, got '{}'.", args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -131,7 +131,7 @@ fn i128_eq<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
     };
 }
 
-fn i128_lt<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
+fn i128_lt<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
     if args.get(1).unwrap().tp != BasicDataType::I128 {
         let fmt: String = format!("invalid types for i128 Lt, got '{}'.", args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -149,7 +149,7 @@ fn i128_lt<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
     };
 }
 
-fn i128_gt<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
+fn i128_gt<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
     if args.get(1).unwrap().tp != BasicDataType::I128 {
         let fmt: String = format!("invalid types for i128 Gt, got '{}'.", args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -167,7 +167,7 @@ fn i128_gt<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
     };
 }
 
-fn i128_le<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
+fn i128_le<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
     if args.get(1).unwrap().tp != BasicDataType::I128 {
         let fmt: String = format!("invalid types for i128 Le, got '{}'.", args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -185,7 +185,7 @@ fn i128_le<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
     };
 }
 
-fn i128_ge<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
+fn i128_ge<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
     if args.get(1).unwrap().tp != BasicDataType::I128 {
         let fmt: String = format!("invalid types for i128 Ge, got '{}'.", args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
@@ -203,7 +203,7 @@ fn i128_ge<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser
     };
 }
 
-fn i128_ne<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
+fn i128_ne<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {    
     if args.get(1).unwrap().tp != BasicDataType::I128 {
         let fmt: String = format!("invalid types for i128 Ne, got '{}'.", args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);

@@ -38,7 +38,7 @@ pub fn add_simple_type<'a>(codegen: &mut codegen::CodeGen<'a>, traits: HashMap<S
     codegen.types.insert(String::from(name), tp);
 }
 
-pub fn create_trait_func<'a>(function: fn(&codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>, nargs: usize, traittype: TraitType, rettp: DataType<'a>) -> Trait<'a>{
+pub fn create_trait_func<'a>(function: fn(&mut codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>, nargs: usize, traittype: TraitType, rettp: DataType<'a>) -> Trait<'a>{
     Trait {
         nargs,
         function: Some(function),

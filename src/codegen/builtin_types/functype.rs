@@ -5,7 +5,7 @@ use crate::parser;
 use crate::errors;
 use std::collections::HashMap;
 
-pub fn fn_call<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
+pub fn fn_call<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &parser::Position) -> Data<'a> {
     let args_ref: &Vec<Data> = &args;
     let selfv: &Data = args_ref.first().unwrap();
     let args_: &[Data] = &args_ref[1..];
@@ -54,7 +54,7 @@ pub fn fn_call<'a>(codegen: &codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &pa
     };
 }
 
-fn func_bool<'a>(codegen: &codegen::CodeGen<'a>, _args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {
+fn func_bool<'a>(codegen: &mut codegen::CodeGen<'a>, _args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(codegen.inkwell_types.booltp.const_int(0, false))),
         tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
