@@ -27,6 +27,7 @@ pub mod wrapperfntype;
 pub mod enumtype;
 
 pub mod structs;
+pub mod enums;
 
 pub fn add_simple_type<'a>(codegen: &mut codegen::CodeGen<'a>, traits: HashMap<String, Trait<'a>>, basictype: BasicDataType, name: &str){
     let tp = Type {
@@ -165,4 +166,8 @@ pub fn init_traits(codegen: &mut codegen::CodeGen) {
 
 pub fn init_structs(codegen: &mut codegen::CodeGen) {
     structs::stringtype::init_string(codegen);
+}
+
+pub fn init_enums(codegen: &mut codegen::CodeGen) {
+    enums::optionaltype::init_optional(codegen);
 }

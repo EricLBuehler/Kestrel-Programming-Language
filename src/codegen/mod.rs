@@ -3925,6 +3925,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
     builtin_types::init(&mut codegen);
     builtin_types::init_traits(&mut codegen);
     builtin_types::init_structs(&mut codegen);
+    builtin_types::init_enums(&mut codegen);
 
     //Generate forward-declaration functions
     codegen.forward_declare(&nodes);
