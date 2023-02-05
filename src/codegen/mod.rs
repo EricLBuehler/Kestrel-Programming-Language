@@ -10,6 +10,7 @@ use inkwell::types::BasicType;
 use crate::fileinfo;
 use inkwell::debug_info::AsDIScope;
 use itertools::izip;
+use ngrammatic::{CorpusBuilder, Pad};
 
 use core::panic;
 use std::error::Error;
@@ -737,8 +738,25 @@ impl<'ctx> CodeGen<'ctx> {
             None => {
                 let res: Option<(inkwell::values::PointerValue, types::DataType, ForwardDeclarationType)> = self.get_function(&name);
                 if res==None {
+                    let mut corpus = CorpusBuilder::new()
+                        .arity(2)
+                        .pad_full(Pad::Auto)
+                        .finish();
+
+                    for locals in &self.namespaces.locals {
+                        for (name, _) in locals {
+                            corpus.add_text(name.as_str());
+                        }
+                    }
+
+                    let results = corpus.search(&name, 0.3);
+                    let top_match = results.first();
+                    if top_match.is_some() {
+                        let fmt: String = format!("Name '{}' is not defined. Did you mean '{}'?", name, top_match.unwrap().text);
+                        errors::raise_error(&fmt, errors::ErrorType::NameNotFound, &node.pos, self.info);                                
+                    }
                     let fmt: String = format!("Name '{}' is not defined.", name);
-                    errors::raise_error(&fmt, errors::ErrorType::NameNotFound, &node.pos, self.info);
+                    errors::raise_error(&fmt, errors::ErrorType::NameNotFound, &node.pos, self.info);                    
                 }
                 let data: types::Data = types::Data {
                     data: Some(inkwell::values::BasicValueEnum::PointerValue(res.as_ref().unwrap().0)),
