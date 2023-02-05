@@ -2,6 +2,6 @@ fn f(s: &mut i32) {
     s=10;
 }
 fn main() {
-    let tomato = 1;
-    tomacco
+    let a = 1;
+    f(&mut a);
 }
