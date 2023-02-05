@@ -83,4 +83,16 @@ All elements must be of the same type
 # Structs
 
 ## ```String```
-The ```String``` wraps a ```char``` array with [methods](methods/String.md).
+The ```String``` wraps an ```i8``` array with [methods](methods/String.md).
+
+# Enums
+
+## ```Optional```
+The ```Optional``` type represents a value that may or may not be present.
+
+```
+enum Optional<T> {
+    Some<T>,
+    None,
+}
+```
