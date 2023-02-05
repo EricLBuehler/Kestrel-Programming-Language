@@ -12,9 +12,9 @@ str.length() == 3usize
 ```
 
 ### ```get```
-The ```get``` instance method returns a reference to a character from the ```String``` array.
+The ```get``` instance method returns an ```Optional``` character from the ```String``` array.
 
-```String.get(self: String, index: usize) -> &u8```
+```String.get(self: String, index: usize) -> Optional<u8>```
 
 ```
 let str = String::new("Kestrel")
