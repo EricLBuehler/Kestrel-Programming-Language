@@ -2361,6 +2361,14 @@ impl<'ctx> CodeGen<'ctx> {
             
             let idx: usize = tp.names.as_ref().unwrap().iter().position(|x| x == &name).unwrap() as usize;
             
+            if get_enum_id {
+                return types::Data {
+                    data: Some(inkwell::values::BasicValueEnum::IntValue(self.inkwell_types.i32tp.const_int(idx as u64, false))),
+                    tp: tp.clone(),
+                    owned: true
+                };
+            }
+            
             if self.namespaces.generic_enums.contains_key(&tp.name) && !allow_enum_noinit && tp.mutability.get(idx).unwrap() != &types::DataMutablility::Immutable {
                 let fmt: String = format!("Enum '{}' is generic, use a generic load.", tp.name);
                 errors::raise_error(&fmt, errors::ErrorType::NamespaceLoadOfGenericEnum, &node.pos, self.info);
@@ -2373,14 +2381,6 @@ impl<'ctx> CodeGen<'ctx> {
                     errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
                 }
                 tp.types = vec![self.datatypes.get(&types::BasicDataType::Void.to_string()).unwrap().clone(), self.datatypes.get(&types::BasicDataType::I32.to_string()).unwrap().clone()];
-                return types::Data {
-                    data: Some(inkwell::values::BasicValueEnum::IntValue(self.inkwell_types.i32tp.const_int(idx as u64, false))),
-                    tp: tp.clone(),
-                    owned: true
-                };
-            }
-            
-            if get_enum_id {
                 return types::Data {
                     data: Some(inkwell::values::BasicValueEnum::IntValue(self.inkwell_types.i32tp.const_int(idx as u64, false))),
                     tp: tp.clone(),
@@ -3088,9 +3088,9 @@ impl<'ctx> CodeGen<'ctx> {
                 //Store optional data
                 let dtp: types::DataType = pattern_v.tp.types.get(pattern_v.tp.names.as_ref().unwrap().iter().position(|x| x == &pattern.as_ref().unwrap().data.attr.as_ref().unwrap().attr).unwrap() as usize).unwrap().clone();
                 if dtp.tp != types::BasicDataType::Void && name.is_some(){
-                    self.namespaces.locals.last_mut().unwrap().insert(name.as_ref().unwrap().to_owned(), (Some(data_ptr), dtp, types::DataMutablility::Immutable, types::DataOwnership {owned: false, transferred: None, mut_borrowed: true,}, node.pos.clone(), InitializationStatus::Initialized));
+                    self.namespaces.locals.last_mut().unwrap().insert(name.as_ref().unwrap().to_owned(), (Some(data_ptr), dtp, types::DataMutablility::Immutable, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
                 }
-
+                
                 let data: types::Data = self.compile(block, true, false);
 
                 if tp.is_none() {
@@ -3667,9 +3667,8 @@ impl<'ctx> CodeGen<'ctx> {
                 self.build_stmt(node)
             }
         };
-
         
-        let res: types::Data = if raw.data.is_some() && !raw.data.unwrap().is_pointer_value() && borrow_options.get_ptr {
+        let res: types::Data = if raw.data.is_some() && !raw.data.unwrap().is_pointer_value() && (borrow_options.get_ptr || get_enum_id) {
             let ptr = self.builder.build_alloca(raw.data.unwrap().get_type(), "inplace_ptr");
             self.builder.build_store(ptr, raw.data.unwrap());
             types::Data {
@@ -3681,6 +3680,19 @@ impl<'ctx> CodeGen<'ctx> {
         else {
             raw
         };
+
+        if get_enum_id && res.tp.tp == types::BasicDataType::Enum {
+            debug_assert!(res.data.unwrap().is_pointer_value());
+            
+            let idptr = self.builder.build_struct_gep(res.data.unwrap().into_pointer_value(), 0, "idptr").expect("GEP Error");
+            
+            let data: types::Data = types::Data {
+                data: Some(inkwell::values::BasicValueEnum::IntValue(self.builder.build_load(idptr, "id").into_int_value())),
+                tp: res.tp,
+                owned: true,
+            };
+            return data;
+        }
 
         return res;
     }

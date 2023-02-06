@@ -25,9 +25,30 @@ entry:
   %res = call { i32, %enum_st_data* } @f(), !dbg !14
   %inplace_ptr = alloca { i32, %enum_st_data* }, !dbg !14
   store { i32, %enum_st_data* } %res, { i32, %enum_st_data* }* %inplace_ptr, !dbg !14
-  %is_id_ptr = getelementptr inbounds { i32, %enum_st_data* }, { i32, %enum_st_data* }* %inplace_ptr, i32 0, i32 0, !dbg !14
-  %is_id = load i32, i32* %is_id_ptr, !dbg !14
-  %is_compare = icmp eq i32 %is_id, 0, !dbg !14
+  %idptr = getelementptr inbounds { i32, %enum_st_data* }, { i32, %enum_st_data* }* %inplace_ptr, i32 0, i32 0, !dbg !14
+  %id = load i32, i32* %idptr, !dbg !14
+  %enum_st = alloca { i32, %enum_st_data* }, !dbg !14
+  %variant_id = getelementptr inbounds { i32, %enum_st_data* }, { i32, %enum_st_data* }* %enum_st, i32 0, i32 0, !dbg !14
+  store i32 0, i32* %variant_id, !dbg !14
+  %variant_data_ptr = alloca i32, !dbg !14
+  store i32 0, i32* %variant_data_ptr, !dbg !14
+  %variant_data_bitcast = bitcast i32* %variant_data_ptr to %enum_st_data*, !dbg !14
+  %variant_data = getelementptr inbounds { i32, %enum_st_data* }, { i32, %enum_st_data* }* %enum_st, i32 0, i32 1, !dbg !14
+  store %enum_st_data* %variant_data_bitcast, %enum_st_data** %variant_data, !dbg !14
+  %id_ptr = getelementptr inbounds { i32, %enum_st_data* }, { i32, %enum_st_data* }* %enum_st, i32 0, i32 0, !dbg !14
+  %data_ptr = getelementptr inbounds { i32, %enum_st_data* }, { i32, %enum_st_data* }* %enum_st, i32 0, i32 1, !dbg !14
+  %id1 = load i32, i32* %id_ptr, !dbg !14
+  %compare_1 = icmp eq i32 %id, %id1, !dbg !14
+  br i1 %compare_1, label %pattern_0, label %default, !dbg !14
+
+pattern_0:                                        ; preds = %entry
+  %v = load %enum_st_data*, %enum_st_data** %data_ptr, !dbg !14
+  br label %end, !dbg !14
+
+default:                                          ; preds = %entry
+  br label %end, !dbg !14
+
+end:                                              ; preds = %default, %pattern_0
   ret void, !dbg !14
 }
 

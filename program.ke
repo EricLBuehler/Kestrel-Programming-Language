@@ -3,5 +3,12 @@ fn f() -> Result<i32, i64> {
 }
 
 fn main() {
-    f() is Result<i32, i64>::Ok;
+    match f() {
+        Result::Ok<v> => {
+            v;
+        },
+        _ => {
+
+        }
+    }
 }
