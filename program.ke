@@ -1,3 +1,7 @@
+fn f() -> Result<i32, i64> {
+    return Result<i32, i64>::Ok<100>
+}
+
 fn main() {
     let res: Optional<u8> = String::new("Kestrel").get(1usize)
 }

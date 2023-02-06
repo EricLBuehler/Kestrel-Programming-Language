@@ -2341,7 +2341,7 @@ impl<'ctx> CodeGen<'ctx> {
         return data;
     }
 
-    fn build_namespaceload(&mut self, node: &parser::Node, get_enum_id: bool, allow_enum_noinit: bool, alttp: Option<types::DataType<'ctx>>) -> types::Data<'ctx> {
+    fn build_namespaceload(&mut self, node: &parser::Node, get_enum_id: bool, allow_enum_noinit: bool, alttp: Option<types::DataType<'ctx>>, borrow_options: BorrowOptions) -> types::Data<'ctx> {
         let attr: &String = &node.data.attr.as_ref().unwrap().attr;
 
         //Check for enums
@@ -2422,8 +2422,15 @@ impl<'ctx> CodeGen<'ctx> {
                 self.builder.build_store(variant_data, data_bitcast);
             }
 
+            if borrow_options.get_ptr {
+                return types::Data {
+                    data: Some(inkwell::values::BasicValueEnum::PointerValue(st)),
+                    tp: tp.clone(),
+                    owned: true
+                };
+            }
             return types::Data {
-                data: Some(inkwell::values::BasicValueEnum::PointerValue(st)),
+                data: Some(self.builder.build_load(st, "load_variant")),
                 tp: tp.clone(),
                 owned: true
             };
@@ -3049,7 +3056,7 @@ impl<'ctx> CodeGen<'ctx> {
                     else_block = default_block;
                 }
 
-                let pattern_v: types::Data = self.build_namespaceload(&pattern.as_ref().unwrap(), false, true, Some(expr.tp.clone()));
+                let pattern_v: types::Data = self.build_namespaceload(&pattern.as_ref().unwrap(), false, true, Some(expr.tp.clone()), BorrowOptions{ give_ownership: false, get_ptr: true, mut_borrow: false});
                 
                 let id_ptr: inkwell::values::PointerValue = self.builder.build_struct_gep(pattern_v.data.unwrap().into_pointer_value(), 0, "id_ptr").expect("GEP Error");
                 let data_ptr: inkwell::values::PointerValue = self.builder.build_struct_gep(pattern_v.data.unwrap().into_pointer_value(), 1, "data_ptr").expect("GEP Error");
@@ -3267,7 +3274,7 @@ impl<'ctx> CodeGen<'ctx> {
         return data;
     }
 
-    fn build_genericenum(&mut self, node: &parser::Node, get_enum_id: bool) -> types::Data<'ctx> {
+    fn build_genericenum(&mut self, node: &parser::Node, get_enum_id: bool, borrow_options: BorrowOptions) -> types::Data<'ctx> {
         let mut tp: types::DataType = self.datatypes.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().clone();
         if tp.tp != types::BasicDataType::Enum {
             let fmt: String = format!("Expected 'enum', got '{}'.", tp);
@@ -3360,8 +3367,15 @@ impl<'ctx> CodeGen<'ctx> {
             self.builder.build_store(variant_data, data_bitcast);
         }
 
+        if borrow_options.get_ptr {
+            return types::Data {
+                data: Some(inkwell::values::BasicValueEnum::PointerValue(st)),
+                tp: tp.clone(),
+                owned: true
+            };
+        }
         return types::Data {
-            data: Some(inkwell::values::BasicValueEnum::PointerValue(st)),
+            data: Some(self.builder.build_load(st, "load_variant")),
             tp: tp.clone(),
             owned: true
         };
@@ -3611,7 +3625,7 @@ impl<'ctx> CodeGen<'ctx> {
                 }
             }
             parser::NodeType::NAMESPACE => {
-                self.build_namespaceload(node, get_enum_id, allow_enum_noinit, None)
+                self.build_namespaceload(node, get_enum_id, allow_enum_noinit, None, borrow_options.clone())
             }
             parser::NodeType::IF => {
                 self.build_if(node)
@@ -3644,7 +3658,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.build_match(node)
             }
             parser::NodeType::GENERICENUM => {
-                self.build_genericenum(node, get_enum_id)
+                self.build_genericenum(node, get_enum_id, borrow_options.clone())
             }
             parser::NodeType::MUTREF => {
                 self.build_mutref(node)

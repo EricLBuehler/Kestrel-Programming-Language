@@ -861,8 +861,8 @@ impl<'a> Parser<'a> {
             
             while self.current_is_type(TokenType::IDENTIFIER) {
                 typs.push(self.parse_type(types::DataMutablility::Immutable).1);
-
-                if !self.current_is_type(TokenType::GT) {
+                
+                if !self.current_is_type(TokenType::GT) && !self.current_is_type(TokenType::COMMA) {
                     self.raise_error("Expected right angle bracket.", ErrorType::InvalidTok);
                 }
                 self.advance();
