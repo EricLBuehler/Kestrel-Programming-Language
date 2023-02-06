@@ -884,19 +884,24 @@ impl<'a> Parser<'a> {
             let attr: String = self.current.data.clone();
             self.advance();
             pos.endcol = self.current.endcol;
-            if !self.current_is_type(TokenType::LT) {
-                self.raise_error("Expected left angle bracket.", ErrorType::InvalidTok);
+
+            let expr: Option<Node>;
+            if self.current_is_type(TokenType::LT) {
+                self.advance();
+                expr = Some(self.expr(Precedence::Comparison));
+                if !self.current_is_type(TokenType::GT) {
+                    self.raise_error("Expected right angle bracket.", ErrorType::InvalidTok);
+                }
             }
-            self.advance();
-            let expr: Node = self.expr(Precedence::Comparison);
-            if !self.current_is_type(TokenType::GT) {
-                self.raise_error("Expected left angle bracket.", ErrorType::InvalidTok);
+            else {
+                expr = None;
             }
+            
 
             let attr: nodes::AttrNode = nodes::AttrNode{
                 name: n,
                 attr,
-                expr: Some(expr),
+                expr,
                 template_types: Some(typs),
             };
         
@@ -1963,7 +1968,7 @@ impl<'a> Parser<'a> {
         
         let expr: Node = self.expr(Precedence::Lowest);
 
-        if expr.tp != NodeType::NAMESPACE {
+        if expr.tp != NodeType::NAMESPACE && expr.tp != NodeType::GENERICENUM {
             self.raise_error("Expected namespace or enum attribute access.", ErrorType::InvalidTok);
         }
 

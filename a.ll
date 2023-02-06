@@ -22,34 +22,12 @@ entry:
 ; Function Attrs: noinline nounwind optnone
 define void @_main() local_unnamed_addr #0 !dbg !10 {
 entry:
-  %String = alloca { [7 x i8] }, !dbg !14
-  %arr = getelementptr inbounds { [7 x i8] }, { [7 x i8] }* %String, i32 0, i32 0, !dbg !14
-  store [7 x i8] c"Kestrel", [7 x i8]* %arr, !dbg !14
-  %string = load { [7 x i8] }, { [7 x i8] }* %String, !dbg !14
-  %inplace_ptr = alloca { [7 x i8] }, !dbg !14
-  store { [7 x i8] } %string, { [7 x i8] }* %inplace_ptr, !dbg !14
-  %arr1 = getelementptr inbounds { [7 x i8] }, { [7 x i8] }* %inplace_ptr, i32 0, i32 0, !dbg !14
-  %load_arr = load [7 x i8], [7 x i8]* %arr1, !dbg !14
-  br label %then, !dbg !14
-
-then:                                             ; preds = %entry
-  %itmptr = getelementptr inbounds [7 x i8], [7 x i8]* %arr1, i32 0, i64 1, !dbg !14
-  %item = load i8, i8* %itmptr, !dbg !14
-  %enum_st = alloca { i32, %enum_st_data* }, !dbg !14
-  %variant_id = getelementptr inbounds { i32, %enum_st_data* }, { i32, %enum_st_data* }* %enum_st, i32 0, i32 0, !dbg !14
-  store i32 0, i32* %variant_id, !dbg !14
-  %variant_data_ptr = alloca i8, !dbg !14
-  store i8 %item, i8* %variant_data_ptr, !dbg !14
-  %variant_data_bitcast = bitcast i8* %variant_data_ptr to %enum_st_data*, !dbg !14
-  %variant_data = getelementptr inbounds { i32, %enum_st_data* }, { i32, %enum_st_data* }* %enum_st, i32 0, i32 1, !dbg !14
-  store %enum_st_data* %variant_data_bitcast, %enum_st_data** %variant_data, !dbg !14
-  br label %end, !dbg !14
-
-end:                                              ; preds = %then
-  %some_case = load { i32, %enum_st_data* }, { i32, %enum_st_data* }* %enum_st, !dbg !14
-  %none_case = load { i32, %enum_st_data* }, { i32, %enum_st_data* }* undef, !dbg !14
-  %res = alloca { i32, %enum_st_data* }, !dbg !14
-  store { i32, %enum_st_data* } %some_case, { i32, %enum_st_data* }* %res, !dbg !14
+  %res = call { i32, %enum_st_data* } @f(), !dbg !14
+  %inplace_ptr = alloca { i32, %enum_st_data* }, !dbg !14
+  store { i32, %enum_st_data* } %res, { i32, %enum_st_data* }* %inplace_ptr, !dbg !14
+  %is_id_ptr = getelementptr inbounds { i32, %enum_st_data* }, { i32, %enum_st_data* }* %inplace_ptr, i32 0, i32 0, !dbg !14
+  %is_id = load i32, i32* %is_id_ptr, !dbg !14
+  %is_compare = icmp eq i32 %is_id, 0, !dbg !14
   ret void, !dbg !14
 }
 

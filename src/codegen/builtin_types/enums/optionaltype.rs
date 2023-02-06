@@ -13,7 +13,7 @@ pub fn optional_some<'a>(codegen: &codegen::CodeGen<'a>, data: Option<inkwell::v
     if data.is_some() {
         let data_ptr: inkwell::values::PointerValue = codegen.builder.build_alloca(data.unwrap().get_type(), "variant_data_ptr");
         codegen.builder.build_store(data_ptr, data.unwrap());
-
+        
         let data_bitcast: inkwell::values::PointerValue = codegen.builder.build_bitcast(data_ptr, codegen.inkwell_types.enum_data_tp.ptr_type(inkwell::AddressSpace::from(0u16)), "variant_data_bitcast").into_pointer_value();
         let variant_data: inkwell::values::PointerValue = codegen.builder.build_struct_gep(st, 1, "variant_data").expect("GEP Error");
         codegen.builder.build_store(variant_data, data_bitcast);

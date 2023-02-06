@@ -2962,7 +2962,7 @@ impl<'ctx> CodeGen<'ctx> {
     }
 
     fn build_is(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let left: types::Data = self.compile_expr(&node.data.is.as_ref().unwrap().left, BorrowOptions{ give_ownership: false, get_ptr: false, mut_borrow: false}, false, false);
+        let left: types::Data = self.compile_expr(&node.data.is.as_ref().unwrap().left, BorrowOptions{ give_ownership: false, get_ptr: true, mut_borrow: false}, false, false);
         
         if left.tp.tp != types::BasicDataType::Enum {
             let fmt: String = format!("Expected 'enum', got '{}'.", left.tp);
@@ -2970,7 +2970,7 @@ impl<'ctx> CodeGen<'ctx> {
         }
 
         let variant: types::Data = self.compile_expr(&node.data.is.as_ref().unwrap().variant, BorrowOptions{ give_ownership: false, get_ptr: false, mut_borrow: false}, true, false);
-
+        
         if variant.tp.tp != types::BasicDataType::Enum {
             let fmt: String = format!("Expected 'enum', got '{}'.", left.tp);
             errors::raise_error(&fmt, errors::ErrorType::ExpectedEnum, &node.data.is.as_ref().unwrap().variant.pos, self.info);

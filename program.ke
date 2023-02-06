@@ -3,5 +3,5 @@ fn f() -> Result<i32, i64> {
 }
 
 fn main() {
-    let res: Optional<u8> = String::new("Kestrel").get(1usize)
+    f() is Result<i32, i64>::Ok;
 }
