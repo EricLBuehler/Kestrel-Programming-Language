@@ -96,3 +96,13 @@ enum Optional<T> {
     None,
 }
 ```
+
+## ```Result```
+The ```Result``` type represents a value that may be an ```Ok``` or ```Err``` value.
+
+```
+enum Result<T, E> {
+    Ok<T>,
+    Err<E>,
+}
+```

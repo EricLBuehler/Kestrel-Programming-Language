@@ -170,4 +170,5 @@ pub fn init_structs(codegen: &mut codegen::CodeGen) {
 
 pub fn init_enums(codegen: &mut codegen::CodeGen) {
     enums::optionaltype::init_optional(codegen);
+    enums::resulttype::init_result(codegen);
 }
