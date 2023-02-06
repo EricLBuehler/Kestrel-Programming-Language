@@ -1900,7 +1900,16 @@ impl<'ctx> CodeGen<'ctx> {
             idx+=1;
         }
 
-        let itmptr: inkwell::values::PointerValue = self.builder.build_struct_gep(base.data.unwrap().into_pointer_value(), idx, base.tp.name.as_str()).expect("GEP Error");
+        let ptr: inkwell::values::PointerValue;
+        if base.data.unwrap().is_pointer_value() {
+            ptr = base.data.unwrap().into_pointer_value();
+        }
+        else {
+            ptr = self.builder.build_alloca(base.data.unwrap().get_type(), "inplace_attr");
+            self.builder.build_store(ptr, base.data.unwrap());
+        }
+
+        let itmptr: inkwell::values::PointerValue = self.builder.build_struct_gep(ptr, idx, base.tp.name.as_str()).expect("GEP Error");
         if borrow_options.get_ptr {
             let data: types::Data = types::Data {
                 data: Some(inkwell::values::BasicValueEnum::PointerValue(itmptr)),
@@ -1964,7 +1973,16 @@ impl<'ctx> CodeGen<'ctx> {
             errors::raise_error(&fmt, errors::ErrorType::ImmutableAttr, &node.pos, self.info);
         }
 
-        let itmptr: inkwell::values::PointerValue = self.builder.build_struct_gep(base.data.unwrap().into_pointer_value(), idx, base.tp.name.as_str()).expect("GEP Error");
+        let ptr: inkwell::values::PointerValue;
+        if base.data.unwrap().is_pointer_value() {
+            ptr = base.data.unwrap().into_pointer_value();
+        }
+        else {
+            ptr = self.builder.build_alloca(base.data.unwrap().get_type(), "inplace_attr");
+            self.builder.build_store(ptr, base.data.unwrap());
+        }
+
+        let itmptr: inkwell::values::PointerValue = self.builder.build_struct_gep(ptr, idx, base.tp.name.as_str()).expect("GEP Error");
         
         let expr: types::Data = self.compile_expr(&node.data.attrassign.as_ref().unwrap().expr, BorrowOptions{ give_ownership: true, get_ptr: false, mut_borrow: false}, false, false);
 
@@ -2461,10 +2479,9 @@ impl<'ctx> CodeGen<'ctx> {
 
         let mut idx: usize = 0;
         for ifn in &node.data.ifn.as_ref().unwrap().ifs {
-            self.builder.position_at_end(enclosing_block);      
-            println!("A");      
+            self.builder.position_at_end(enclosing_block);    
             let right: types::Data = self.compile_expr(&ifn.0, BorrowOptions{ give_ownership: false, get_ptr: false, mut_borrow: false}, false, false);
-            dbg!(&right.tp);
+            
             let mut args: Vec<types::Data> = Vec::new();
 
             let tp: types::Type = Self::get_type_from_data(self.types.clone(), &right);
@@ -3356,8 +3373,8 @@ impl<'ctx> CodeGen<'ctx> {
         return data;
     }
 
-    fn compile_expr(&mut self, node: &parser::Node, borrow_options: BorrowOptions, get_enum_id: bool, allow_enum_noinit: bool,) -> types::Data<'ctx> {
-        match node.tp {
+    fn compile_expr(&mut self, node: &parser::Node, borrow_options: BorrowOptions, get_enum_id: bool, allow_enum_noinit: bool) -> types::Data<'ctx> {
+        let raw: types::Data = match node.tp {
             parser::NodeType::I32 => {
                 let self_data: &String = &node.data.num.as_ref().unwrap().left;
                 builtin_types::i32type::check_overflow_literal(self, self_data, &node.pos);
@@ -3381,7 +3398,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.build_let(node)
             }
             parser::NodeType::IDENTIFIER => {
-                self.build_loadname(node, borrow_options, get_enum_id)
+                self.build_loadname(node, borrow_options.clone(), get_enum_id)
             }
             parser::NodeType::FUNC => {
                 self.build_func(node, None, None, None)
@@ -3567,7 +3584,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.build_initstruct(node)
             }
             parser::NodeType::ATTR => {
-                self.build_attrload(node, borrow_options)
+                self.build_attrload(node, borrow_options.clone())
             }
             parser::NodeType::ATTRASSIGN => {
                 self.build_attrasssign(node)
@@ -3630,7 +3647,23 @@ impl<'ctx> CodeGen<'ctx> {
             parser::NodeType::STMT => {
                 self.build_stmt(node)
             }
+        };
+
+        
+        let res: types::Data = if raw.data.is_some() && !raw.data.unwrap().is_pointer_value() && borrow_options.get_ptr {
+            let ptr = self.builder.build_alloca(raw.data.unwrap().get_type(), "inplace_ptr");
+            self.builder.build_store(ptr, raw.data.unwrap());
+            types::Data {
+                data: Some(inkwell::values::BasicValueEnum::PointerValue(ptr)),
+                tp: raw.tp.clone(),
+                owned: raw.owned,
+            }
         }
+        else {
+            raw
+        };
+
+        return res;
     }
 
     fn compile(&mut self, nodes: &Vec<parser::Node>, infn: bool, toplvl: bool) -> types::Data<'ctx>{

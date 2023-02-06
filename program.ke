@@ -1,5 +1,3 @@
 fn main() {
-    let str: String = String::new("Kestrel")
-
-    let res: Optional<u8> = Optional::None;
+    let res: Optional<u8> = String::new("Kestrel").get(1usize)
 }

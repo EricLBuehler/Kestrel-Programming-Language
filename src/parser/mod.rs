@@ -313,7 +313,10 @@ impl<'a> Parser<'a> {
             TokenType::NE => {
                 Precedence::Equals
             }
-            
+            TokenType::DOT => {
+                Precedence::Dot
+            }
+
             _ => {
                 Precedence::Lowest
             }
@@ -495,6 +498,15 @@ impl<'a> Parser<'a> {
 
                 TokenType::LPAREN => {
                     left = self.generate_call(left);
+                }
+
+                TokenType::DOT => {
+                    self.advance();
+                    let attr: String = self.current.data.clone();
+
+                    left = self.generate_attr(attr, left.to_owned(), left.pos);
+
+                    self.advance();
                 }
 
                 TokenType::KEYWORD => {
@@ -763,7 +775,7 @@ impl<'a> Parser<'a> {
             n = self.create_node(NodeType::INITSTRUCT, nodedat, pos);
         }
         else if self.next_is_type(TokenType::DOT) {
-            let mut pos = Position {
+            let pos = Position {
                 line: self.current.line,
                 startcol: self.current.startcol,
                 endcol: 0,
@@ -771,86 +783,7 @@ impl<'a> Parser<'a> {
             self.advance();
             self.advance();
             let attr: String = self.current.data.clone();
-
-            if self.next_is_type(TokenType::EQUALS) {
-                self.advance();
-                self.advance();
-                let expr: Node = self.expr(Precedence::Lowest);
-                self.backadvance();
-                pos.endcol = self.current.endcol;
-
-                let attr: nodes::AttrAssignNode = nodes::AttrAssignNode{
-                    name: n,
-                    attr,
-                    expr,
-                };
-            
-                let nodedat: nodes::NodeData = nodes::NodeData {
-                    binary: None,
-                    num: None,
-                    letn: None,
-                    identifier: None,
-                    func: None,
-                    assign: None,
-                    call: None,
-                    ret: None,
-                    to: None,
-                    unary: None,
-                    st: None,
-                    initst: None,
-                    attr: None,
-                    attrassign: Some(attr),
-                    str: None,
-                    arr: None,
-                    impln: None,
-                    ifn: None,
-                    loopn: None,
-                    enumn: None,
-                    traitn: None,
-                    is: None,
-                    matchn: None,
-                };
-            
-                n = self.create_node(NodeType::ATTRASSIGN, nodedat, pos.clone());
-            }
-            else {            
-                pos.endcol = self.current.endcol;
-
-                let attr: nodes::AttrNode = nodes::AttrNode{
-                    name: n,
-                    attr,
-                    expr: None,
-                    template_types: None,
-                };
-            
-                let nodedat: nodes::NodeData = nodes::NodeData {
-                    binary: None,
-                    num: None,
-                    letn: None,
-                    identifier: None,
-                    func: None,
-                    assign: None,
-                    call: None,
-                    ret: None,
-                    to: None,
-                    unary: None,
-                    st: None,
-                    initst: None,
-                    attr: Some(attr),
-                    attrassign: None,
-                    str: None,
-                    arr: None,
-                    impln: None,
-                    ifn: None,
-                    loopn: None,
-                    enumn: None,
-                    traitn: None,
-                    is: None,
-                    matchn: None,
-                };
-            
-                n = self.create_node(NodeType::ATTR, nodedat, pos.clone());
-            }
+            n = self.generate_attr(attr, n, pos);
         }
         else if self.next_is_type(TokenType::DOUBLECOLON) {
             let mut pos = Position {
@@ -997,6 +930,88 @@ impl<'a> Parser<'a> {
         }
     
         return n;
+    }
+
+    fn generate_attr(&mut self, attr: String, left: Node, mut pos: Position) -> Node {
+        if self.next_is_type(TokenType::EQUALS) {
+            self.advance();
+            self.advance();
+            let expr: Node = self.expr(Precedence::Lowest);
+            self.backadvance();
+            pos.endcol = self.current.endcol;
+
+            let attr: nodes::AttrAssignNode = nodes::AttrAssignNode{
+                name: left,
+                attr,
+                expr,
+            };
+        
+            let nodedat: nodes::NodeData = nodes::NodeData {
+                binary: None,
+                num: None,
+                letn: None,
+                identifier: None,
+                func: None,
+                assign: None,
+                call: None,
+                ret: None,
+                to: None,
+                unary: None,
+                st: None,
+                initst: None,
+                attr: None,
+                attrassign: Some(attr),
+                str: None,
+                arr: None,
+                impln: None,
+                ifn: None,
+                loopn: None,
+                enumn: None,
+                traitn: None,
+                is: None,
+                matchn: None,
+            };
+        
+            return self.create_node(NodeType::ATTRASSIGN, nodedat, pos.clone());
+        }
+        else {            
+            pos.endcol = self.current.endcol;
+
+            let attr: nodes::AttrNode = nodes::AttrNode{
+                name: left,
+                attr,
+                expr: None,
+                template_types: None,
+            };
+        
+            let nodedat: nodes::NodeData = nodes::NodeData {
+                binary: None,
+                num: None,
+                letn: None,
+                identifier: None,
+                func: None,
+                assign: None,
+                call: None,
+                ret: None,
+                to: None,
+                unary: None,
+                st: None,
+                initst: None,
+                attr: Some(attr),
+                attrassign: None,
+                str: None,
+                arr: None,
+                impln: None,
+                ifn: None,
+                loopn: None,
+                enumn: None,
+                traitn: None,
+                is: None,
+                matchn: None,
+            };
+        
+            return self.create_node(NodeType::ATTR, nodedat, pos.clone());
+        }
     }
 
     fn generate_assign(&mut self, left: Node) -> Node{
