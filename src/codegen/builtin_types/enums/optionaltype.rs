@@ -47,7 +47,7 @@ pub fn init_optional(codegen: &mut codegen::CodeGen) {
     tp.name = String::from("Optional");
     tp.names = Some(vec![String::from("Some"), String::from("None")]);
     tp.types = vec![];
-    tp.mutability = vec![DataMutablility::Mutable];
+    tp.mutability = vec![DataMutablility::Mutable, DataMutablility::Immutable];
 
     let typ: crate::parser::Type = crate::parser::Type {
         isfn: false,

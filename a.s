@@ -10,53 +10,30 @@ _main:                                  # @_main
 	.cfi_sections .debug_frame
 	.cfi_startproc
 # %bb.0:                                # %entry
-	pushq	%rbp
-	.cfi_def_cfa_offset 16
-	.cfi_offset %rbp, -16
-	movq	%rsp, %rbp
-	.cfi_def_cfa_register %rbp
-	subq	$16, %rsp
-.Ltmp0:
-	movb	$108, -2(%rbp)
-	movb	$101, -3(%rbp)
-	movb	$114, -4(%rbp)
-	movb	$116, -5(%rbp)
-	movb	$115, -6(%rbp)
-	movb	$101, -7(%rbp)
-	movb	$75, -8(%rbp)
-	movb	-8(%rbp), %sil
-	movb	-7(%rbp), %dil
-	movb	-6(%rbp), %r8b
-	movb	-5(%rbp), %r9b
-	movb	-4(%rbp), %cl
-	movb	-3(%rbp), %dl
-	movb	-2(%rbp), %al
-	movb	%al, -10(%rbp)
-	movb	%dl, -11(%rbp)
-	movb	%cl, -12(%rbp)
-	movb	%r9b, -13(%rbp)
-	movb	%r8b, -14(%rbp)
-	movb	%dil, -15(%rbp)
-	movb	%sil, -16(%rbp)
-# %bb.1:                                # %else
-	movq	%rsp, %rax
-	addq	$-16, %rax
-	movq	%rax, %rsp
-	movl	$1, (%rax)
-# %bb.2:                                # %end
-	movl	(%rax), %ecx
-	movq	8(%rax), %rax
-	movq	%rsp, %rdx
-	movq	%rdx, %rsi
-	addq	$-16, %rsi
-	movq	%rsi, %rsp
-	movq	%rax, -8(%rdx)
-	movl	%ecx, -16(%rdx)
-	movq	%rbp, %rsp
-	popq	%rbp
-	.cfi_def_cfa %rsp, 8
+	movb	$108, -18(%rsp)
+	movb	$101, -19(%rsp)
+	movb	$114, -20(%rsp)
+	movb	$116, -21(%rsp)
+	movb	$115, -22(%rsp)
+	movb	$101, -23(%rsp)
+	movb	$75, -24(%rsp)
+	movb	-24(%rsp), %sil
+	movb	-23(%rsp), %dil
+	movb	-22(%rsp), %r8b
+	movb	-21(%rsp), %r9b
+	movb	-20(%rsp), %cl
+	movb	-19(%rsp), %dl
+	movb	-18(%rsp), %al
+	movb	%al, -10(%rsp)
+	movb	%dl, -11(%rsp)
+	movb	%cl, -12(%rsp)
+	movb	%r9b, -13(%rsp)
+	movb	%r8b, -14(%rsp)
+	movb	%dil, -15(%rsp)
+	movb	%sil, -16(%rsp)
+	movl	$1, -4(%rsp)
 	retq
-.Ltmp1:
+.Ltmp0:
 .Lfunc_end0:
 	.size	_main, .Lfunc_end0-_main
 	.cfi_endproc
@@ -167,7 +144,7 @@ main:                                   # @main
 	.quad	.Lfunc_begin0           # DW_AT_low_pc
 	.long	.Lfunc_end0-.Lfunc_begin0 # DW_AT_high_pc
 	.byte	1                       # DW_AT_frame_base
-	.byte	86
+	.byte	87
 	.long	.Linfo_string3          # DW_AT_linkage_name
 	.long	.Linfo_string4          # DW_AT_name
 	.long	70                      # DW_AT_type

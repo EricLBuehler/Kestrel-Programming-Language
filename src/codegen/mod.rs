@@ -2325,10 +2325,6 @@ impl<'ctx> CodeGen<'ctx> {
         if  self.datatypes.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).is_some() &&
             self.datatypes.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().tp == types::BasicDataType::Enum{
             let mut tp: types::DataType = self.datatypes.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().clone();
-            if self.namespaces.generic_enums.contains_key(&tp.name) && !allow_enum_noinit {
-                let fmt: String = format!("Enum '{}' is generic, use a generic load.", tp.name);
-                errors::raise_error(&fmt, errors::ErrorType::NamespaceLoadOfGenericEnum, &node.pos, self.info);
-            }
 
             if alttp.is_some() {
                 tp = alttp.unwrap().to_owned();
@@ -2341,6 +2337,26 @@ impl<'ctx> CodeGen<'ctx> {
             }
             
             let idx: usize = tp.names.as_ref().unwrap().iter().position(|x| x == &name).unwrap() as usize;
+            
+            if self.namespaces.generic_enums.contains_key(&tp.name) && !allow_enum_noinit && tp.mutability.get(idx).unwrap() != &types::DataMutablility::Immutable {
+                let fmt: String = format!("Enum '{}' is generic, use a generic load.", tp.name);
+                errors::raise_error(&fmt, errors::ErrorType::NamespaceLoadOfGenericEnum, &node.pos, self.info);
+            }
+            else if (self.namespaces.generic_enums.contains_key(&tp.name) || allow_enum_noinit) &&
+                    tp.mutability.get(idx).unwrap() == &types::DataMutablility::Immutable {
+                if node.data.attr.as_ref().unwrap().expr.is_some() {
+                    let dat: types::Data = self.compile_expr(&node.data.attr.as_ref().unwrap().expr.as_ref().unwrap(), BorrowOptions{ give_ownership: true, get_ptr: false, mut_borrow: false}, false, false);    
+                    let fmt: String = format!("Expected 'i32' type, got '{}' type.", dat.tp);
+                    errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+                }
+                tp.types = vec![self.datatypes.get(&types::BasicDataType::Void.to_string()).unwrap().clone(), self.datatypes.get(&types::BasicDataType::I32.to_string()).unwrap().clone()];
+                return types::Data {
+                    data: Some(inkwell::values::BasicValueEnum::IntValue(self.inkwell_types.i32tp.const_int(idx as u64, false))),
+                    tp: tp.clone(),
+                    owned: true
+                };
+            }
+            
             if get_enum_id {
                 return types::Data {
                     data: Some(inkwell::values::BasicValueEnum::IntValue(self.inkwell_types.i32tp.const_int(idx as u64, false))),
