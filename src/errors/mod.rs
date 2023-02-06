@@ -67,6 +67,7 @@ pub enum ErrorType {
     RefNonStruct,
     ReferenceUnownedData,
     ReferenceVariantEnum,
+    MutableRefFromImmutable,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -142,6 +143,7 @@ pub fn repr_err(tp: ErrorType) -> &'static str {
         ErrorType::RefNonStruct => "cannot have reference to non-struct",
         ErrorType::ReferenceUnownedData => "cannot have reference to unowned data",
         ErrorType::ReferenceVariantEnum => "reference variant in enum is not allowed",
+        ErrorType::MutableRefFromImmutable => "cannot take mutable reference from immutable name",
     }
 }
 

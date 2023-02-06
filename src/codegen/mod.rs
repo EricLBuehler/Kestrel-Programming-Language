@@ -792,6 +792,11 @@ impl<'ctx> CodeGen<'ctx> {
                 let fmt: String = format!("Name '{}' cannot be mutable borrowed more than once.", name);
                 errors::raise_error_multi(errors::ErrorType::NameMutableBorrowed, vec![transferred, fmt], vec![&self.get_variable(&name).0.unwrap().3.transferred.as_ref().unwrap(), &node.pos], self.info);
             }
+            if  borrow_options.mut_borrow &&
+                locals.get(&name).unwrap().2 == types::DataMutablility::Immutable {
+                    let fmt: String = format!("Cannot take mutable reference from immutable name '{}'.", name);
+                    errors::raise_error(&fmt, errors::ErrorType::MutableRefFromImmutable, &node.pos, self.info);
+            }
             locals.insert(name.clone(), (var.0.unwrap().0.clone(), var.0.unwrap().1.clone(), var.0.unwrap().2.clone(), types::DataOwnership {owned: false, transferred: Some(node.pos.clone()), mut_borrowed: borrow_options.mut_borrow}, var.0.unwrap().4.clone(), var.0.unwrap().5.clone()));
 
             self.namespaces.locals.pop();
