@@ -1,5 +1,5 @@
 fn main() {
     let str: String = String::new("Kestrel")
 
-    str.get(100usize);
+    let res: Optional<u8> = str.get(100usize);
 }

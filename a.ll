@@ -24,6 +24,10 @@ else:                                             ; preds = %entry
   br label %end, !dbg !8
 
 end:                                              ; preds = %else
+  %some_case = load { i32, %enum_st_data* }, { i32, %enum_st_data* }* undef, !dbg !8
+  %none_case = load { i32, %enum_st_data* }, { i32, %enum_st_data* }* %enum_st2, !dbg !8
+  %res = alloca { i32, %enum_st_data* }, !dbg !8
+  store { i32, %enum_st_data* } %none_case, { i32, %enum_st_data* }* %res, !dbg !8
   ret void, !dbg !8
 }
 

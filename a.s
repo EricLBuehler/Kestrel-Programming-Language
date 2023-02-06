@@ -44,6 +44,14 @@ _main:                                  # @_main
 	movq	%rax, %rsp
 	movl	$1, (%rax)
 # %bb.2:                                # %end
+	movl	(%rax), %ecx
+	movq	8(%rax), %rax
+	movq	%rsp, %rdx
+	movq	%rdx, %rsi
+	addq	$-16, %rsi
+	movq	%rsi, %rsp
+	movq	%rax, -8(%rdx)
+	movl	%ecx, -16(%rdx)
 	movq	%rbp, %rsp
 	popq	%rbp
 	.cfi_def_cfa %rsp, 8

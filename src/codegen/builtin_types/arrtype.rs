@@ -96,10 +96,10 @@ fn array_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &
 
     codegen.enclosing_block = Some(end_block);
 
-    let phi: inkwell::values::PhiValue = codegen.builder.build_phi(inkwell::types::BasicTypeEnum::StructType(*codegen.inkwell_types.enum_data_tp), "check_phi");
+    let phi: inkwell::values::PhiValue = codegen.builder.build_phi(inkwell::types::BasicTypeEnum::StructType(*codegen.inkwell_types.enumsttp), "check_phi");
 
-    phi.add_incoming(&[(&res_some.data.unwrap(), then_block)]);
-    phi.add_incoming(&[(&res_none.data.unwrap(), else_block)]);
+    phi.add_incoming(&[(&codegen.builder.build_load(res_some.data.unwrap().into_pointer_value(), "some_case"), then_block)]);
+    phi.add_incoming(&[(&codegen.builder.build_load(res_none.data.unwrap().into_pointer_value(), "none_case"), else_block)]);
 
     return Data {
         data: Some(phi.as_basic_value()),

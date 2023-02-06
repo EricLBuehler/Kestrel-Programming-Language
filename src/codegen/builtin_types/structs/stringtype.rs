@@ -59,6 +59,9 @@ fn string_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: 
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
     }
 
+    let mut opt: DataType = codegen.datatypes.get(&String::from("Optional")).unwrap().clone();
+    opt.types = vec![codegen.datatypes.get(&BasicDataType::U8.to_string()).unwrap().clone(), codegen.datatypes.get(&BasicDataType::I32.to_string()).unwrap().clone()];
+
     let ptr: inkwell::values::PointerValue = codegen.builder.build_struct_gep(args.get(0).unwrap().data.unwrap().into_pointer_value(), 0 as u32, "arr").expect("GEP Error");
     let arr: inkwell::values::ArrayValue = codegen.builder.build_load(ptr, "load_arr").into_array_value();
 
@@ -104,14 +107,14 @@ fn string_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: 
 
     codegen.enclosing_block = Some(end_block);
 
-    let phi: inkwell::values::PhiValue = codegen.builder.build_phi(inkwell::types::BasicTypeEnum::StructType(*codegen.inkwell_types.enum_data_tp), "check_phi");
+    let phi: inkwell::values::PhiValue = codegen.builder.build_phi(inkwell::types::BasicTypeEnum::StructType(*codegen.inkwell_types.enumsttp), "check_phi");
 
-    phi.add_incoming(&[(&res_some.data.unwrap(), then_block)]);
-    phi.add_incoming(&[(&res_none.data.unwrap(), else_block)]);
+    phi.add_incoming(&[(&codegen.builder.build_load(res_some.data.unwrap().into_pointer_value(), "some_case"), then_block)]);
+    phi.add_incoming(&[(&codegen.builder.build_load(res_none.data.unwrap().into_pointer_value(), "none_case"), else_block)]);
 
     return Data {
         data: Some(phi.as_basic_value()),
-        tp: codegen.datatypes.get(&String::from("Optional")).unwrap().clone(),
+        tp: opt,
         owned: true,
     };
 }

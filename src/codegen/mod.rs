@@ -5,6 +5,7 @@ use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
 use inkwell::passes::PassManagerSubType;
+use inkwell::types::AnyType;
 use inkwell::types::AnyTypeEnum;
 use inkwell::types::BasicType;
 use crate::fileinfo;
@@ -317,7 +318,7 @@ impl<'ctx> CodeGen<'ctx> {
             return (tp, inkwell::types::AnyTypeEnum::StructType(*types.dynptrtp));
         }
         else if arg.isgenum {
-            let (mut tp, anytp) = Self::get_llvm_from_type(ctx, namespaces, types, datatypes, traits, info, &arg.basetp.as_ref().unwrap(), node);
+            let (mut tp, _) = Self::get_llvm_from_type(ctx, namespaces, types, datatypes, traits, info, &arg.basetp.as_ref().unwrap(), node);
         
             if tp.tp != types::BasicDataType::Enum {
                 let fmt: String = format!("Expected 'enum', got '{}'.", tp);
@@ -357,7 +358,7 @@ impl<'ctx> CodeGen<'ctx> {
             tp.types = newtypes;
             tp.mutability = mutabilities;
 
-            return (tp.clone(), anytp);
+            return (tp.clone(), types.enumsttp.as_any_type_enum());
         }
         else if arg.isref {
             let (mut tp, anytp_raw) = Self::get_llvm_from_type(ctx, namespaces, types, datatypes, traits, info, &arg.basetp.as_ref().unwrap(), node);
