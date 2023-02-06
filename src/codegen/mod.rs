@@ -3313,6 +3313,10 @@ impl<'ctx> CodeGen<'ctx> {
                 errors::raise_error_multi(errors::ErrorType::TypeMismatch, vec![String::from("Add <...>."), fmt], vec![&node.pos, &node.pos], self.info);
             }
             let dat: types::Data = self.compile_expr(&node.data.attr.as_ref().unwrap().expr.as_ref().unwrap(), BorrowOptions{ give_ownership: true, get_ptr: false, mut_borrow: false}, false, false);
+            if tp.mutability.get(idx).unwrap() == &types::DataMutablility::Immutable {
+                let fmt: String = format!("Expected 'i32' type, got '{}' type.", dat.tp);
+                errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
+            }
             if dat.tp != enum_tp.clone() {
                 let fmt: String = format!("Expected '{}' type, got '{}' type.", enum_tp.clone(), dat.tp);
                 errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
