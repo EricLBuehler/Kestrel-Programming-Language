@@ -3062,7 +3062,8 @@ impl<'ctx> CodeGen<'ctx> {
                 let pattern_v: types::Data = self.build_namespaceload(&pattern.as_ref().unwrap(), false, true, Some(expr.tp.clone()), BorrowOptions{ give_ownership: false, get_ptr: true, mut_borrow: false});
                 
                 let id_ptr: inkwell::values::PointerValue = self.builder.build_struct_gep(pattern_v.data.unwrap().into_pointer_value(), 0, "id_ptr").expect("GEP Error");
-                let data_ptr: inkwell::values::PointerValue = self.builder.build_struct_gep(pattern_v.data.unwrap().into_pointer_value(), 1, "data_ptr").expect("GEP Error");
+                
+                let data_ptr: inkwell::values::PointerValue = self.builder.build_struct_gep(pattern_v.data.unwrap().into_pointer_value(), (expr.tp.names.as_ref().unwrap().iter().position(|x| x==&pattern.as_ref().unwrap().data.attr.as_ref().unwrap().attr).unwrap()+1) as u32, "data_ptr").expect("GEP Error");
                 
                 self.builder.build_conditional_branch(self.builder.build_int_compare(inkwell::IntPredicate::EQ, expr.data.unwrap().into_int_value(), self.builder.build_load(id_ptr, "id").into_int_value(), &("compare_".to_owned()+&index.to_string())), pattern_block_old, else_block);
                 
