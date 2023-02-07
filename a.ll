@@ -17,6 +17,31 @@ entry:
 ; Function Attrs: noinline nounwind optnone
 define void @_main() local_unnamed_addr #0 !dbg !10 {
 entry:
+  %res = call { i32, i32, i64 } @f(), !dbg !14
+  %inplace_ptr = alloca { i32, i32, i64 }, !dbg !14
+  store { i32, i32, i64 } %res, { i32, i32, i64 }* %inplace_ptr, !dbg !14
+  %idptr = getelementptr inbounds { i32, i32, i64 }, { i32, i32, i64 }* %inplace_ptr, i32 0, i32 0, !dbg !14
+  %id = load i32, i32* %idptr, !dbg !14
+  %enum_st = alloca { i32, i32, i64 }, !dbg !14
+  %variant_id = getelementptr inbounds { i32, i32, i64 }, { i32, i32, i64 }* %enum_st, i32 0, i32 0, !dbg !14
+  store i32 0, i32* %variant_id, !dbg !14
+  %variant_data = getelementptr inbounds { i32, i32, i64 }, { i32, i32, i64 }* %enum_st, i32 0, i32 1, !dbg !14
+  store i32 0, i32* %variant_data, !dbg !14
+  %id_ptr = getelementptr inbounds { i32, i32, i64 }, { i32, i32, i64 }* %enum_st, i32 0, i32 0, !dbg !14
+  %data_ptr = getelementptr inbounds { i32, i32, i64 }, { i32, i32, i64 }* %enum_st, i32 0, i32 1, !dbg !14
+  %id1 = load i32, i32* %id_ptr, !dbg !14
+  %compare_1 = icmp eq i32 %id, %id1, !dbg !14
+  br i1 %compare_1, label %pattern_0, label %default, !dbg !14
+
+pattern_0:                                        ; preds = %entry
+  %v = load i32, i32* %data_ptr, !dbg !14
+  %i32sum = add i32 %v, 1, !dbg !14
+  br label %end, !dbg !14
+
+default:                                          ; preds = %entry
+  br label %end, !dbg !14
+
+end:                                              ; preds = %default, %pattern_0
   ret void, !dbg !14
 }
 

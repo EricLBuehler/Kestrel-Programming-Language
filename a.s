@@ -29,9 +29,30 @@ _main:                                  # @_main
 	.loc	1 4 0                   # program.ke:4:0
 	.cfi_startproc
 # %bb.0:                                # %entry
-	.loc	1 4 0 prologue_end      # program.ke:4:0
-	retq
+	subq	$40, %rsp
+	.cfi_def_cfa_offset 48
 .Ltmp1:
+	.loc	1 4 0 prologue_end      # program.ke:4:0
+	callq	f
+	movq	%rcx, 32(%rsp)
+	movl	%edx, 28(%rsp)
+	movl	%eax, 24(%rsp)
+	movl	24(%rsp), %eax
+	movl	$0, 8(%rsp)
+	movl	$0, 12(%rsp)
+	leaq	8(%rsp), %rcx
+	addq	$4, %rcx
+	cmpl	8(%rsp), %eax
+	jne	.LBB1_2
+# %bb.1:                                # %pattern_0
+	jmp	.LBB1_3
+.LBB1_2:                                # %default
+	jmp	.LBB1_3
+.LBB1_3:                                # %end
+	addq	$40, %rsp
+	.cfi_def_cfa_offset 8
+	retq
+.Ltmp2:
 .Lfunc_end1:
 	.size	_main, .Lfunc_end1-_main
 	.cfi_endproc

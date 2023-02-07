@@ -821,8 +821,16 @@ impl<'ctx> CodeGen<'ctx> {
 
         if ptr.is_some() {
             if (borrow_options.mut_borrow || !borrow_options.give_ownership) && !owner.owned {
-                let fmt: String = format!("Cannot take reference of unowned data..");
+                let fmt: String = format!("Cannot take reference of unowned data.");
                 errors::raise_error(&fmt, errors::ErrorType::ReferenceUnownedData, &node.pos, self.info);
+            }
+            if !borrow_options.get_ptr {
+                let data: types::Data = types::Data {
+                    data: Some(self.builder.build_load(ptr.unwrap(), name.as_str())),
+                    tp,
+                    owned: owner.owned,
+                };
+                return data;
             }
             if borrow_options.get_ptr || borrow_options.mut_borrow || !borrow_options.give_ownership {
                 if borrow_options.mut_borrow || !borrow_options.give_ownership {
@@ -835,13 +843,6 @@ impl<'ctx> CodeGen<'ctx> {
                 };
                 return data;
             }
-            
-            let data: types::Data = types::Data {
-                data: Some(self.builder.build_load(ptr.unwrap(), name.as_str())),
-                tp,
-                owned: owner.owned,
-            };
-            return data;
         }
         let data: types::Data = types::Data {
             data: None,
