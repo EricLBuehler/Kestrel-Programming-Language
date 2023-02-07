@@ -235,7 +235,7 @@ pub fn init_string(codegen: &mut codegen::CodeGen) {
     tp.methods = methods;
 
     codegen.datatypes.insert(String::from("String"), tp.clone());
-    codegen.namespaces.structs.insert(String::from("String"), (tp, None, idxmapping, codegen::ForwardDeclarationType::Real));
+    codegen.cur_module.namespaces.structs.insert(String::from("String"), (tp, None, idxmapping, codegen::ForwardDeclarationType::Real));
     codegen::builtin_types::add_simple_type(codegen, std::collections::HashMap::new(), BasicDataType::Struct, &String::from("String"));
 
 }

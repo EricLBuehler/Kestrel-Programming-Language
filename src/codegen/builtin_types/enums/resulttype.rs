@@ -88,7 +88,7 @@ pub fn init_result(codegen: &mut codegen::CodeGen) {
         generic_tps: None,
     };
     
-    codegen.namespaces.generic_enums.insert(String::from("Result"), (vec![String::from("T"), String::from("E")], vec![Some(typ_t), Some(typ_e)]));
+    codegen.cur_module.namespaces.generic_enums.insert(String::from("Result"), (vec![String::from("T"), String::from("E")], vec![Some(typ_t), Some(typ_e)]));
 
     codegen.datatypes.insert(String::from("Result"), tp.clone());
     codegen::builtin_types::add_simple_type(codegen, std::collections::HashMap::new(), BasicDataType::Enum, &String::from("Result"));

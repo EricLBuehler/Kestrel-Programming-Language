@@ -18,6 +18,7 @@ use crate::parser;
 pub mod types;
 mod builtin_types;
 use crate::errors;
+mod modules;
 
 extern crate guess_host_triple;
 
@@ -82,7 +83,6 @@ pub struct CodeGen<'ctx> {
     info: &'ctx fileinfo::FileInfo<'ctx>,
     inkwell_types: InkwellTypes<'ctx>,
     datatypes: std::collections::HashMap<String, types::DataType<'ctx>>,
-    namespaces: Namespaces<'ctx>,
     dibuilder: inkwell::debug_info::DebugInfoBuilder<'ctx>,
     dicompile_unit: inkwell::debug_info::DICompileUnit<'ctx>,
     expected_rettp: Option<types::DataType<'ctx>>,
@@ -93,14 +93,15 @@ pub struct CodeGen<'ctx> {
     loop_flow_broken: bool,
     vtables: Option<inkwell::values::GlobalValue<'ctx>>,
     vtables_vec: Vec<Vec<inkwell::values::PointerValue<'ctx>>>,
+    cur_module: modules::Module<'ctx>,
 }
 
 //Codegen functions
 impl<'ctx> CodeGen<'ctx> {
     fn get_variable(&self, name: &String) -> (Option<&(Option<inkwell::values::PointerValue<'ctx>>, types::DataType<'ctx>, types::DataMutablility, types::DataOwnership, parser::Position, InitializationStatus)>, usize){
-        for index in (0..self.namespaces.locals.len()).rev(){
-            if self.namespaces.locals.get(index).unwrap().iter().find(|x| *x.0 == *name) != None {
-                return (self.namespaces.locals.get(index).unwrap().get(name), index);
+        for index in (0..self.cur_module.namespaces.locals.len()).rev(){
+            if self.cur_module.namespaces.locals.get(index).unwrap().iter().find(|x| *x.0 == *name) != None {
+                return (self.cur_module.namespaces.locals.get(index).unwrap().get(name), index);
             }
         }
         
@@ -108,8 +109,8 @@ impl<'ctx> CodeGen<'ctx> {
     }
     
     fn get_function(&self, name: &String) -> Option<(inkwell::values::PointerValue<'ctx>, types::DataType<'ctx>, ForwardDeclarationType)>{
-        if self.namespaces.functions.iter().find(|x| *x.0 == *name) != None {
-            return Some((self.namespaces.functions.get(name).unwrap().0.as_global_value().as_pointer_value(), self.namespaces.functions.get(name).unwrap().1.clone(), self.namespaces.functions.get(name).unwrap().2.clone()));
+        if self.cur_module.namespaces.functions.iter().find(|x| *x.0 == *name) != None {
+            return Some((self.cur_module.namespaces.functions.get(name).unwrap().0.as_global_value().as_pointer_value(), self.cur_module.namespaces.functions.get(name).unwrap().1.clone(), self.cur_module.namespaces.functions.get(name).unwrap().2.clone()));
         }
 
         return None;
@@ -593,7 +594,7 @@ impl<'ctx> CodeGen<'ctx> {
             if ptr.is_some() {
                 self.builder.build_store(ptr.unwrap(), data.data.unwrap());
 
-                self.namespaces.locals.last_mut().unwrap().insert(name.to_owned(), (ptr, data.tp.clone(), types::DataMutablility::Mutable, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
+                self.cur_module.namespaces.locals.last_mut().unwrap().insert(name.to_owned(), (ptr, data.tp.clone(), types::DataMutablility::Mutable, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
             }
         }
 
@@ -616,10 +617,10 @@ impl<'ctx> CodeGen<'ctx> {
             return data;
         }
 
-        if self.namespaces.locals.last().unwrap().get(&name).is_some() {
+        if self.cur_module.namespaces.locals.last().unwrap().get(&name).is_some() {
             let fmt: String = format!("Name '{}' is already defined in namespace.", &name);
             let here: String = format!("'{}' defined here.", name);
-            errors::raise_error_multi(errors::ErrorType::RedefinitionAttempt, vec![here, fmt], vec![&self.namespaces.locals.last().unwrap().get(&name).unwrap().4, &node.pos], self.info);
+            errors::raise_error_multi(errors::ErrorType::RedefinitionAttempt, vec![here, fmt], vec![&self.cur_module.namespaces.locals.last().unwrap().get(&name).unwrap().4, &node.pos], self.info);
         }
 
         if node.data.letn.as_ref().unwrap().expr.is_some() {
@@ -630,7 +631,7 @@ impl<'ctx> CodeGen<'ctx> {
                 let ptr: inkwell::values::PointerValue = self.builder.build_alloca(inkwell::types::BasicTypeEnum::StructType(*self.inkwell_types.dynptrtp), name.as_str());
 
                 let typ: types::Type = Self::get_type_from_data(self.types.clone(), &right);
-                let (dyntp, _) = Self::get_llvm_from_type(&self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
+                let (dyntp, _) = Self::get_llvm_from_type(&self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
                 
                 if !typ.traits.contains_key(&dyntp.name) {
                     let fmt: String = format!("'{}' type does not implement '{}' trait.", right.tp.to_string(), dyntp.name);
@@ -650,7 +651,7 @@ impl<'ctx> CodeGen<'ctx> {
                 }
 
                 let idptr = self.builder.build_struct_gep(ptr, 0u32, "idptr").expect("GEP error");
-                self.builder.build_store(idptr, self.inkwell_types.i32tp.const_int(*self.namespaces.structid.get(&right.tp.name).unwrap() as u64, false));
+                self.builder.build_store(idptr, self.inkwell_types.i32tp.const_int(*self.cur_module.namespaces.structid.get(&right.tp.name).unwrap() as u64, false));
 
                 let itmptr = self.builder.build_struct_gep(ptr, 1u32, "item").expect("GEP error");
                 let structptr: inkwell::values::PointerValue = self.builder.build_alloca(right.data.unwrap().get_type(), "struct_ptr");
@@ -658,7 +659,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.builder.build_store(itmptr, self.builder.build_pointer_cast(structptr, itmptr.get_type().get_element_type().into_pointer_type(), "st_bitcast"));
 
 
-                self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), dyntp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
+                self.cur_module.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), dyntp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
             }
             else { 
                 let right: types::Data = self.compile_expr(&node.data.letn.as_ref().unwrap().expr.as_ref().unwrap(), BorrowOptions{ give_ownership: true, get_ptr: false, mut_borrow: false}, false, false);
@@ -666,14 +667,14 @@ impl<'ctx> CodeGen<'ctx> {
                     let rt_tp: types::DataType = right.tp.clone();
 
                     if node.data.letn.as_ref().unwrap().tp != None {
-                        let (tp, _) = Self::get_llvm_from_type(&self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
+                        let (tp, _) = Self::get_llvm_from_type(&self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
                         if tp != rt_tp {
                             let fmt: String = format!("Expected '{}' type, got '{}' type.", tp.to_string(), rt_tp.to_string());
                             errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
                         }
                     }
 
-                    if self.namespaces.generic_enums.contains_key(&right.tp.name) && right.tp.types.len() == 0 {
+                    if self.cur_module.namespaces.generic_enums.contains_key(&right.tp.name) && right.tp.types.len() == 0 {
                         let fmt: String = format!("Expected generic types for '{}'.", right.tp.name);
                         errors::raise_error(&fmt, errors::ErrorType::ExpectedGenericTypes, &node.pos, &self.info);
                     }
@@ -683,10 +684,10 @@ impl<'ctx> CodeGen<'ctx> {
                         
                     self.builder.build_store(ptr, right.data.unwrap());
 
-                    self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), right.tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
+                    self.cur_module.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), right.tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
                 }
                 else {
-                    self.namespaces.locals.last_mut().unwrap().insert(name, (None, right.tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));            
+                    self.cur_module.namespaces.locals.last_mut().unwrap().insert(name, (None, right.tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));            
                 }
             }
         }
@@ -700,12 +701,12 @@ impl<'ctx> CodeGen<'ctx> {
                 node.data.letn.as_ref().unwrap().tp.as_ref().unwrap().isdyn {                
                 let ptr: inkwell::values::PointerValue = self.builder.build_alloca(inkwell::types::BasicTypeEnum::StructType(*self.inkwell_types.dynptrtp), name.as_str());
 
-                let (dyntp, _) = Self::get_llvm_from_type(&self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
+                let (dyntp, _) = Self::get_llvm_from_type(&self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
 
-                self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), dyntp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
+                self.cur_module.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), dyntp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
             }
             else { 
-                let (tp, inktp) = Self::get_llvm_from_type(&self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
+                let (tp, inktp) = Self::get_llvm_from_type(&self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
 
                 if tp.tp != types::BasicDataType::Void{
                     let ptr: inkwell::values::PointerValue = self.builder.build_alloca(Self::get_basic_from_any(inktp).unwrap(), name.as_str());
@@ -719,10 +720,10 @@ impl<'ctx> CodeGen<'ctx> {
                         }
                     }
     
-                    self.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Uninitialized));
+                    self.cur_module.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Uninitialized));
                 }
                 else {
-                    self.namespaces.locals.last_mut().unwrap().insert(name, (None, tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Uninitialized));            
+                    self.cur_module.namespaces.locals.last_mut().unwrap().insert(name, (None, tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Uninitialized));            
                 }
             }
         }
@@ -747,7 +748,7 @@ impl<'ctx> CodeGen<'ctx> {
                         .pad_full(Pad::Auto)
                         .finish();
 
-                    for locals in &self.namespaces.locals {
+                    for locals in &self.cur_module.namespaces.locals {
                         for (name, _) in locals {
                             corpus.add_text(name.as_str());
                         }
@@ -788,7 +789,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         if borrow_options.give_ownership {
             let var = self.get_variable(&name);
-            let mut locals = self.namespaces.locals.last().unwrap().clone();
+            let mut locals = self.cur_module.namespaces.locals.last().unwrap().clone();
             if  borrow_options.mut_borrow &&
                 locals.get(&name).unwrap().3.mut_borrowed {
                 let transferred: String = String::from(format!("'{}' was transferred here.", name));
@@ -802,8 +803,8 @@ impl<'ctx> CodeGen<'ctx> {
             }
             locals.insert(name.clone(), (var.0.unwrap().0.clone(), var.0.unwrap().1.clone(), var.0.unwrap().2.clone(), types::DataOwnership {owned: false, transferred: Some(node.pos.clone()), mut_borrowed: borrow_options.mut_borrow}, var.0.unwrap().4.clone(), var.0.unwrap().5.clone()));
 
-            self.namespaces.locals.pop();
-            self.namespaces.locals.push(locals);
+            self.cur_module.namespaces.locals.pop();
+            self.cur_module.namespaces.locals.push(locals);
         }
 
         if get_enum_id {
@@ -887,7 +888,7 @@ impl<'ctx> CodeGen<'ctx> {
                 instance = TemplateFunctionInstance::Namespace;
             }
             
-            self.namespaces.template_functions_sig.insert(name.to_owned(), (node.clone(), instance));
+            self.cur_module.namespaces.template_functions_sig.insert(name.to_owned(), (node.clone(), instance));
                 
             let data: types::Data = types::Data {
                 data: None,
@@ -906,7 +907,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         if template_types.is_none() {
             for arg in &args.args {
-                let (data, tp) = Self::get_llvm_from_type(&self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &arg, node);
+                let (data, tp) = Self::get_llvm_from_type(&self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &arg, node);
                 datatypes.push(data);
                 mutability.push(arg.mutability);
 
@@ -939,7 +940,7 @@ impl<'ctx> CodeGen<'ctx> {
         let rettp_any: inkwell::types::AnyTypeEnum;
         
         if rettp_opt.is_none() {
-            let rettp_full: (types::DataType, inkwell::types::AnyTypeEnum) = Self::get_llvm_from_type(&self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &args.rettp.last().unwrap(), node);
+            let rettp_full: (types::DataType, inkwell::types::AnyTypeEnum) = Self::get_llvm_from_type(&self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &args.rettp.last().unwrap(), node);
             rettp_tp = rettp_full.0;
             rettp_any = rettp_full.1;
         }
@@ -1014,20 +1015,20 @@ impl<'ctx> CodeGen<'ctx> {
             else {
                 func = self.module.add_function(mangled_name.as_str(), fn_type, None);
             }
-            self.namespaces.template_functions.push((name.clone(), dtp.clone(), func.clone()));
+            self.cur_module.namespaces.template_functions.push((name.clone(), dtp.clone(), func.clone()));
         }
         else if  node.data.func.as_ref().unwrap().methodname.is_some() ||
             node.data.func.as_ref().unwrap().namespacename.is_some() {
             let structnm: &String = &node.data.func.as_ref().unwrap().name;
 
-            if self.namespaces.structs.get(structnm).is_none() {
+            if self.cur_module.namespaces.structs.get(structnm).is_none() {
                 let fmt: String = format!("Struct '{}' is not defined.", structnm);
                 errors::raise_error(&fmt, errors::ErrorType::StructNotDefined, &node.pos, self.info);
             }
 
             func = self.module.add_function(&(structnm.to_owned()+"."+mangled_name.as_str()), fn_type, None);
     
-            let mut s: (types::DataType, Option<AnyTypeEnum>, std::collections::HashMap<String, i32>, ForwardDeclarationType) = self.namespaces.structs.get(structnm).unwrap().clone();
+            let mut s: (types::DataType, Option<AnyTypeEnum>, std::collections::HashMap<String, i32>, ForwardDeclarationType) = self.cur_module.namespaces.structs.get(structnm).unwrap().clone();
             let mut isinstance: bool = true;
             if node.data.func.as_ref().unwrap().namespacename.is_some() {
                 isinstance = false;
@@ -1040,7 +1041,7 @@ impl<'ctx> CodeGen<'ctx> {
                 isinstance: isinstance,
             });
 
-            self.namespaces.structs.insert(structnm.to_owned(), (s.0, s.1, s.2, s.3));
+            self.cur_module.namespaces.structs.insert(structnm.to_owned(), (s.0, s.1, s.2, s.3));
         }
         else {
             if self.module.get_function(mangled_name.as_str()).is_some() {
@@ -1049,7 +1050,7 @@ impl<'ctx> CodeGen<'ctx> {
             else {
                 func = self.module.add_function(mangled_name.as_str(), fn_type, None);
             }
-            self.namespaces.functions.insert(name.clone(), (func, dtp.clone(), ForwardDeclarationType::Real));
+            self.cur_module.namespaces.functions.insert(name.clone(), (func, dtp.clone(), ForwardDeclarationType::Real));
         }
         
         // Add debug information
@@ -1120,9 +1121,9 @@ impl<'ctx> CodeGen<'ctx> {
         self.builder.position_at_end(basic_block); 
         
         //Setup locals
-        let prev_locals = self.namespaces.locals.to_owned();
-        self.namespaces.locals = Vec::new();
-        self.namespaces.locals.push(std::collections::HashMap::new());
+        let prev_locals = self.cur_module.namespaces.locals.to_owned();
+        self.cur_module.namespaces.locals = Vec::new();
+        self.cur_module.namespaces.locals.push(std::collections::HashMap::new());
         
         //Setup arguments
         let mut idx: u32 = 0;
@@ -1140,18 +1141,18 @@ impl<'ctx> CodeGen<'ctx> {
             let ptr: inkwell::values::PointerValue;
             if argv.is_some() {
                 if tp.is_ref && tp.mutability.last().unwrap() == &types::DataMutablility::Mutable{
-                    self.namespaces.locals.last_mut().unwrap().insert(name.to_string(), (Some(argv.unwrap().into_pointer_value()), tp.clone(), mutability.get(idx_mut).unwrap().clone(), types::DataOwnership {owned: false, transferred: Some(node.pos.clone()), mut_borrowed: tp.mutability.last().unwrap() == &types::DataMutablility::Mutable}, node.pos.clone(), InitializationStatus::Initialized));
+                    self.cur_module.namespaces.locals.last_mut().unwrap().insert(name.to_string(), (Some(argv.unwrap().into_pointer_value()), tp.clone(), mutability.get(idx_mut).unwrap().clone(), types::DataOwnership {owned: false, transferred: Some(node.pos.clone()), mut_borrowed: tp.mutability.last().unwrap() == &types::DataMutablility::Mutable}, node.pos.clone(), InitializationStatus::Initialized));
                 }
                 else {
                     ptr = self.builder.build_alloca(argv.unwrap().get_type(), name.as_str());
                 
                     self.builder.build_store(ptr, argv.unwrap());
 
-                    self.namespaces.locals.last_mut().unwrap().insert(name.to_string(), (Some(ptr), tp.clone(), mutability.get(idx_mut).unwrap().clone(), types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
+                    self.cur_module.namespaces.locals.last_mut().unwrap().insert(name.to_string(), (Some(ptr), tp.clone(), mutability.get(idx_mut).unwrap().clone(), types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
                 }
             }
             else {
-                self.namespaces.locals.last_mut().unwrap().insert(name.to_string(), (None, tp.clone(), types::DataMutablility::Immutable, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
+                self.cur_module.namespaces.locals.last_mut().unwrap().insert(name.to_string(), (None, tp.clone(), types::DataMutablility::Immutable, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
             }
             idx_mut += 1;
         }
@@ -1161,7 +1162,7 @@ impl<'ctx> CodeGen<'ctx> {
         let retv: types::Data = self.compile(&node.data.func.as_ref().unwrap().blocks, true, true);
         
         //Reset locals
-        self.namespaces.locals = prev_locals;
+        self.cur_module.namespaces.locals = prev_locals;
 
         /////// End
         
@@ -1238,7 +1239,7 @@ impl<'ctx> CodeGen<'ctx> {
             let ptr: inkwell::values::PointerValue = self.get_variable(&name).0.unwrap().0.unwrap().clone();
             if self.get_variable(&name).0.unwrap().1.is_dyn {
                 let typ: types::Type = Self::get_type_from_data(self.types.clone(), &right);
-                let (dyntp, _) = Self::get_llvm_from_type(&self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
+                let (dyntp, _) = Self::get_llvm_from_type(&self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
 
                 if !typ.traits.contains_key(&dyntp.name) {
                     let fmt: String = format!("'{}' type does not implement '{}' trait.", right.tp.to_string(), dyntp.name);
@@ -1258,7 +1259,7 @@ impl<'ctx> CodeGen<'ctx> {
                 }
 
                 let idptr = self.builder.build_struct_gep(ptr, 0u32, "idptr").expect("GEP error");
-                self.builder.build_store(idptr, self.inkwell_types.i32tp.const_int(*self.namespaces.structid.get(&right.tp.name).unwrap() as u64, false));
+                self.builder.build_store(idptr, self.inkwell_types.i32tp.const_int(*self.cur_module.namespaces.structid.get(&right.tp.name).unwrap() as u64, false));
 
                 let itmptr = self.builder.build_struct_gep(ptr, 1u32, "item").expect("GEP error");
                 let structptr: inkwell::values::PointerValue = self.builder.build_malloc(right.data.unwrap().get_type(), "struct_ptr").expect("Malloc error");
@@ -1267,14 +1268,14 @@ impl<'ctx> CodeGen<'ctx> {
                 
                 let idx: usize = self.get_variable(&name).1;
 
-                self.namespaces.locals.get_mut(idx).unwrap().insert(name, (Some(ptr), dyntp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
+                self.cur_module.namespaces.locals.get_mut(idx).unwrap().insert(name, (Some(ptr), dyntp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
             }
             else {
                 self.builder.build_store(ptr, right.data.unwrap());
 
                 let idx: usize = self.get_variable(&name).1;
                 
-                self.namespaces.locals.get_mut(idx).unwrap().insert(name, (Some(ptr), right.tp.clone(), types::DataMutablility::Mutable, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
+                self.cur_module.namespaces.locals.get_mut(idx).unwrap().insert(name, (Some(ptr), right.tp.clone(), types::DataMutablility::Mutable, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
             }
         }
 
@@ -1323,7 +1324,7 @@ impl<'ctx> CodeGen<'ctx> {
                 let mut names: Vec<String> = Vec::new();
                 
                 for arg in &func_args.args {
-                    let (data, _) = Self::get_llvm_from_type(&self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &arg, node);
+                    let (data, _) = Self::get_llvm_from_type(&self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &arg, node);
                     
                     if data.tp != types::BasicDataType::Void {
                         names.push(String::from(""));
@@ -1332,7 +1333,7 @@ impl<'ctx> CodeGen<'ctx> {
                     datatypes.push(data);                  
                 }
                 
-                let rettp_full: (types::DataType, inkwell::types::AnyTypeEnum) = Self::get_llvm_from_type(&self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &func_args.rettp.last().unwrap(), node);
+                let rettp_full: (types::DataType, inkwell::types::AnyTypeEnum) = Self::get_llvm_from_type(&self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &func_args.rettp.last().unwrap(), node);
                 let rettp_tp: types::DataType = rettp_full.0;
 
                 mtp.types = datatypes;
@@ -1395,7 +1396,7 @@ impl<'ctx> CodeGen<'ctx> {
                     }
                 }
             }
-            else if self.namespaces.template_functions_sig.contains_key(&(base.tp.name.clone()+"."+node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().attr.to_owned().as_str()).to_owned()) {
+            else if self.cur_module.namespaces.template_functions_sig.contains_key(&(base.tp.name.clone()+"."+node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().attr.to_owned().as_str()).to_owned()) {
                 have_template_method = true;
             }
             else{
@@ -1404,7 +1405,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
         }
         else if node.data.call.as_ref().unwrap().name.tp == parser::NodeType::IDENTIFIER &&
-                self.namespaces.template_functions_sig.contains_key(&node.data.call.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name) {
+                self.cur_module.namespaces.template_functions_sig.contains_key(&node.data.call.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name) {
             // Do nothing yet
         }
         else {
@@ -1429,8 +1430,8 @@ impl<'ctx> CodeGen<'ctx> {
         }
 
         if  node.data.call.as_ref().unwrap().name.tp == parser::NodeType::IDENTIFIER &&
-            self.namespaces.template_functions_sig.contains_key(&node.data.call.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name) {
-            let func: parser::Node = self.namespaces.template_functions_sig.get(&node.data.call.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().0.to_owned();
+            self.cur_module.namespaces.template_functions_sig.contains_key(&node.data.call.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name) {
+            let func: parser::Node = self.cur_module.namespaces.template_functions_sig.get(&node.data.call.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().0.to_owned();
             let mut fn_types: Vec<types::DataType> = Vec::new();
             let mut templates: std::collections::HashMap<String, types::DataType> = std::collections::HashMap::new();
             
@@ -1450,7 +1451,7 @@ impl<'ctx> CodeGen<'ctx> {
                     fn_types.push(templates.get(&arg.data.as_ref().unwrap().clone()).unwrap().to_owned());
                 }
                 else {
-                    fn_types.push(Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, arg, node).0.to_owned());
+                    fn_types.push(Self::get_llvm_from_type(self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, arg, node).0.to_owned());
                 }
             }
 
@@ -1469,17 +1470,17 @@ impl<'ctx> CodeGen<'ctx> {
                 rettp_tp = templates.get(&rettp.data.as_ref().unwrap().clone()).unwrap().to_owned();
             }
             else {
-                rettp_tp = Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, rettp, node).0.to_owned();
+                rettp_tp = Self::get_llvm_from_type(self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, rettp, node).0.to_owned();
             }
             
             let enclosing_block: inkwell::basic_block::BasicBlock = self.enclosing_block.unwrap();
             self.build_func(&func, None, Some(fn_types), Some(rettp_tp));
             self.enclosing_block = Some(enclosing_block);
 
-            let func_v = self.namespaces.template_functions.last().unwrap().to_owned();
-            self.namespaces.template_functions.pop();
-            if !self.namespaces.template_functions.contains(&func_v) {
-                self.namespaces.template_functions.push(func_v.to_owned());
+            let func_v = self.cur_module.namespaces.template_functions.last().unwrap().to_owned();
+            self.cur_module.namespaces.template_functions.pop();
+            if !self.cur_module.namespaces.template_functions.contains(&func_v) {
+                self.cur_module.namespaces.template_functions.push(func_v.to_owned());
             }
             
             tp_name = func_v.1.name.clone();
@@ -1497,9 +1498,9 @@ impl<'ctx> CodeGen<'ctx> {
         if have_template_method {
             let base: types::Data = self.compile_expr(&node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().name, BorrowOptions{ give_ownership: false, get_ptr: true, mut_borrow: false}, false, false);
 
-            if  self.namespaces.template_functions_sig.contains_key(&(base.tp.name.clone()+"."+node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().attr.to_owned().as_str()).to_owned()) {
-                let func: parser::Node = self.namespaces.template_functions_sig.get(&(base.tp.name.clone()+"."+node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().attr.to_owned().as_str()).to_owned()).unwrap().0.to_owned();
-                let instance_meth: TemplateFunctionInstance = self.namespaces.template_functions_sig.get(&(base.tp.name.clone()+"."+node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().attr.to_owned().as_str()).to_owned()).unwrap().1.to_owned();
+            if  self.cur_module.namespaces.template_functions_sig.contains_key(&(base.tp.name.clone()+"."+node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().attr.to_owned().as_str()).to_owned()) {
+                let func: parser::Node = self.cur_module.namespaces.template_functions_sig.get(&(base.tp.name.clone()+"."+node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().attr.to_owned().as_str()).to_owned()).unwrap().0.to_owned();
+                let instance_meth: TemplateFunctionInstance = self.cur_module.namespaces.template_functions_sig.get(&(base.tp.name.clone()+"."+node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().attr.to_owned().as_str()).to_owned()).unwrap().1.to_owned();
                 
                 let mut fn_types: Vec<types::DataType> = Vec::new();
                 let mut templates: std::collections::HashMap<String, types::DataType> = std::collections::HashMap::new();
@@ -1541,7 +1542,7 @@ impl<'ctx> CodeGen<'ctx> {
                         errors::raise_error(&fmt, errors::ErrorType::MethodTemplateFunctionHasFirstTemplate, &node.pos, self.info);
                     }
                     else {
-                        fn_types.push(Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, arg, node).0.to_owned());
+                        fn_types.push(Self::get_llvm_from_type(self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, arg, node).0.to_owned());
                     }
                     idx += 1;
                 }
@@ -1561,17 +1562,17 @@ impl<'ctx> CodeGen<'ctx> {
                     rettp_tp = templates.get(&rettp.data.as_ref().unwrap().clone()).unwrap().to_owned();
                 }
                 else {
-                    rettp_tp = Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, rettp, node).0.to_owned();
+                    rettp_tp = Self::get_llvm_from_type(self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, rettp, node).0.to_owned();
                 }
                 
                 let enclosing_block: inkwell::basic_block::BasicBlock = self.enclosing_block.unwrap();
                 self.build_func(&func, None, Some(fn_types), Some(rettp_tp));
                 self.enclosing_block = Some(enclosing_block);
 
-                let func_v = self.namespaces.template_functions.last().unwrap().to_owned();
-                self.namespaces.template_functions.pop();
-                if !self.namespaces.template_functions.contains(&func_v) {
-                    self.namespaces.template_functions.push(func_v.to_owned());
+                let func_v = self.cur_module.namespaces.template_functions.last().unwrap().to_owned();
+                self.cur_module.namespaces.template_functions.pop();
+                if !self.cur_module.namespaces.template_functions.contains(&func_v) {
+                    self.cur_module.namespaces.template_functions.push(func_v.to_owned());
                 }
                 
                 tp_name = func_v.1.name.clone();
@@ -1755,18 +1756,18 @@ impl<'ctx> CodeGen<'ctx> {
     }
 
     fn build_struct(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        if self.namespaces.structs.get(&node.data.st.as_ref().unwrap().name.clone()).is_some() && self.namespaces.structs.get(&node.data.st.as_ref().unwrap().name.clone()).unwrap().3 != ForwardDeclarationType::Forward {
+        if self.cur_module.namespaces.structs.get(&node.data.st.as_ref().unwrap().name.clone()).is_some() && self.cur_module.namespaces.structs.get(&node.data.st.as_ref().unwrap().name.clone()).unwrap().3 != ForwardDeclarationType::Forward {
             let fmt: String = format!("Struct '{}' is already defined.", node.data.st.as_ref().unwrap().name.clone());
             errors::raise_error(&fmt, errors::ErrorType::RedefinitionAttempt, &node.pos, self.info);
         }
-        if self.datatypes.get(&node.data.st.as_ref().unwrap().name.clone()).is_some() && self.namespaces.structs.get(&node.data.st.as_ref().unwrap().name.clone()).unwrap().3 != ForwardDeclarationType::Forward {
+        if self.datatypes.get(&node.data.st.as_ref().unwrap().name.clone()).is_some() && self.cur_module.namespaces.structs.get(&node.data.st.as_ref().unwrap().name.clone()).unwrap().3 != ForwardDeclarationType::Forward {
             let fmt: String = format!("Type '{}' is already defined.", node.data.st.as_ref().unwrap().name.clone());
             errors::raise_error(&fmt, errors::ErrorType::TypeRedefinitionAttempt, &node.pos, self.info);
         }
 
-        self.namespaces.structid.insert(node.data.st.as_ref().unwrap().name.clone(), self.namespaces.structid_max);
-        self.namespaces.structid_from.insert(self.namespaces.structid_max, node.data.st.as_ref().unwrap().name.clone());
-        self.namespaces.structid_max += 1;
+        self.cur_module.namespaces.structid.insert(node.data.st.as_ref().unwrap().name.clone(), self.cur_module.namespaces.structid_max);
+        self.cur_module.namespaces.structid_from.insert(self.cur_module.namespaces.structid_max, node.data.st.as_ref().unwrap().name.clone());
+        self.cur_module.namespaces.structid_max += 1;
         
         if !node.data.st.as_ref().unwrap().name.is_camel_case() {
             errors::show_warning(errors::WarningType::ExpectedCamelCase, vec![String::from(""), node.data.st.as_ref().unwrap().name.to_camel_case()], vec![String::from("Expected camel case"), String::from("Convert to this: ")], &node.pos, self.info)
@@ -1788,12 +1789,12 @@ impl<'ctx> CodeGen<'ctx> {
                 errors::raise_error(&fmt, errors::ErrorType::FieldRedeclaration, &node.pos, self.info);
             }
             names.push(member.clone());
-            types.push(Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, node.data.st.as_ref().unwrap().members.get(member).unwrap(), node));
+            types.push(Self::get_llvm_from_type(self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, node.data.st.as_ref().unwrap().members.get(member).unwrap(), node));
             if types.last().unwrap().0.is_ref {
                 let fmt: String = format!("Structs may not contain references.");
                 errors::raise_error(&fmt, errors::ErrorType::ReferenceMemberStruct, &node.pos, self.info);
             }
-            simpletypes.push(Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, node.data.st.as_ref().unwrap().members.get(member).unwrap(), node).0);
+            simpletypes.push(Self::get_llvm_from_type(self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, node.data.st.as_ref().unwrap().members.get(member).unwrap(), node).0);
             mutabilitites.push(node.data.st.as_ref().unwrap().members.get(member).unwrap().mutability);
             idxmapping.insert(member.clone(), idx);
             idx+=1;
@@ -1806,7 +1807,7 @@ impl<'ctx> CodeGen<'ctx> {
         tp.mutability = mutabilitites;
 
         self.datatypes.insert(node.data.st.as_ref().unwrap().name.clone(), tp.clone());
-        self.namespaces.structs.insert(node.data.st.as_ref().unwrap().name.clone(), (tp, Some(Self::build_struct_tp_from_types(self.context, &self.inkwell_types, &simpletypes, &self.datatypes)), idxmapping, ForwardDeclarationType::Real));
+        self.cur_module.namespaces.structs.insert(node.data.st.as_ref().unwrap().name.clone(), (tp, Some(Self::build_struct_tp_from_types(self.context, &self.inkwell_types, &simpletypes, &self.datatypes)), idxmapping, ForwardDeclarationType::Real));
         
         let data: types::Data = types::Data {
             data: None,
@@ -1820,12 +1821,12 @@ impl<'ctx> CodeGen<'ctx> {
         let mut members: std::collections::HashMap<String, types::Data> = std::collections::HashMap::new();
         let name: String = node.data.initst.as_ref().unwrap().name.clone();
 
-        if self.namespaces.structs.get(&name).is_none() {
+        if self.cur_module.namespaces.structs.get(&name).is_none() {
             let fmt: String = format!("Struct '{}' is not defined.", name);
             errors::raise_error(&fmt, errors::ErrorType::StructNotDefined, &node.pos, self.info);
         }
 
-        let s: (types::DataType, Option<AnyTypeEnum>, std::collections::HashMap<String, i32>, ForwardDeclarationType) = self.namespaces.structs.get(&name).unwrap().clone();
+        let s: (types::DataType, Option<AnyTypeEnum>, std::collections::HashMap<String, i32>, ForwardDeclarationType) = self.cur_module.namespaces.structs.get(&name).unwrap().clone();
 
         for member in &node.data.initst.as_ref().unwrap().members_vec {
             if members.contains_key(member) {
@@ -2133,7 +2134,7 @@ impl<'ctx> CodeGen<'ctx> {
             
             let func: types::Data = self.build_func(&node.data.impln.as_ref().unwrap().functions.last().unwrap(), Some(structnm.to_owned() + "." + node.data.impln.as_ref().unwrap().functions.last().unwrap().data.func.as_ref().unwrap().name.as_str()), None, None);
 
-            if !self.namespaces.structs.contains_key(structnm) {
+            if !self.cur_module.namespaces.structs.contains_key(structnm) {
                 let fmt: String = format!("Struct '{}' is not defined.", structnm);
                 errors::raise_error(&fmt, errors::ErrorType::StructNotDefined, &node.pos, self.info);
             }
@@ -2145,7 +2146,7 @@ impl<'ctx> CodeGen<'ctx> {
                 errors::raise_error(&fmt, errors::ErrorType::StructAlreadyImplements, &node.pos, self.info);
             }
 
-            let rettp: types::DataType = Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, node.data.impln.as_ref().unwrap().functions.last().unwrap().data.func.as_ref().unwrap().args.rettp.first().unwrap(), node).0;
+            let rettp: types::DataType = Self::get_llvm_from_type(self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, node.data.impln.as_ref().unwrap().functions.last().unwrap().data.func.as_ref().unwrap().args.rettp.first().unwrap(), node).0;
 
             let traittp: Option<types::TraitType> = types::get_traittp_from_str(traitnm.to_owned());
             if traittp.as_ref().unwrap() == &types::TraitType::Call {
@@ -2160,7 +2161,7 @@ impl<'ctx> CodeGen<'ctx> {
             functions.insert(traitsig.name, func.data.unwrap().into_pointer_value());
         }
         else {
-            if !self.namespaces.structs.contains_key(structnm) {
+            if !self.cur_module.namespaces.structs.contains_key(structnm) {
                 let fmt: String = format!("Struct '{}' is not defined.", structnm);
                 errors::raise_error(&fmt, errors::ErrorType::StructNotDefined, &node.pos, self.info);
             }
@@ -2182,13 +2183,13 @@ impl<'ctx> CodeGen<'ctx> {
             self.types.insert(structnm.to_owned(), tp);
 
             for var in traitsig.vars.as_ref().unwrap() {
-                if !self.namespaces.structs.get(structnm).unwrap().0.names.as_ref().unwrap().contains(var.0) {
+                if !self.cur_module.namespaces.structs.get(structnm).unwrap().0.names.as_ref().unwrap().contains(var.0) {
                     let fmt: String = format!("Struct '{}' does not implement required member '{}'.", structnm, var.0);
                     errors::raise_error(&fmt, errors::ErrorType::CannotImplementBuiltinTrait, &node.pos, self.info);                    
                 }
-                let idx = self.namespaces.structs.get(structnm).unwrap().0.names.as_ref().unwrap().iter().position(|x| x==var.0).unwrap();
-                if self.namespaces.structs.get(structnm).unwrap().0.types.get(idx).unwrap() != &Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, var.1, node).0 {
-                    let fmt: String = format!("Struct '{}' does not implement required member '{}' of type '{}'.", structnm, var.0, self.namespaces.structs.get(structnm).unwrap().0.types.get(idx).unwrap());
+                let idx = self.cur_module.namespaces.structs.get(structnm).unwrap().0.names.as_ref().unwrap().iter().position(|x| x==var.0).unwrap();
+                if self.cur_module.namespaces.structs.get(structnm).unwrap().0.types.get(idx).unwrap() != &Self::get_llvm_from_type(self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, var.1, node).0 {
+                    let fmt: String = format!("Struct '{}' does not implement required member '{}' of type '{}'.", structnm, var.0, self.cur_module.namespaces.structs.get(structnm).unwrap().0.types.get(idx).unwrap());
                     errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);     
                 }
             }
@@ -2273,7 +2274,7 @@ impl<'ctx> CodeGen<'ctx> {
                 }
                 
                 let _ = self.build_func(&function, Some(structnm.to_owned() + "." + function.data.func.as_ref().unwrap().name.as_str()), None, None);
-                let functp: types::DataType = self.namespaces.functions.get(&(structnm.to_owned() + "." + function.data.func.as_ref().unwrap().name.as_str())).unwrap().1.to_owned();
+                let functp: types::DataType = self.cur_module.namespaces.functions.get(&(structnm.to_owned() + "." + function.data.func.as_ref().unwrap().name.as_str())).unwrap().1.to_owned();
                 
                 for (template, indices) in &template_indices {
                     let firsttp: types::DataType = functp.types.get(indices.get(0).unwrap().to_owned()).unwrap().to_owned();
@@ -2290,8 +2291,8 @@ impl<'ctx> CodeGen<'ctx> {
                 for idx in &standard_indices {
                     let tp: types::DataType = functp.types.get(idx.to_owned()).unwrap().to_owned();
 
-                    if tp != Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, sig.args.args.get(idx.to_owned()).as_ref().unwrap(), function).0 {
-                        let fmt: String = format!("Expected '{}' type, got '{}' type.", tp, Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, sig.args.args.get(idx.to_owned()).as_ref().unwrap(), function).0);
+                    if tp != Self::get_llvm_from_type(self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, sig.args.args.get(idx.to_owned()).as_ref().unwrap(), function).0 {
+                        let fmt: String = format!("Expected '{}' type, got '{}' type.", tp, Self::get_llvm_from_type(self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, sig.args.args.get(idx.to_owned()).as_ref().unwrap(), function).0);
                         errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
                     }
                 }
@@ -2312,27 +2313,27 @@ impl<'ctx> CodeGen<'ctx> {
                 }
 
                 //Add as method
-                let mut s: (types::DataType, Option<AnyTypeEnum>, std::collections::HashMap<String, i32>, ForwardDeclarationType) = self.namespaces.structs.get(structnm).unwrap().clone();
+                let mut s: (types::DataType, Option<AnyTypeEnum>, std::collections::HashMap<String, i32>, ForwardDeclarationType) = self.cur_module.namespaces.structs.get(structnm).unwrap().clone();
                 
                 s.0.methods.insert(function.data.func.as_ref().unwrap().name.clone(), types::Method {
                     tp: types::MethodType::Fn,
                     builtin: None,
-                    func: Some(self.namespaces.functions.get(&(structnm.to_owned() + "." + function.data.func.as_ref().unwrap().name.as_str())).unwrap().0.as_global_value().as_pointer_value()),
+                    func: Some(self.cur_module.namespaces.functions.get(&(structnm.to_owned() + "." + function.data.func.as_ref().unwrap().name.as_str())).unwrap().0.as_global_value().as_pointer_value()),
                     functp: functp.clone(),
                     isinstance: true,
                 });
 
-                self.namespaces.structs.insert(structnm.to_owned(), (s.0, s.1, s.2, s.3));  
+                self.cur_module.namespaces.structs.insert(structnm.to_owned(), (s.0, s.1, s.2, s.3));  
 
-                ptrs.push(self.namespaces.functions.get(&(structnm.to_owned() + "." + function.data.func.as_ref().unwrap().name.as_str())).unwrap().0.as_global_value().as_pointer_value());
-                functions.insert(function.data.func.as_ref().unwrap().name.to_owned(), self.namespaces.functions.get(&(structnm.to_owned() + "." + function.data.func.as_ref().unwrap().name.as_str())).unwrap().0.as_global_value().as_pointer_value());                  
+                ptrs.push(self.cur_module.namespaces.functions.get(&(structnm.to_owned() + "." + function.data.func.as_ref().unwrap().name.as_str())).unwrap().0.as_global_value().as_pointer_value());
+                functions.insert(function.data.func.as_ref().unwrap().name.to_owned(), self.cur_module.namespaces.functions.get(&(structnm.to_owned() + "." + function.data.func.as_ref().unwrap().name.as_str())).unwrap().0.as_global_value().as_pointer_value());                  
             }
 
             traitsig.implementations.insert(structnm.to_owned(), functions);
             
             self.traits.insert(traitsig.name.to_owned(), traitsig);   
 
-            let idx: i32 = self.namespaces.structid.get(structnm).unwrap().clone();
+            let idx: i32 = self.cur_module.namespaces.structid.get(structnm).unwrap().clone();
 
             self.append_struct_to_vtables(ptrs, idx);
         }
@@ -2373,11 +2374,11 @@ impl<'ctx> CodeGen<'ctx> {
                 };
             }
             
-            if self.namespaces.generic_enums.contains_key(&tp.name) && !allow_enum_noinit && tp.mutability.get(idx).unwrap() != &types::DataMutablility::Immutable {
+            if self.cur_module.namespaces.generic_enums.contains_key(&tp.name) && !allow_enum_noinit && tp.mutability.get(idx).unwrap() != &types::DataMutablility::Immutable {
                 let fmt: String = format!("Enum '{}' is generic, use a generic load.", tp.name);
                 errors::raise_error(&fmt, errors::ErrorType::NamespaceLoadOfGenericEnum, &node.pos, self.info);
             }
-            else if (self.namespaces.generic_enums.contains_key(&tp.name) || allow_enum_noinit) &&
+            else if (self.cur_module.namespaces.generic_enums.contains_key(&tp.name) || allow_enum_noinit) &&
                     tp.mutability.get(idx).unwrap() == &types::DataMutablility::Immutable {
                 if node.data.attr.as_ref().unwrap().expr.is_some() {
                     let dat: types::Data = self.compile_expr(&node.data.attr.as_ref().unwrap().expr.as_ref().unwrap(), BorrowOptions{ give_ownership: true, get_ptr: false, mut_borrow: false}, false, false);    
@@ -2439,12 +2440,12 @@ impl<'ctx> CodeGen<'ctx> {
             };
         }
 
-        if self.namespaces.structs.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).is_none() {
+        if self.cur_module.namespaces.structs.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).is_none() {
             let fmt: String = format!("Struct '{}' is not defined.", &node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name);
             errors::raise_error(&fmt, errors::ErrorType::StructNotDefined, &node.pos, self.info);
         }
 
-        let st = self.namespaces.structs.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().clone();
+        let st = self.cur_module.namespaces.structs.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap().clone();
 
         //First check methods
         let method_: Option<&types::Method> = st.0.methods.get(attr);
@@ -2545,14 +2546,14 @@ impl<'ctx> CodeGen<'ctx> {
 
             self.builder.position_at_end(then_block);
             
-            self.namespaces.locals.push(std::collections::HashMap::new());
+            self.cur_module.namespaces.locals.push(std::collections::HashMap::new());
 
 
             let mut start_locals: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
             let mut end_locals: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
             
             let mut lvl: usize = 0;
-            for local in &self.namespaces.locals {
+            for local in &self.cur_module.namespaces.locals {
                 for item in local {
                     if item.1.5 == InitializationStatus::Uninitialized {
                         start_locals.insert(item.0.clone(), lvl);
@@ -2579,7 +2580,7 @@ impl<'ctx> CodeGen<'ctx> {
             self.loop_flow_broken = loop_flow_broken_old;
 
             let mut lvl: usize = 0;
-            for local in &self.namespaces.locals {
+            for local in &self.cur_module.namespaces.locals {
                 for item in local {
                     if  item.1.5 == InitializationStatus::Initialized && start_locals.get(item.0).is_some() &&
                         start_locals.get(item.0).unwrap() == &lvl {
@@ -2592,16 +2593,16 @@ impl<'ctx> CodeGen<'ctx> {
             }
 
             for var in &end_locals {
-                let mut var_val = self.namespaces.locals.get_mut(var.1.to_owned()).unwrap().get(&var.0.to_owned()).unwrap().to_owned();
+                let mut var_val = self.cur_module.namespaces.locals.get_mut(var.1.to_owned()).unwrap().get(&var.0.to_owned()).unwrap().to_owned();
                 var_val.5 = InitializationStatus::Uninitialized;
 
-                self.namespaces.locals.get_mut(var.1.to_owned()).unwrap().insert(var.0.to_owned(), var_val);
+                self.cur_module.namespaces.locals.get_mut(var.1.to_owned()).unwrap().insert(var.0.to_owned(), var_val);
             }
 
             collected_locals.push(end_locals);
 
 
-            self.namespaces.locals.pop();
+            self.cur_module.namespaces.locals.pop();
 
             self.builder.build_unconditional_branch(end_block);
 
@@ -2617,14 +2618,14 @@ impl<'ctx> CodeGen<'ctx> {
         if node.data.ifn.as_ref().unwrap().else_opt.is_some() {
             self.builder.position_at_end(else_block);
             
-            self.namespaces.locals.push(std::collections::HashMap::new());
+            self.cur_module.namespaces.locals.push(std::collections::HashMap::new());
 
 
             let mut start_locals: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
             let mut end_locals: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
             
             let mut lvl: usize = 0;
-            for local in &self.namespaces.locals {
+            for local in &self.cur_module.namespaces.locals {
                 for item in local {
                     if item.1.5 == InitializationStatus::Uninitialized {
                         start_locals.insert(item.0.clone(), lvl);
@@ -2651,7 +2652,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
 
             let mut lvl: usize = 0;
-            for local in &self.namespaces.locals {
+            for local in &self.cur_module.namespaces.locals {
                 for item in local {
                     if  item.1.5 == InitializationStatus::Initialized && start_locals.get(item.0).is_some() &&
                         start_locals.get(item.0).unwrap() == &lvl {
@@ -2663,10 +2664,10 @@ impl<'ctx> CodeGen<'ctx> {
             }
 
             for var in &end_locals {
-                let mut var_val = self.namespaces.locals.get_mut(var.1.to_owned()).unwrap().get(&var.0.to_owned()).unwrap().to_owned();
+                let mut var_val = self.cur_module.namespaces.locals.get_mut(var.1.to_owned()).unwrap().get(&var.0.to_owned()).unwrap().to_owned();
                 var_val.5 = InitializationStatus::Uninitialized;
 
-                self.namespaces.locals.get_mut(var.1.to_owned()).unwrap().insert(var.0.to_owned(), var_val);
+                self.cur_module.namespaces.locals.get_mut(var.1.to_owned()).unwrap().insert(var.0.to_owned(), var_val);
             }
 
             collected_locals.push(end_locals);
@@ -2674,7 +2675,7 @@ impl<'ctx> CodeGen<'ctx> {
 
             self.builder.build_unconditional_branch(self.enclosing_block.unwrap());
 
-            self.namespaces.locals.pop();
+            self.cur_module.namespaces.locals.pop();
         }
         else {
             self.builder.position_at_end(else_block);
@@ -2711,10 +2712,10 @@ impl<'ctx> CodeGen<'ctx> {
             }
 
             for var in common_init {
-                let mut var_val = self.namespaces.locals.get_mut(var.1).unwrap().get(&var.0).unwrap().to_owned();
+                let mut var_val = self.cur_module.namespaces.locals.get_mut(var.1).unwrap().get(&var.0).unwrap().to_owned();
                 var_val.5 = InitializationStatus::Initialized;
 
-                self.namespaces.locals.get_mut(var.1).unwrap().insert(var.0, var_val);
+                self.cur_module.namespaces.locals.get_mut(var.1).unwrap().insert(var.0, var_val);
             }
         }
 
@@ -2889,7 +2890,7 @@ impl<'ctx> CodeGen<'ctx> {
             errors::show_warning(errors::WarningType::ExpectedCamelCase, vec![String::from(""), node.data.st.as_ref().unwrap().name.to_camel_case()], vec![String::from("Expected camel case"), String::from("Convert to this: ")], &node.pos, self.info)
         }
 
-        if self.datatypes.get(&node.data.enumn.as_ref().unwrap().name.clone()).is_some() && self.namespaces.structs.get(&node.data.enumn.as_ref().unwrap().name.clone()).unwrap().3 != ForwardDeclarationType::Forward {
+        if self.datatypes.get(&node.data.enumn.as_ref().unwrap().name.clone()).is_some() && self.cur_module.namespaces.structs.get(&node.data.enumn.as_ref().unwrap().name.clone()).unwrap().3 != ForwardDeclarationType::Forward {
             let fmt: String = format!("Type '{}' is already defined.", node.data.enumn.as_ref().unwrap().name.clone());
             errors::raise_error(&fmt, errors::ErrorType::TypeRedefinitionAttempt, &node.pos, self.info);
         }
@@ -2913,7 +2914,7 @@ impl<'ctx> CodeGen<'ctx> {
         if node.data.enumn.as_ref().unwrap().template_types.len() == 0 {
             for tp in &node.data.enumn.as_ref().unwrap().tps {
                 if tp.is_some() {
-                    types.push(Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, tp.as_ref().unwrap(), node).0);
+                    types.push(Self::get_llvm_from_type(self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, tp.as_ref().unwrap(), node).0);
                     mutabilities.push(types::DataMutablility::Mutable);
                 }
                 else {
@@ -2936,7 +2937,7 @@ impl<'ctx> CodeGen<'ctx> {
         self.datatypes.insert(node.data.enumn.as_ref().unwrap().name.clone(), tp.clone());
 
         if node.data.enumn.as_ref().unwrap().template_types.len() > 0 {
-            self.namespaces.generic_enums.insert(node.data.enumn.as_ref().unwrap().name.clone(), (node.data.enumn.as_ref().unwrap().template_types.to_owned(), node.data.enumn.as_ref().unwrap().tps.to_owned()));
+            self.cur_module.namespaces.generic_enums.insert(node.data.enumn.as_ref().unwrap().name.clone(), (node.data.enumn.as_ref().unwrap().template_types.to_owned(), node.data.enumn.as_ref().unwrap().tps.to_owned()));
         }
 
         builtin_types::add_simple_type(self, std::collections::HashMap::new(), types::BasicDataType::Enum, &node.data.enumn.as_ref().unwrap().name.clone());
@@ -3071,14 +3072,14 @@ impl<'ctx> CodeGen<'ctx> {
     
 
 
-                self.namespaces.locals.push(std::collections::HashMap::new());
+                self.cur_module.namespaces.locals.push(std::collections::HashMap::new());
 
 
                 let mut start_locals: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
                 let mut end_locals: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
                 
                 let mut lvl: usize = 0;
-                for local in &self.namespaces.locals {
+                for local in &self.cur_module.namespaces.locals {
                     for item in local {
                         if item.1.5 == InitializationStatus::Uninitialized {
                             start_locals.insert(item.0.clone(), lvl);
@@ -3092,7 +3093,7 @@ impl<'ctx> CodeGen<'ctx> {
                 //Store optional data
                 let dtp: types::DataType = pattern_v.tp.types.get(pattern_v.tp.names.as_ref().unwrap().iter().position(|x| x == &pattern.as_ref().unwrap().data.attr.as_ref().unwrap().attr).unwrap() as usize).unwrap().clone();
                 if dtp.tp != types::BasicDataType::Void && name.is_some(){
-                    self.namespaces.locals.last_mut().unwrap().insert(name.as_ref().unwrap().to_owned(), (Some(data_ptr), dtp, types::DataMutablility::Immutable, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
+                    self.cur_module.namespaces.locals.last_mut().unwrap().insert(name.as_ref().unwrap().to_owned(), (Some(data_ptr), dtp, types::DataMutablility::Immutable, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
                 }
                 
                 let data: types::Data = self.compile(block, true, false);
@@ -3109,7 +3110,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.loop_flow_broken = loop_flow_broken_old;
 
                 let mut lvl: usize = 0;
-                for local in &self.namespaces.locals {
+                for local in &self.cur_module.namespaces.locals {
                     for item in local {
                         if  item.1.5 == InitializationStatus::Initialized && start_locals.get(item.0).is_some() &&
                             start_locals.get(item.0).unwrap() == &lvl {
@@ -3122,13 +3123,13 @@ impl<'ctx> CodeGen<'ctx> {
                 }
 
                 for var in &end_locals {
-                    let mut var_val = self.namespaces.locals.get_mut(var.1.to_owned()).unwrap().get(&var.0.to_owned()).unwrap().to_owned();
+                    let mut var_val = self.cur_module.namespaces.locals.get_mut(var.1.to_owned()).unwrap().get(&var.0.to_owned()).unwrap().to_owned();
                     var_val.5 = InitializationStatus::Uninitialized;
 
-                    self.namespaces.locals.get_mut(var.1.to_owned()).unwrap().insert(var.0.to_owned(), var_val);
+                    self.cur_module.namespaces.locals.get_mut(var.1.to_owned()).unwrap().insert(var.0.to_owned(), var_val);
                 }
 
-                self.namespaces.locals.pop();
+                self.cur_module.namespaces.locals.pop();
 
                 collected_locals.push(end_locals);
 
@@ -3151,14 +3152,14 @@ impl<'ctx> CodeGen<'ctx> {
     
 
 
-                self.namespaces.locals.push(std::collections::HashMap::new());
+                self.cur_module.namespaces.locals.push(std::collections::HashMap::new());
 
 
                 let mut start_locals: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
                 let mut end_locals: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
                 
                 let mut lvl: usize = 0;
-                for local in &self.namespaces.locals {
+                for local in &self.cur_module.namespaces.locals {
                     for item in local {
                         if item.1.5 == InitializationStatus::Uninitialized {
                             start_locals.insert(item.0.clone(), lvl);
@@ -3183,7 +3184,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.loop_flow_broken = loop_flow_broken_old;
 
                 let mut lvl: usize = 0;
-                for local in &self.namespaces.locals {
+                for local in &self.cur_module.namespaces.locals {
                     for item in local {
                         if  item.1.5 == InitializationStatus::Initialized && start_locals.get(item.0).is_some() &&
                             start_locals.get(item.0).unwrap() == &lvl {
@@ -3196,13 +3197,13 @@ impl<'ctx> CodeGen<'ctx> {
                 }
 
                 for var in &end_locals {
-                    let mut var_val = self.namespaces.locals.get_mut(var.1.to_owned()).unwrap().get(&var.0.to_owned()).unwrap().to_owned();
+                    let mut var_val = self.cur_module.namespaces.locals.get_mut(var.1.to_owned()).unwrap().get(&var.0.to_owned()).unwrap().to_owned();
                     var_val.5 = InitializationStatus::Uninitialized;
 
-                    self.namespaces.locals.get_mut(var.1.to_owned()).unwrap().insert(var.0.to_owned(), var_val);
+                    self.cur_module.namespaces.locals.get_mut(var.1.to_owned()).unwrap().insert(var.0.to_owned(), var_val);
                 }
 
-                self.namespaces.locals.pop();
+                self.cur_module.namespaces.locals.pop();
 
                 collected_locals.push(end_locals);
 
@@ -3247,10 +3248,10 @@ impl<'ctx> CodeGen<'ctx> {
         }
 
         for var in common_init {
-            let mut var_val = self.namespaces.locals.get_mut(var.1).unwrap().get(&var.0).unwrap().to_owned();
+            let mut var_val = self.cur_module.namespaces.locals.get_mut(var.1).unwrap().get(&var.0).unwrap().to_owned();
             var_val.5 = InitializationStatus::Initialized;
 
-            self.namespaces.locals.get_mut(var.1).unwrap().insert(var.0, var_val);
+            self.cur_module.namespaces.locals.get_mut(var.1).unwrap().insert(var.0, var_val);
         }
         
         if tp.as_ref().unwrap().tp == types::BasicDataType::Void {
@@ -3284,12 +3285,12 @@ impl<'ctx> CodeGen<'ctx> {
             let fmt: String = format!("Expected 'enum', got '{}'.", tp);
             errors::raise_error(&fmt, errors::ErrorType::ExpectedEnum, &node.pos, self.info);
         }
-        if !self.namespaces.generic_enums.contains_key(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name) {
+        if !self.cur_module.namespaces.generic_enums.contains_key(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name) {
             let fmt: String = format!("Enum '{}' is not generic.", node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name);
             errors::raise_error(&fmt, errors::ErrorType::EnumNotGeneric, &node.pos, self.info);
         }
 
-        let (generics, tps) = self.namespaces.generic_enums.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap();
+        let (generics, tps) = self.cur_module.namespaces.generic_enums.get(&node.data.attr.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name).unwrap();
         let generic_tps = node.data.attr.as_ref().unwrap().template_types.as_ref().unwrap();
 
         let mut types: Vec<types::DataType> = Vec::new();
@@ -3300,11 +3301,11 @@ impl<'ctx> CodeGen<'ctx> {
                 if  !tp.as_ref().unwrap().isarr && !tp.as_ref().unwrap().isfn && !tp.as_ref().unwrap().isdyn &&
                     !tp.as_ref().unwrap().isgenum && !tp.as_ref().unwrap().isref &&
                     generics.contains(&tp.as_ref().unwrap().data.as_ref().unwrap()) {
-                    types.push(Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, generic_tps.get(generics.iter().position(|x| x == tp.as_ref().unwrap().data.as_ref().unwrap()).unwrap()).unwrap(), node).0);
+                    types.push(Self::get_llvm_from_type(self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, generic_tps.get(generics.iter().position(|x| x == tp.as_ref().unwrap().data.as_ref().unwrap()).unwrap()).unwrap(), node).0);
                     mutabilities.push(types::DataMutablility::Mutable);
                 }
                 else {
-                    types.push(Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, tp.as_ref().unwrap(), node).0);
+                    types.push(Self::get_llvm_from_type(self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, tp.as_ref().unwrap(), node).0);
                     mutabilities.push(types::DataMutablility::Mutable);
                 }
             }
@@ -3781,7 +3782,7 @@ impl<'ctx> CodeGen<'ctx> {
                         instance = TemplateFunctionInstance::Namespace;
                     }
                     
-                    self.namespaces.template_functions_sig.insert(name.to_owned(), (node.clone(), instance));
+                    self.cur_module.namespaces.template_functions_sig.insert(name.to_owned(), (node.clone(), instance));
                     continue;
                 }
 
@@ -3793,7 +3794,7 @@ impl<'ctx> CodeGen<'ctx> {
                 let mut inktypes: Vec<inkwell::types::BasicMetadataTypeEnum> = Vec::new();
 
                 for arg in &args.args {
-                    let (data, tp) = Self::get_llvm_from_type(&self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &arg, node);
+                    let (data, tp) = Self::get_llvm_from_type(&self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &arg, node);
                     datatypes.push(data);
                     mutability.push(arg.mutability);
 
@@ -3805,7 +3806,7 @@ impl<'ctx> CodeGen<'ctx> {
                     }
                 }
                 
-                let rettp_full: (types::DataType, inkwell::types::AnyTypeEnum) = Self::get_llvm_from_type(&self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &args.rettp.last().unwrap(), node);
+                let rettp_full: (types::DataType, inkwell::types::AnyTypeEnum) = Self::get_llvm_from_type(&self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, &args.rettp.last().unwrap(), node);
 
                 self.expected_rettp = Some(rettp_full.0.clone());
                 
@@ -3861,16 +3862,16 @@ impl<'ctx> CodeGen<'ctx> {
                 tp.mutability =mutability.clone();
                 tp.rettp =  Some(Box::new(rettp_full.0.clone()));
 
-                self.namespaces.functions.insert(name.clone(), (func, tp, ForwardDeclarationType::Forward));
+                self.cur_module.namespaces.functions.insert(name.clone(), (func, tp, ForwardDeclarationType::Forward));
             }
             else if node.tp == parser::NodeType::STRUCT {
                 if !node.data.st.as_ref().unwrap().name.is_camel_case() {
                     errors::show_warning(errors::WarningType::ExpectedCamelCase, vec![String::from(""), node.data.st.as_ref().unwrap().name.to_camel_case()], vec![String::from("Expected camel case"), String::from("Convert to this: ")], &node.pos, self.info)
                 }
 
-                self.namespaces.structid_max += 1;
-                self.namespaces.structid.insert(node.data.st.as_ref().unwrap().name.clone(), self.namespaces.structid_max);
-                self.namespaces.structid_from.insert(self.namespaces.structid_max, node.data.st.as_ref().unwrap().name.clone());
+                self.cur_module.namespaces.structid_max += 1;
+                self.cur_module.namespaces.structid.insert(node.data.st.as_ref().unwrap().name.clone(), self.cur_module.namespaces.structid_max);
+                self.cur_module.namespaces.structid_from.insert(self.cur_module.namespaces.structid_max, node.data.st.as_ref().unwrap().name.clone());
                     
                 let mut names: Vec<String> = Vec::new();
                 let mut types: Vec<(types::DataType, AnyTypeEnum)> = Vec::new();
@@ -3888,8 +3889,8 @@ impl<'ctx> CodeGen<'ctx> {
                         errors::raise_error(&fmt, errors::ErrorType::FieldRedeclaration, &node.pos, self.info);
                     }
                     names.push(member.0.clone());
-                    types.push(Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, member.1, node));
-                    simpletypes.push(Self::get_llvm_from_type(self.context, &self.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, member.1, node).0);
+                    types.push(Self::get_llvm_from_type(self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, member.1, node));
+                    simpletypes.push(Self::get_llvm_from_type(self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.datatypes, &self.traits, self.info, member.1, node).0);
                     mutabilitites.push(types::DataMutablility::Mutable);
                     idxmapping.insert(member.0.clone(), idx);
                     idx+=1;
@@ -3902,7 +3903,7 @@ impl<'ctx> CodeGen<'ctx> {
                 tp.mutability = mutabilitites;
                 
                 self.datatypes.insert(node.data.st.as_ref().unwrap().name.clone(), tp.clone());
-                self.namespaces.structs.insert(node.data.st.as_ref().unwrap().name.clone(), (tp, Some(Self::build_struct_tp_from_types(self.context, &self.inkwell_types, &simpletypes, &self.datatypes)), idxmapping, ForwardDeclarationType::Forward));
+                self.cur_module.namespaces.structs.insert(node.data.st.as_ref().unwrap().name.clone(), (tp, Some(Self::build_struct_tp_from_types(self.context, &self.inkwell_types, &simpletypes, &self.datatypes)), idxmapping, ForwardDeclarationType::Forward));
                 builtin_types::add_simple_type(self, std::collections::HashMap::new(), types::BasicDataType::Struct, &node.data.st.as_ref().unwrap().name.clone());
             }
             else if node.tp == parser::NodeType::ENUM {
@@ -3979,6 +3980,12 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
         false,
         false);
 
+    let cur_module: modules::Module = modules::Module { 
+        name: if info.name.contains(".") { info.name.rsplit_once(".").unwrap().0.to_string() } else { info.name.clone() },
+        namespaces,
+        modules: Vec::new(),
+    };
+
     let mut codegen: CodeGen = CodeGen {
         context: &context,
         module: module,
@@ -3987,7 +3994,6 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
         datatypes: std::collections::HashMap::new(),
         info,
         inkwell_types: inkwelltypes,
-        namespaces: namespaces,
         dibuilder: dibuilder,
         dicompile_unit: compile_unit,
         expected_rettp: None, 
@@ -3998,6 +4004,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
         loop_flow_broken: false,
         vtables: None,
         vtables_vec: Vec::new(),
+        cur_module,
     };
     
     //Pass manager (optimizer)
@@ -4024,7 +4031,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
         errors::raise_error_no_pos(&fmt, errors::ErrorType::NameNotFound);
     }
 
-    let (main, _, _) = codegen.namespaces.functions.get(&String::from("main")).unwrap();
+    let (main, _, _) = codegen.cur_module.namespaces.functions.get(&String::from("main")).unwrap();
 
     let main_tp: inkwell::types::FunctionType = codegen.inkwell_types.i32tp.fn_type(&[inkwell::types::BasicMetadataTypeEnum::IntType(*codegen.inkwell_types.i32tp), inkwell::types::BasicMetadataTypeEnum::PointerType(codegen.inkwell_types.i8tp.ptr_type(inkwell::AddressSpace::from(0u16)).ptr_type(inkwell::AddressSpace::from(0u16)))], false);
     let realmain: inkwell::values::FunctionValue = codegen.module.add_function("main", main_tp, None);

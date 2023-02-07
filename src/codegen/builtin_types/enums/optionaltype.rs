@@ -66,7 +66,7 @@ pub fn init_optional(codegen: &mut codegen::CodeGen) {
         generic_tps: None,
     };
     
-    codegen.namespaces.generic_enums.insert(String::from("Optional"), (vec![String::from("T")], vec![Some(typ.to_owned())]));
+    codegen.cur_module.namespaces.generic_enums.insert(String::from("Optional"), (vec![String::from("T")], vec![Some(typ.to_owned())]));
 
     codegen.datatypes.insert(String::from("Optional"), tp.clone());
     codegen::builtin_types::add_simple_type(codegen, std::collections::HashMap::new(), BasicDataType::Enum, &String::from("Optional"));
