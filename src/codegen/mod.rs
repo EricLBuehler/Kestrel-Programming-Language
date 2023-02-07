@@ -5,7 +5,6 @@ use inkwell::builder::Builder;
 use inkwell::context::Context;
 use inkwell::module::Module;
 use inkwell::passes::PassManagerSubType;
-use inkwell::types::AnyType;
 use inkwell::types::AnyTypeEnum;
 use inkwell::types::BasicType;
 use crate::fileinfo;
@@ -34,9 +33,7 @@ pub struct InkwellTypes<'ctx> {
     voidtp: &'ctx inkwell::types::VoidType<'ctx>,
     booltp: &'ctx inkwell::types::IntType<'ctx>,
     dynptrtp: &'ctx inkwell::types::StructType<'ctx>,
-    enumsttp: &'ctx inkwell::types::StructType<'ctx>,
     st_data_tp: &'ctx inkwell::types::StructType<'ctx>,
-    enum_data_tp: &'ctx inkwell::types::StructType<'ctx>,
 }
 
 #[derive(PartialEq, Clone)]
@@ -118,11 +115,11 @@ impl<'ctx> CodeGen<'ctx> {
         return None;
     }
     
-    fn build_struct_tp_from_types(ctx: &'ctx Context, inktypes: &InkwellTypes<'ctx>, types: &Vec<types::DataType<'ctx>>) -> inkwell::types::AnyTypeEnum<'ctx> {
+    fn build_struct_tp_from_types(ctx: &'ctx Context, inktypes: &InkwellTypes<'ctx>, types: &Vec<types::DataType<'ctx>>, datatypes: &std::collections::HashMap<String, types::DataType<'ctx>>) -> inkwell::types::AnyTypeEnum<'ctx> {
         let mut basictypes: Vec<inkwell::types::BasicTypeEnum> = Vec::new();
 
         for tp in types {
-            let any: Option<AnyTypeEnum> = Self::get_anytp_from_tp(ctx, &inktypes, tp.clone());
+            let any: Option<AnyTypeEnum> = Self::get_anytp_from_tp(ctx, &inktypes, tp.clone(), datatypes);
             
             if any.is_some() {
                 let res: Option<inkwell::types::BasicTypeEnum> = Self::get_basic_from_any(any.unwrap());
@@ -145,7 +142,7 @@ impl<'ctx> CodeGen<'ctx> {
         return res;
     }
 
-    fn get_anytp_from_tp(ctx: &'ctx Context, types: &InkwellTypes<'ctx>, tp: types::DataType<'ctx>) -> Option<inkwell::types::AnyTypeEnum<'ctx>> {
+    fn get_anytp_from_tp(ctx: &'ctx Context, types: &InkwellTypes<'ctx>, tp: types::DataType<'ctx>, datatypes: &std::collections::HashMap<String, types::DataType<'ctx>>) -> Option<inkwell::types::AnyTypeEnum<'ctx>> {
         match tp.tp {
             types::BasicDataType::I32 |
             types::BasicDataType::U32 => {
@@ -181,7 +178,7 @@ impl<'ctx> CodeGen<'ctx> {
                 return None;
             }
             types::BasicDataType::Struct => {
-                return Some(Self::build_struct_tp_from_types(ctx, types, &tp.types));
+                return Some(Self::build_struct_tp_from_types(ctx, types, &tp.types, datatypes));
             }
             types::BasicDataType::Array => {
                 return Some(inkwell::types::AnyTypeEnum::ArrayType(tp.arrtp.unwrap()));
@@ -190,7 +187,9 @@ impl<'ctx> CodeGen<'ctx> {
                 return Some(inkwell::types::AnyTypeEnum::IntType(*types.booltp));
             }
             types::BasicDataType::Enum => {
-                return Some(inkwell::types::AnyTypeEnum::StructType(*types.enum_data_tp));
+                let mut tps: Vec<types::DataType> = tp.types.clone();
+                tps.insert(0, datatypes.get(&types::BasicDataType::I32.to_string()).unwrap().clone());                
+                return Some(inkwell::types::AnyTypeEnum::StructType(Self::build_struct_tp_from_types(&ctx, &types, &tps, datatypes).into_struct_type()));
             }
             types::BasicDataType::Dyn => {
                 return Some(inkwell::types::AnyTypeEnum::StructType(*types.dynptrtp));
@@ -319,7 +318,7 @@ impl<'ctx> CodeGen<'ctx> {
         }
         else if arg.isgenum {
             let (mut tp, _) = Self::get_llvm_from_type(ctx, namespaces, types, datatypes, traits, info, &arg.basetp.as_ref().unwrap(), node);
-        
+            
             if tp.tp != types::BasicDataType::Enum {
                 let fmt: String = format!("Expected 'enum', got '{}'.", tp);
                 errors::raise_error(&fmt, errors::ErrorType::ExpectedEnum, &node.pos, info);
@@ -341,11 +340,13 @@ impl<'ctx> CodeGen<'ctx> {
                     if  !tp.as_ref().unwrap().isarr && !tp.as_ref().unwrap().isfn && !tp.as_ref().unwrap().isdyn &&
                         !tp.as_ref().unwrap().isgenum && !tp.as_ref().unwrap().isref &&
                         generics.contains(&tp.as_ref().unwrap().data.as_ref().unwrap()) {
-                        newtypes.push(Self::get_llvm_from_type(ctx, namespaces, types, datatypes, traits, info, generic_tps.get(generics.iter().position(|x| x == tp.as_ref().unwrap().data.as_ref().unwrap()).unwrap()).unwrap(), node).0);
+                        let any = Self::get_llvm_from_type(ctx, namespaces, types, datatypes, traits, info, generic_tps.get(generics.iter().position(|x| x == tp.as_ref().unwrap().data.as_ref().unwrap()).unwrap()).unwrap(), node);
+                        newtypes.push(any.0);
                         mutabilities.push(types::DataMutablility::Mutable);
                     }
                     else {
-                        newtypes.push(Self::get_llvm_from_type(ctx, namespaces, types, datatypes, traits, info, tp.as_ref().unwrap(), node).0);
+                        let any = Self::get_llvm_from_type(ctx, namespaces, types, datatypes, traits, info, tp.as_ref().unwrap(), node);
+                        newtypes.push(any.0);
                         mutabilities.push(types::DataMutablility::Mutable);
                     }
                 }
@@ -355,10 +356,12 @@ impl<'ctx> CodeGen<'ctx> {
                 }
             }
 
-            tp.types = newtypes;
+            tp.types = newtypes.clone();
             tp.mutability = mutabilities;
+            
+            newtypes.insert(0, datatypes.get(&types::BasicDataType::I32.to_string()).unwrap().clone());
 
-            return (tp.clone(), types.enumsttp.as_any_type_enum());
+            return (tp.clone(), Self::build_struct_tp_from_types(ctx, types, &newtypes, datatypes));
         }
         else if arg.isref {
             let (mut tp, anytp_raw) = Self::get_llvm_from_type(ctx, namespaces, types, datatypes, traits, info, &arg.basetp.as_ref().unwrap(), node);
@@ -397,7 +400,7 @@ impl<'ctx> CodeGen<'ctx> {
                 errors::raise_error(&fmt, errors::ErrorType::UnknownType, &node.pos, info);
             }
 
-            let anytp: Option<inkwell::types::AnyTypeEnum> = Self::get_anytp_from_tp(ctx, &types, tp.unwrap().clone());
+            let anytp: Option<inkwell::types::AnyTypeEnum> = Self::get_anytp_from_tp(ctx, &types, tp.unwrap().clone(), datatypes);
             if anytp.is_none() {
                 unimplemented!();
             }
@@ -919,7 +922,7 @@ impl<'ctx> CodeGen<'ctx> {
 
                 datatypes.push(tp.0.clone());
 
-                let any = Self::get_anytp_from_tp(self.context, &self.inkwell_types, tp.0.clone());
+                let any = Self::get_anytp_from_tp(self.context, &self.inkwell_types, tp.0.clone(), &self.datatypes);
                 if any.is_none() {
                     unimplemented!();
                 }
@@ -941,7 +944,7 @@ impl<'ctx> CodeGen<'ctx> {
         }
         else {
             rettp_tp = rettp_opt.unwrap().to_owned();
-            let any_opt: Option<inkwell::types::AnyTypeEnum> = Self::get_anytp_from_tp(self.context, &self.inkwell_types, rettp_tp.clone());
+            let any_opt: Option<inkwell::types::AnyTypeEnum> = Self::get_anytp_from_tp(self.context, &self.inkwell_types, rettp_tp.clone(), &self.datatypes);
             if any_opt.is_none() {
                 unimplemented!();
             }
@@ -1653,7 +1656,7 @@ impl<'ctx> CodeGen<'ctx> {
             self.datatypes.get(tp_name).unwrap()
         };
 
-        let anytp: Option<inkwell::types::AnyTypeEnum> = Self::get_anytp_from_tp(self.context, &self.inkwell_types, tp.clone());
+        let anytp: Option<inkwell::types::AnyTypeEnum> = Self::get_anytp_from_tp(self.context, &self.inkwell_types, tp.clone(), &self.datatypes);
 
         if !anytp.is_none() && anytp.unwrap().is_int_type() && left.data.unwrap().is_int_value() {
             let res: inkwell::values::IntValue = self.builder.build_int_cast(left.data.unwrap().into_int_value(), anytp.unwrap().into_int_type(), "cast");
@@ -1802,7 +1805,7 @@ impl<'ctx> CodeGen<'ctx> {
         tp.mutability = mutabilitites;
 
         self.datatypes.insert(node.data.st.as_ref().unwrap().name.clone(), tp.clone());
-        self.namespaces.structs.insert(node.data.st.as_ref().unwrap().name.clone(), (tp, Some(Self::build_struct_tp_from_types(self.context, &self.inkwell_types, &simpletypes)), idxmapping, ForwardDeclarationType::Real));
+        self.namespaces.structs.insert(node.data.st.as_ref().unwrap().name.clone(), (tp, Some(Self::build_struct_tp_from_types(self.context, &self.inkwell_types, &simpletypes, &self.datatypes)), idxmapping, ForwardDeclarationType::Real));
         
         let data: types::Data = types::Data {
             data: None,
@@ -2053,7 +2056,7 @@ impl<'ctx> CodeGen<'ctx> {
         }
 
         data_elem.push(self.compile_expr(elements.first().unwrap(), BorrowOptions{ give_ownership: true, get_ptr: false, mut_borrow: false}, false, false));
-        let firsttp_: Option<inkwell::types::AnyTypeEnum> = Self::get_anytp_from_tp(self.context, &self.inkwell_types, data_elem.first().unwrap().tp.clone());
+        let firsttp_: Option<inkwell::types::AnyTypeEnum> = Self::get_anytp_from_tp(self.context, &self.inkwell_types, data_elem.first().unwrap().tp.clone(), &self.datatypes);
         if firsttp_.is_none() {
             let fmt: String = format!("Cannot define array of 'void'.");
             errors::raise_error(&fmt, errors::ErrorType::CannotDefineVoidArray, &node.pos, self.info);
@@ -2066,7 +2069,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         for element in elements[1..].to_vec() {
             data_elem.push(self.compile_expr(&element, BorrowOptions{ give_ownership: true, get_ptr: false, mut_borrow: false}, false, false));
-            let tp_: Option<inkwell::types::AnyTypeEnum> = Self::get_anytp_from_tp(self.context, &self.inkwell_types, data_elem.last().unwrap().tp.clone());
+            let tp_: Option<inkwell::types::AnyTypeEnum> = Self::get_anytp_from_tp(self.context, &self.inkwell_types, data_elem.last().unwrap().tp.clone(), &self.datatypes);
             if tp_.is_none() {
                 let fmt: String = format!("Expected '{}' type, got 'void' type.", data_elem.first().unwrap().tp.to_string());
                 errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &element.pos, self.info);
@@ -2408,18 +2411,17 @@ impl<'ctx> CodeGen<'ctx> {
                 data = dat.data;
             }
 
-            let st: inkwell::values::PointerValue = self.builder.build_alloca(*self.inkwell_types.enumsttp, "enum_st");
-
+            let mut types: Vec<types::DataType> = tp.types.to_owned();
+            types.insert(0, self.datatypes.get(&types::BasicDataType::I32.to_string()).unwrap().clone());
+    
+            let st: inkwell::values::PointerValue = self.builder.build_alloca(Self::build_struct_tp_from_types(&self.context, &self.inkwell_types, &types, &self.datatypes).into_struct_type(), "enum_st");
+    
             let id: inkwell::values::PointerValue = self.builder.build_struct_gep(st, 0, "variant_id").expect("GEP Error");
             self.builder.build_store(id, self.inkwell_types.i32tp.const_int(idx as u64, false));
             
             if data.is_some() {
-                let data_ptr: inkwell::values::PointerValue = self.builder.build_alloca(data.unwrap().get_type(), "variant_data_ptr");
-                self.builder.build_store(data_ptr, data.unwrap());
-
-                let data_bitcast: inkwell::values::PointerValue = self.builder.build_bitcast(data_ptr, self.inkwell_types.enum_data_tp.ptr_type(inkwell::AddressSpace::from(0u16)), "variant_data_bitcast").into_pointer_value();
-                let variant_data: inkwell::values::PointerValue = self.builder.build_struct_gep(st, 1, "variant_data").expect("GEP Error");
-                self.builder.build_store(variant_data, data_bitcast);
+                let variant_data: inkwell::values::PointerValue = self.builder.build_struct_gep(st, (idx+1) as u32, "variant_data").expect("GEP Error");
+                self.builder.build_store(variant_data, data.unwrap());
             }
 
             if borrow_options.get_ptr {
@@ -3310,7 +3312,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
         }
 
-        tp.types = types;
+        tp.types = types.clone();
         tp.mutability = mutabilities;
 
         let name: String = node.data.attr.as_ref().unwrap().attr.clone();
@@ -3353,18 +3355,16 @@ impl<'ctx> CodeGen<'ctx> {
             data = dat.data;
         }
 
-        let st: inkwell::values::PointerValue = self.builder.build_alloca(*self.inkwell_types.enumsttp, "enum_st");
+        types.insert(0, self.datatypes.get(&types::BasicDataType::I32.to_string()).unwrap().clone());
+
+        let st: inkwell::values::PointerValue = self.builder.build_alloca(Self::build_struct_tp_from_types(&self.context, &self.inkwell_types, &types, &self.datatypes).into_struct_type(), "enum_st");
 
         let id: inkwell::values::PointerValue = self.builder.build_struct_gep(st, 0, "variant_id").expect("GEP Error");
         self.builder.build_store(id, self.inkwell_types.i32tp.const_int(idx as u64, false));
         
         if data.is_some() {
-            let data_ptr: inkwell::values::PointerValue = self.builder.build_alloca(data.unwrap().get_type(), "variant_data_ptr");
-            self.builder.build_store(data_ptr, data.unwrap());
-
-            let data_bitcast: inkwell::values::PointerValue = self.builder.build_bitcast(data_ptr, self.inkwell_types.enum_data_tp.ptr_type(inkwell::AddressSpace::from(0u16)), "variant_data_bitcast").into_pointer_value();
-            let variant_data: inkwell::values::PointerValue = self.builder.build_struct_gep(st, 1, "variant_data").expect("GEP Error");
-            self.builder.build_store(variant_data, data_bitcast);
+            let variant_data: inkwell::values::PointerValue = self.builder.build_struct_gep(st, (idx+1) as u32, "variant_data").expect("GEP Error");
+            self.builder.build_store(variant_data, data.unwrap());
         }
 
         if borrow_options.get_ptr {
@@ -3900,7 +3900,7 @@ impl<'ctx> CodeGen<'ctx> {
                 tp.mutability = mutabilitites;
                 
                 self.datatypes.insert(node.data.st.as_ref().unwrap().name.clone(), tp.clone());
-                self.namespaces.structs.insert(node.data.st.as_ref().unwrap().name.clone(), (tp, Some(Self::build_struct_tp_from_types(self.context, &self.inkwell_types, &simpletypes)), idxmapping, ForwardDeclarationType::Forward));
+                self.namespaces.structs.insert(node.data.st.as_ref().unwrap().name.clone(), (tp, Some(Self::build_struct_tp_from_types(self.context, &self.inkwell_types, &simpletypes, &self.datatypes)), idxmapping, ForwardDeclarationType::Forward));
                 builtin_types::add_simple_type(self, std::collections::HashMap::new(), types::BasicDataType::Struct, &node.data.st.as_ref().unwrap().name.clone());
             }
             else if node.tp == parser::NodeType::ENUM {
@@ -3929,10 +3929,8 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
     module.set_source_file_name(source_name);
 
     let st_data_tp: inkwell::types::StructType = context.opaque_struct_type("st_data");
-    let enum_data_tp: inkwell::types::StructType = context.opaque_struct_type("enum_st_data");
 
     let dynptrtp: inkwell::types::StructType = context.struct_type(&[inkwell::types::BasicTypeEnum::IntType(context.i32_type()), inkwell::types::BasicTypeEnum::PointerType(st_data_tp.ptr_type(inkwell::AddressSpace::from(0u16)))], false);
-    let enumsttp: inkwell::types::StructType = context.struct_type(&[inkwell::types::BasicTypeEnum::IntType(context.i32_type()), inkwell::types::BasicTypeEnum::PointerType(enum_data_tp.ptr_type(inkwell::AddressSpace::from(0u16)))], false);
 
 
     let inkwelltypes = InkwellTypes {
@@ -3946,9 +3944,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
         voidtp: &context.void_type(),
         booltp: &context.bool_type(),
         dynptrtp: &dynptrtp,
-        enumsttp: &enumsttp,
         st_data_tp: &st_data_tp,
-        enum_data_tp: &enum_data_tp,
     };
 
     let namespaces: Namespaces = Namespaces {

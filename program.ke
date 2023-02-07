@@ -3,12 +3,4 @@ fn f() -> Result<i32, i64> {
 }
 
 fn main() {
-    match f() {
-        Result::Ok<v> => {
-            v;
-        },
-        _ => {
-
-        }
-    }
 }

@@ -11,11 +11,10 @@ f:                                      # @f
 	.cfi_startproc
 # %bb.0:                                # %entry
 	movl	$0, -16(%rsp)
-	movl	$100, -20(%rsp)
-	leaq	-20(%rsp), %rax
-	movq	%rax, -8(%rsp)
+	movl	$100, -12(%rsp)
 	movl	-16(%rsp), %eax
-	movq	-8(%rsp), %rdx
+	movl	-12(%rsp), %edx
+	movq	-8(%rsp), %rcx
 	retq
 .Ltmp0:
 .Lfunc_end0:
@@ -30,31 +29,9 @@ _main:                                  # @_main
 	.loc	1 4 0                   # program.ke:4:0
 	.cfi_startproc
 # %bb.0:                                # %entry
-	subq	$40, %rsp
-	.cfi_def_cfa_offset 48
-.Ltmp1:
 	.loc	1 4 0 prologue_end      # program.ke:4:0
-	callq	f
-	movq	%rdx, 32(%rsp)
-	movl	%eax, 24(%rsp)
-	movl	24(%rsp), %eax
-	movl	$0, 8(%rsp)
-	movl	$0, 4(%rsp)
-	leaq	4(%rsp), %rcx
-	movq	%rcx, 16(%rsp)
-	leaq	8(%rsp), %rcx
-	addq	$8, %rcx
-	cmpl	8(%rsp), %eax
-	jne	.LBB1_2
-# %bb.1:                                # %pattern_0
-	jmp	.LBB1_3
-.LBB1_2:                                # %default
-	jmp	.LBB1_3
-.LBB1_3:                                # %end
-	addq	$40, %rsp
-	.cfi_def_cfa_offset 8
 	retq
-.Ltmp2:
+.Ltmp1:
 .Lfunc_end1:
 	.size	_main, .Lfunc_end1-_main
 	.cfi_endproc
@@ -89,13 +66,13 @@ main:                                   # @main
 .Linfo_string3:
 	.asciz	"f"                     # string offset=21
 .Linfo_string4:
-	.asciz	"{ i32, %enum_st_data* }" # string offset=23
+	.asciz	"{ i32, i32, i64 }"     # string offset=23
 .Linfo_string5:
-	.asciz	"_main"                 # string offset=47
+	.asciz	"_main"                 # string offset=41
 .Linfo_string6:
-	.asciz	"main"                  # string offset=53
+	.asciz	"main"                  # string offset=47
 .Linfo_string7:
-	.asciz	"void"                  # string offset=58
+	.asciz	"void"                  # string offset=52
 	.section	.debug_abbrev,"",@progbits
 	.byte	1                       # Abbreviation Code
 	.byte	17                      # DW_TAG_compile_unit
@@ -241,7 +218,7 @@ main:                                   # @main
 	.long	107                     # DIE offset
 	.asciz	"void"                  # External Name
 	.long	100                     # DIE offset
-	.asciz	"{ i32, %enum_st_data* }" # External Name
+	.asciz	"{ i32, i32, i64 }"     # External Name
 	.long	0                       # End Mark
 .LpubTypes_end0:
 	.section	".note.GNU-stack","",@progbits

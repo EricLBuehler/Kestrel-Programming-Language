@@ -1,4 +1,4 @@
-use crate::codegen;
+use crate::codegen::{self, CodeGen};
 use crate::codegen::builtin_types::enums;
 use std::collections::HashMap;
 use crate::codegen::types::*;
@@ -88,7 +88,7 @@ fn string_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: 
     
     let itm: inkwell::values::IntValue = codegen.builder.build_load(itmptr, "item").into_int_value();
 
-    let res_some: Data = enums::optionaltype::optional_some(codegen, Some(inkwell::values::BasicValueEnum::IntValue(itm)));
+    let res_some: Data = enums::optionaltype::optional_some(codegen, Some(inkwell::values::BasicValueEnum::IntValue(itm)), opt.types.clone());
 
     codegen.builder.build_unconditional_branch(end_block);
     
@@ -96,7 +96,7 @@ fn string_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: 
 
     codegen.builder.position_at_end(else_block);
 
-    let res_none: Data = enums::optionaltype::optional_none(codegen);
+    let res_none: Data = enums::optionaltype::optional_none(codegen, opt.types.clone());
     
     codegen.builder.build_unconditional_branch(end_block);
 
@@ -107,7 +107,11 @@ fn string_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: 
 
     codegen.enclosing_block = Some(end_block);
 
-    let phi: inkwell::values::PhiValue = codegen.builder.build_phi(inkwell::types::BasicTypeEnum::StructType(*codegen.inkwell_types.enumsttp), "check_phi");
+
+    let mut types: Vec<DataType> = opt.types.clone();
+    types.insert(0, codegen.datatypes.get(&BasicDataType::I32.to_string()).unwrap().clone());
+
+    let phi: inkwell::values::PhiValue = codegen.builder.build_phi(inkwell::types::BasicTypeEnum::StructType(CodeGen::build_struct_tp_from_types(&codegen.context, &codegen.inkwell_types, &types, &codegen.datatypes).into_struct_type()), "check_phi");
 
     phi.add_incoming(&[(&codegen.builder.build_load(res_some.data.unwrap().into_pointer_value(), "some_case"), then_block)]);
     phi.add_incoming(&[(&codegen.builder.build_load(res_none.data.unwrap().into_pointer_value(), "none_case"), else_block)]);
