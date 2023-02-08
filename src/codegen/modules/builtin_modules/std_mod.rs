@@ -1,5 +1,6 @@
-use crate::codegen::{CodeGen, Namespaces};
+use crate::codegen::{CodeGen, Namespaces, ForwardDeclarationType};
 use crate::codegen::modules::*;
+use crate::codegen::types::*;
 
 pub fn init_std(codegen: &mut CodeGen) {
     //std module
@@ -23,9 +24,20 @@ pub fn init_std(codegen: &mut CodeGen) {
     //
 
     //out module
+    let mut out_functions = std::collections::HashMap::new();
+
+    //printf
+    let mut fntp: DataType = codegen.datatypes.get(&BasicDataType::Func.to_string()).unwrap().clone();
+    fntp.name = String::from("printf");
+    fntp.names = Some(vec![String::from("arg")]);
+    fntp.rettp = Some(Box::new(codegen.datatypes.get(&BasicDataType::I32.to_string()).unwrap().clone()));
+    fntp.types = vec![codegen.datatypes.get(&BasicDataType::Array.to_string()).unwrap().clone()];
+
+    out_functions.insert(String::from("printf"), (codegen.module.add_function("printf", codegen.inkwell_types.i32tp.fn_type(&[inkwell::types::BasicMetadataTypeEnum::PointerType(codegen.inkwell_types.i8tp.ptr_type(inkwell::AddressSpace::from(0u16)))], true), Some(inkwell::module::Linkage::External)), fntp, ForwardDeclarationType::Real));
+    //
     let namespaces: Namespaces = Namespaces {
         locals: Vec::new(),
-        functions: std::collections::HashMap::new(),
+        functions: out_functions,
         structs: std::collections::HashMap::new(),
         template_functions_sig: std::collections::HashMap::new(),
         template_functions: Vec::new(),
