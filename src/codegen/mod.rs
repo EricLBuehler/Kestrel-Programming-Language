@@ -3983,7 +3983,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
     let cur_module: modules::Module = modules::Module { 
         name: if info.name.contains(".") { info.name.rsplit_once(".").unwrap().0.to_string() } else { info.name.clone() },
         namespaces,
-        modules: Vec::new(),
+        modules: std::collections::HashMap::new(),
     };
 
     let mut codegen: CodeGen = CodeGen {
@@ -4018,6 +4018,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
     builtin_types::init_traits(&mut codegen);
     builtin_types::init_structs(&mut codegen);
     builtin_types::init_enums(&mut codegen);
+    modules::builtin_modules::init_builtin_modules(&mut codegen);
 
     //Generate forward-declaration functions
     codegen.forward_declare(&nodes);
