@@ -37,7 +37,7 @@ pub struct InkwellTypes<'ctx> {
     st_data_tp: &'ctx inkwell::types::StructType<'ctx>,
 }
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum ForwardDeclarationType {
     Forward,
     Real,
@@ -49,7 +49,7 @@ pub enum InitializationStatus {
     Uninitialized,
 }
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum TemplateFunctionInstance {
     Unrelated,
     Instance,
@@ -63,6 +63,7 @@ pub struct BorrowOptions {
     mut_borrow: bool,
 }
 
+#[derive(PartialEq, Clone, Debug)]
 pub struct Namespaces<'ctx> {
     locals: Vec<std::collections::HashMap<String, (Option<inkwell::values::PointerValue<'ctx>>, types::DataType<'ctx>, types::DataMutablility, types::DataOwnership, parser::Position, InitializationStatus)>>,
     functions: std::collections::HashMap<String, (inkwell::values::FunctionValue<'ctx>, types::DataType<'ctx>, ForwardDeclarationType)>,
