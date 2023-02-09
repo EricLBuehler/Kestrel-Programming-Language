@@ -18,11 +18,11 @@ fn std_print<'a>(codegen: &mut CodeGen<'a>, args: Vec<Data<'a>>, pos: &crate::pa
     let ptr: inkwell::values::PointerValue = codegen.builder.build_struct_gep(args.get(0).unwrap().data.unwrap().into_pointer_value(), 0, "data").expect("GEP Error");
     let bitcast: inkwell::values::BasicValueEnum = codegen.builder.build_bitcast(ptr, codegen.inkwell_types.i8tp.ptr_type(inkwell::AddressSpace::from(0u16)), "arr_bitcast");
     
-    codegen.builder.build_call(inkwell::values::CallableValue::try_from(codegen.cur_module.modules.get("std").unwrap().namespaces.functions.get("printf").unwrap().0.as_global_value().as_pointer_value()).unwrap(), &[bitcast.into()], "printf_call");
+    let res: inkwell::values::CallSiteValue = codegen.builder.build_call(inkwell::values::CallableValue::try_from(codegen.cur_module.modules.get("std").unwrap().namespaces.functions.get("printf").unwrap().0.as_global_value().as_pointer_value()).unwrap(), &[bitcast.into()], "printf_call");
 
     let data: Data = Data {
-        data: None,
-        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Void.to_string()).unwrap().clone(),
+        data: Some(res.try_as_basic_value().left().unwrap()),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::I32.to_string()).unwrap().clone(),
         owned: true,
     };
     return data;
@@ -75,7 +75,7 @@ pub fn init_std(codegen: &mut CodeGen) {
     let mut newfntype: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Func.to_string()).unwrap().clone();
     newfntype.name = String::from("print");
     newfntype.names = Some(vec![String::from("str")]);
-    newfntype.rettp = Some(Box::new(crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Void.to_string()).unwrap().clone()));
+    newfntype.rettp = Some(Box::new(crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::I32.to_string()).unwrap().clone()));
     
     let mut str_tp: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &String::from("String")).unwrap().clone();
     str_tp.is_ref = true;
