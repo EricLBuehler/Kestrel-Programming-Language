@@ -15,7 +15,12 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
 
     if args.last().unwrap() == &String::from("--help") && args.len() == 2 {
-        println!("usage: kestrel [--version | --help] [--err <error> | --warn <warning>] [<program>]");
+        println!("usage: kestrel [--version | --help] [--err <error> | --warn <warning>] [<program> [--run]] ");
+        println!("--version => view Kestrel version");
+        println!("--help => view this information");
+        println!("--err => get the textual representaion of an error code");
+        println!("--warn => get the textual representaion of an warning code");
+        println!("--run => run the program automatically after compilation");
         return;
     }
 
@@ -64,7 +69,11 @@ fn main() {
         return;        
     }
 
-    if args.len() != 2 {
+    let mut inplace_run: bool = false;
+    if args.len() == 3 && args.last().unwrap() == &String::from("--run") {
+        inplace_run = true;
+    }
+    else if args.len() != 2 {
         println!("Invalid number of command line arguments. Expected 2, got {}.", args.len());
         return;
     }
@@ -137,5 +146,11 @@ fn main() {
             panic!("{}",err.to_string());
         }
     }
-
+    
+    if inplace_run {
+        let res: std::io::Result<std::process::ExitStatus> = std::process::Command::new("./a.out").status();
+        if res.is_err() {
+            println!("Failed to run ./a.out (exit code {})", res.err().unwrap().raw_os_error().unwrap());
+        }
+    }
 }
