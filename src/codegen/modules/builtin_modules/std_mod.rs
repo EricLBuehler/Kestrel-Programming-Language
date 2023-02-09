@@ -16,9 +16,9 @@ fn std_print<'a>(codegen: &mut CodeGen<'a>, args: Vec<Data<'a>>, pos: &crate::pa
     }
 
     let ptr: inkwell::values::PointerValue = codegen.builder.build_struct_gep(args.get(0).unwrap().data.unwrap().into_pointer_value(), 0, "data").expect("GEP Error");
-    let bitcast: inkwell::values::BasicValueEnum = codegen.builder.build_bitcast(ptr, codegen.inkwell_types.i8tp.ptr_type(inkwell::AddressSpace::from(0u16)), "arr_bitcast");
-    
-    let res: inkwell::values::CallSiteValue = codegen.builder.build_call(inkwell::values::CallableValue::try_from(codegen.cur_module.modules.get("std").unwrap().namespaces.functions.get("printf").unwrap().0.as_global_value().as_pointer_value()).unwrap(), &[bitcast.into()], "printf_call");
+    let data_ptr: inkwell::values::PointerValue = unsafe { codegen.builder.build_in_bounds_gep(ptr, &[codegen.inkwell_types.i32tp.const_zero(), codegen.inkwell_types.i32tp.const_zero()], "data_ptr") };
+
+    let res: inkwell::values::CallSiteValue = codegen.builder.build_call(inkwell::values::CallableValue::try_from(codegen.cur_module.modules.get("std").unwrap().namespaces.functions.get("printf").unwrap().0.as_global_value().as_pointer_value()).unwrap(), &[data_ptr.into()], "printf_call");
 
     let data: Data = Data {
         data: Some(res.try_as_basic_value().left().unwrap()),
