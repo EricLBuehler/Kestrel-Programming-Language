@@ -86,6 +86,7 @@ pub struct CodeGen<'ctx> {
     dicompile_unit: inkwell::debug_info::DICompileUnit<'ctx>,
     expected_rettp: Option<types::DataType<'ctx>>,
     traits: std::collections::HashMap<String, types::TraitSignature<'ctx>>,
+    current_block: Option<inkwell::basic_block::BasicBlock<'ctx>>,
     enclosing_block: Option<inkwell::basic_block::BasicBlock<'ctx>>,
     start_block: Option<inkwell::basic_block::BasicBlock<'ctx>>,
     end_block: Option<inkwell::basic_block::BasicBlock<'ctx>>,
@@ -160,14 +161,14 @@ impl<'ctx> CodeGen<'ctx> {
         if codegen.alloc_head.is_some() {
             codegen.builder.position_at(codegen.enclosing_block.unwrap(), codegen.alloc_head.as_ref().unwrap());
             let ptr = codegen.builder.build_alloca(ty, name);
-            codegen.builder.position_at_end(codegen.enclosing_block.unwrap());
+            codegen.builder.position_at_end(codegen.current_block.unwrap());
             codegen.alloc_head=ptr.as_instruction();
             return ptr;
         }
         else if codegen.enclosing_block.unwrap().get_first_instruction().is_some() {
             codegen.builder.position_before(codegen.enclosing_block.unwrap().get_first_instruction().as_ref().unwrap());
             let ptr = codegen.builder.build_alloca(ty, name);
-            codegen.builder.position_at_end(codegen.enclosing_block.unwrap());
+            codegen.builder.position_at_end(codegen.current_block.unwrap());
             codegen.alloc_head=ptr.as_instruction();
             return ptr;
         }
@@ -1140,6 +1141,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         //Continue function compilation
         let basic_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(func, "entry");
+        self.current_block = Some(basic_block);
         self.enclosing_block = Some(basic_block);
         self.builder.set_current_debug_location(self.context, location);
 
@@ -1152,7 +1154,7 @@ impl<'ctx> CodeGen<'ctx> {
         func.add_attribute(inkwell::attributes::AttributeLoc::Function, attr);
         
         self.builder.position_at_end(basic_block); 
-        self.enclosing_block = Some(basic_block);
+        self.current_block = Some(basic_block);
         
         //Setup locals
         let prev_locals = self.cur_module.namespaces.locals.to_owned();
@@ -1521,9 +1523,9 @@ impl<'ctx> CodeGen<'ctx> {
                 rettp_tp = Self::get_llvm_from_type(self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.cur_module.datatypes, &self.datatypes, &self.traits, self.info, rettp, node).0.to_owned();
             }
             
-            let enclosing_block: inkwell::basic_block::BasicBlock = self.enclosing_block.unwrap();
+            let current_block: inkwell::basic_block::BasicBlock = self.current_block.unwrap();
             self.build_func(&func, None, Some(fn_types), Some(rettp_tp));
-            self.enclosing_block = Some(enclosing_block);
+            self.current_block = Some(current_block);
 
             let func_v = self.cur_module.namespaces.template_functions.last().unwrap().to_owned();
             self.cur_module.namespaces.template_functions.pop();
@@ -1540,7 +1542,7 @@ impl<'ctx> CodeGen<'ctx> {
 
             args.insert(0usize, callable);
             tp = Some(Self::get_type_from_data(self.cur_module.types.clone(), &args.first().unwrap()));
-            self.builder.position_at_end(self.enclosing_block.unwrap());
+            self.builder.position_at_end(self.current_block.unwrap());
         }
 
         if have_template_method {
@@ -1613,9 +1615,9 @@ impl<'ctx> CodeGen<'ctx> {
                     rettp_tp = Self::get_llvm_from_type(self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.cur_module.datatypes, &self.datatypes, &self.traits, self.info, rettp, node).0.to_owned();
                 }
                 
-                let enclosing_block: inkwell::basic_block::BasicBlock = self.enclosing_block.unwrap();
+                let current_block: inkwell::basic_block::BasicBlock = self.current_block.unwrap();
                 self.build_func(&func, None, Some(fn_types), Some(rettp_tp));
-                self.enclosing_block = Some(enclosing_block);
+                self.current_block = Some(current_block);
 
                 let func_v = self.cur_module.namespaces.template_functions.last().unwrap().to_owned();
                 self.cur_module.namespaces.template_functions.pop();
@@ -1632,7 +1634,7 @@ impl<'ctx> CodeGen<'ctx> {
 
                 args.insert(0usize, callable.clone());
                 tp = Some(Self::get_type_from_data(self.cur_module.types.clone(), &callable));
-                self.builder.position_at_end(self.enclosing_block.unwrap());
+                self.builder.position_at_end(self.current_block.unwrap());
                 if instance_meth == TemplateFunctionInstance::Instance {
                     args.insert(1usize, types::Data {
                         data: Some(self.builder.build_load(base.data.unwrap().into_pointer_value(), &base.tp.name)),
@@ -2542,10 +2544,10 @@ impl<'ctx> CodeGen<'ctx> {
     }
 
     fn build_if(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let end_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "if_end");
-        let else_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "else");
+        let end_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.current_block.unwrap().get_parent().unwrap(), "if_end");
+        let else_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.current_block.unwrap().get_parent().unwrap(), "else");
 
-        let mut enclosing_block: inkwell::basic_block::BasicBlock = self.enclosing_block.unwrap();
+        let mut current_block: inkwell::basic_block::BasicBlock = self.current_block.unwrap();
 
         let mut collected_locals: Vec<std::collections::HashMap<String, usize>> = Vec::new();
 
@@ -2556,8 +2558,8 @@ impl<'ctx> CodeGen<'ctx> {
 
         let mut idx: usize = 0;
         for ifn in &node.data.ifn.as_ref().unwrap().ifs {
-            self.builder.position_at_end(enclosing_block);  
-            self.enclosing_block = Some(enclosing_block);  
+            self.builder.position_at_end(current_block);  
+            self.current_block = Some(current_block);  
             let right: types::Data = self.compile_expr(&ifn.0, BorrowOptions{ give_ownership: false, get_ptr: false, mut_borrow: false}, false, false);
             
             let mut args: Vec<types::Data> = Vec::new();
@@ -2587,18 +2589,18 @@ impl<'ctx> CodeGen<'ctx> {
                 errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, &node.pos, self.info);
             }
             
-            let then_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "if");
+            let then_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.current_block.unwrap().get_parent().unwrap(), "if");
 
-            let _ = then_block.move_after(self.enclosing_block.unwrap());
+            let _ = then_block.move_after(self.current_block.unwrap());
             
             let elseif_block: inkwell::basic_block::BasicBlock;
 
             if idx!=node.data.ifn.as_ref().unwrap().ifs.len()-1 {
-                elseif_block = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "else_if");
+                elseif_block = self.context.append_basic_block(self.current_block.unwrap().get_parent().unwrap(), "else_if");
 
                 let _ = elseif_block.move_after(then_block);
                 
-                enclosing_block = elseif_block;                
+                current_block = elseif_block;                
             }
             else {
                 elseif_block = else_block;
@@ -2607,7 +2609,7 @@ impl<'ctx> CodeGen<'ctx> {
             self.builder.build_conditional_branch(data.data.unwrap().into_int_value(), then_block, elseif_block);
 
             self.builder.position_at_end(then_block);
-            self.enclosing_block = Some(then_block);
+            self.current_block = Some(then_block);
             
             self.cur_module.namespaces.locals.push(std::collections::HashMap::new());
 
@@ -2669,18 +2671,18 @@ impl<'ctx> CodeGen<'ctx> {
 
             self.builder.build_unconditional_branch(end_block);
 
-            self.enclosing_block = Some(then_block);
+            self.current_block = Some(then_block);
 
             idx+=1;
         }
         
         
-        let _ = else_block.move_after(self.enclosing_block.unwrap());
+        let _ = else_block.move_after(self.current_block.unwrap());
         let _ = end_block.move_after(else_block); 
 
         if node.data.ifn.as_ref().unwrap().else_opt.is_some() {
             self.builder.position_at_end(else_block);
-            self.enclosing_block = Some(else_block);
+            self.current_block = Some(else_block);
             
             self.cur_module.namespaces.locals.push(std::collections::HashMap::new());
 
@@ -2737,13 +2739,13 @@ impl<'ctx> CodeGen<'ctx> {
             collected_locals.push(end_locals);
 
 
-            self.builder.build_unconditional_branch(self.enclosing_block.unwrap());
+            self.builder.build_unconditional_branch(self.current_block.unwrap());
 
             self.cur_module.namespaces.locals.pop();
         }
         else {
             self.builder.position_at_end(else_block);
-            self.enclosing_block = Some(else_block);
+            self.current_block = Some(else_block);
             self.builder.build_unconditional_branch(end_block);
         }
 
@@ -2784,10 +2786,10 @@ impl<'ctx> CodeGen<'ctx> {
             }
         }
 
-        self.enclosing_block = Some(end_block);
+        self.current_block = Some(end_block);
 
         self.builder.position_at_end(end_block);
-        self.enclosing_block = Some(end_block);
+        self.current_block = Some(end_block);
 
         if rettp.as_ref().unwrap().tp == types::BasicDataType::Void {
             let data: types::Data = types::Data {
@@ -2813,8 +2815,8 @@ impl<'ctx> CodeGen<'ctx> {
     }
 
     fn build_loop(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let loop_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "loop");
-        let end_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "loop_end");
+        let loop_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.current_block.unwrap().get_parent().unwrap(), "loop");
+        let end_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.current_block.unwrap().get_parent().unwrap(), "loop_end");
 
         let start_block_old = self.start_block;
         let end_block_old = self.end_block;
@@ -2826,14 +2828,14 @@ impl<'ctx> CodeGen<'ctx> {
         self.builder.build_unconditional_branch(loop_block);
 
         self.builder.position_at_end(loop_block);
-        self.enclosing_block = Some(loop_block);
+        self.current_block = Some(loop_block);
 
         self.compile(&node.data.loopn.as_ref().unwrap().block, true, true);
 
         self.builder.build_unconditional_branch(loop_block);
 
         self.builder.position_at_end(end_block);
-        self.enclosing_block = Some(end_block);
+        self.current_block = Some(end_block);
 
         self.end_block = end_block_old;
         self.start_block = start_block_old;
@@ -2886,9 +2888,9 @@ impl<'ctx> CodeGen<'ctx> {
     }
 
     fn build_while(&mut self, node: &parser::Node) -> types::Data<'ctx> {
-        let loop_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "loop_head");
-        let loop_then_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "loop_then");
-        let end_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "loop_end");
+        let loop_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.current_block.unwrap().get_parent().unwrap(), "loop_head");
+        let loop_then_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.current_block.unwrap().get_parent().unwrap(), "loop_then");
+        let end_block: inkwell::basic_block::BasicBlock = self.context.append_basic_block(self.current_block.unwrap().get_parent().unwrap(), "loop_end");
 
         let start_block_old = self.start_block;
         let end_block_old = self.end_block;
@@ -2900,7 +2902,7 @@ impl<'ctx> CodeGen<'ctx> {
         self.builder.build_unconditional_branch(loop_block);
 
         self.builder.position_at_end(loop_block);     
-        self.enclosing_block = Some(loop_block);       
+        self.current_block = Some(loop_block);       
 
         let right: types::Data = self.compile_expr(&node.data.loopn.as_ref().unwrap().expr.as_ref().unwrap(), BorrowOptions{ give_ownership: false, get_ptr: false, mut_borrow: false}, false, false);
       
@@ -2935,14 +2937,14 @@ impl<'ctx> CodeGen<'ctx> {
         self.builder.build_conditional_branch(data.data.unwrap().into_int_value(), loop_then_block, end_block);
 
         self.builder.position_at_end(loop_then_block);
-        self.enclosing_block = Some(loop_then_block);
+        self.current_block = Some(loop_then_block);
 
         self.compile(&node.data.loopn.as_ref().unwrap().block, true, true);
 
         self.builder.build_unconditional_branch(loop_block);
 
         self.builder.position_at_end(end_block);
-        self.enclosing_block = Some(end_block);
+        self.current_block = Some(end_block);
 
         self.end_block = end_block_old;
         self.start_block = start_block_old;
@@ -3074,10 +3076,10 @@ impl<'ctx> CodeGen<'ctx> {
             errors::raise_error(&fmt, errors::ErrorType::ExpectedEnum, &node.pos, self.info);
         }
         
-        let end_block = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "end");
-        let default_block = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "default");
+        let end_block = self.context.append_basic_block(self.current_block.unwrap().get_parent().unwrap(), "end");
+        let default_block = self.context.append_basic_block(self.current_block.unwrap().get_parent().unwrap(), "default");
         
-        let mut pattern_block = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), "pattern_0");
+        let mut pattern_block = self.context.append_basic_block(self.current_block.unwrap().get_parent().unwrap(), "pattern_0");
         let _ = default_block.move_after(pattern_block);
 
         let mut tp: Option<types::DataType> = None;
@@ -3088,7 +3090,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         let mut collected_locals: Vec<std::collections::HashMap<String, usize>> = Vec::new();
 
-        let mut else_block: inkwell::basic_block::BasicBlock = self.enclosing_block.unwrap();
+        let mut else_block: inkwell::basic_block::BasicBlock = self.current_block.unwrap();
 
         let mut names: Vec<String> = Vec::new();
         for (_, name, _) in &node.data.matchn.as_ref().unwrap().patterns {
@@ -3115,16 +3117,16 @@ impl<'ctx> CodeGen<'ctx> {
         for (pattern, name, block) in &node.data.matchn.as_ref().unwrap().patterns {
             if pattern.is_some() {
                 self.builder.position_at_end(else_block);
-                self.enclosing_block = Some(else_block);
+                self.current_block = Some(else_block);
 
                 let pattern_block_old = pattern_block.clone();
 
                 index += 1;
 
                 if index != node.data.matchn.as_ref().unwrap().patterns.len()-1 {
-                    let check_block = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), &("pattern_check_".to_owned()+&(index%2).to_string()));
+                    let check_block = self.context.append_basic_block(self.current_block.unwrap().get_parent().unwrap(), &("pattern_check_".to_owned()+&(index%2).to_string()));
                     let _ = check_block.move_after(pattern_block_old);
-                    pattern_block = self.context.append_basic_block(self.enclosing_block.unwrap().get_parent().unwrap(), &("pattern_".to_owned()+&index.to_string()));
+                    pattern_block = self.context.append_basic_block(self.current_block.unwrap().get_parent().unwrap(), &("pattern_".to_owned()+&index.to_string()));
                     let _ = pattern_block.move_after(check_block);
                     else_block = check_block;
                 }
@@ -3141,7 +3143,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.builder.build_conditional_branch(self.builder.build_int_compare(inkwell::IntPredicate::EQ, expr.data.unwrap().into_int_value(), self.builder.build_load(id_ptr, "id").into_int_value(), &("compare_".to_owned()+&index.to_string())), pattern_block_old, else_block);
                 
                 self.builder.position_at_end(pattern_block_old);
-                self.enclosing_block = Some(pattern_block_old);
+                self.current_block = Some(pattern_block_old);
     
 
 
@@ -3210,19 +3212,19 @@ impl<'ctx> CodeGen<'ctx> {
                 
                 self.builder.build_unconditional_branch(end_block);
                     
-                self.builder.position_at_end(self.enclosing_block.unwrap());
+                self.builder.position_at_end(self.current_block.unwrap());
 
                 blocks.push((data.data, pattern_block_old));
             }
             else {
-                self.builder.position_at_end(self.enclosing_block.unwrap());
+                self.builder.position_at_end(self.current_block.unwrap());
 
                 if else_block != default_block {
                     self.builder.build_unconditional_branch(default_block);
                 }
                 
                 self.builder.position_at_end(default_block);
-                self.enclosing_block = Some(default_block);
+                self.current_block = Some(default_block);
     
 
 
@@ -3284,8 +3286,8 @@ impl<'ctx> CodeGen<'ctx> {
 
 
                 self.builder.build_unconditional_branch(end_block);
-                self.enclosing_block = Some(end_block);
-                self.builder.position_at_end(self.enclosing_block.unwrap());
+                self.current_block = Some(end_block);
+                self.builder.position_at_end(self.current_block.unwrap());
 
                 blocks.push((data.data, default_block));
             }                  
@@ -3343,7 +3345,7 @@ impl<'ctx> CodeGen<'ctx> {
             phi.add_incoming(&[(&block.0.unwrap(), block.1)]);
         }
 
-        self.enclosing_block = Some(end_block);
+        self.current_block = Some(end_block);
         
         let data: types::Data = types::Data {
             data: Some(phi.as_basic_value()),
@@ -3851,6 +3853,11 @@ impl<'ctx> CodeGen<'ctx> {
             tp: Self::datatypes_get(self, &types::BasicDataType::Void.to_string()).unwrap().clone(),
             owned: true
         };
+        let current = self.current_block;
+        let enclosing = self.enclosing_block;
+        let expected = self.expected_rettp.clone();
+        let alloc = self.alloc_head;
+        let end = self.end_block;
         let mut idx: usize = 0;
         for node in nodes {
             if infn && node.tp == parser::NodeType::FUNC {
@@ -3890,6 +3897,11 @@ impl<'ctx> CodeGen<'ctx> {
 
             idx += 1;
         }
+        self.current_block = current;
+        self.expected_rettp = expected;
+        self.alloc_head = alloc;
+        self.end_block = end;
+        self.enclosing_block = enclosing;
         return retv;
     }
 
@@ -4145,6 +4157,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
         dicompile_unit: compile_unit,
         expected_rettp: None, 
         traits: std::collections::HashMap::new(),
+        current_block: None,
         enclosing_block: None,
         start_block: None,
         end_block: None,
@@ -4198,7 +4211,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
     realmain.add_attribute(inkwell::attributes::AttributeLoc::Function, attr);
     
     codegen.builder.position_at_end(basic_block);
-    codegen.enclosing_block = Some(basic_block);
+    codegen.current_block = Some(basic_block);
 
     codegen.builder.build_call(*main, &[], "res");
 

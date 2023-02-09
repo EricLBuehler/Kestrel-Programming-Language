@@ -57,9 +57,9 @@ fn array_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &
 
     let len: u32 = args.get(0).unwrap().tp.arrtp.unwrap().len();
 
-    let end_block: inkwell::basic_block::BasicBlock = codegen.context.append_basic_block(codegen.enclosing_block.unwrap().get_parent().unwrap(), "end");
-    let then_block: inkwell::basic_block::BasicBlock = codegen.context.append_basic_block(codegen.enclosing_block.unwrap().get_parent().unwrap(), "then");
-    let else_block: inkwell::basic_block::BasicBlock = codegen.context.append_basic_block(codegen.enclosing_block.unwrap().get_parent().unwrap(), "else");
+    let end_block: inkwell::basic_block::BasicBlock = codegen.context.append_basic_block(codegen.current_block.unwrap().get_parent().unwrap(), "end");
+    let then_block: inkwell::basic_block::BasicBlock = codegen.context.append_basic_block(codegen.current_block.unwrap().get_parent().unwrap(), "then");
+    let else_block: inkwell::basic_block::BasicBlock = codegen.context.append_basic_block(codegen.current_block.unwrap().get_parent().unwrap(), "else");
 
     let lhs: inkwell::values::IntValue = if std::mem::size_of::<usize>() == std::mem::size_of::<u32>() {
         codegen.inkwell_types.i32tp.const_int(len.into(), false)
@@ -73,7 +73,7 @@ fn array_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &
     //
     
     codegen.builder.position_at_end(then_block);
-    codegen.enclosing_block = Some(then_block);
+    codegen.current_block = Some(then_block);
 
     let ptr: inkwell::values::PointerValue = codegen.builder.build_struct_gep(args.get(0).unwrap().data.unwrap().into_pointer_value(), 0 as u32, "arr").expect("GEP Error");
     
@@ -88,7 +88,7 @@ fn array_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &
     //
 
     codegen.builder.position_at_end(else_block);
-    codegen.enclosing_block = Some(else_block);
+    codegen.current_block = Some(else_block);
 
     let res_none: Data = enums::optionaltype::optional_none(codegen, opt.types.clone());
     
@@ -98,9 +98,9 @@ fn array_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &
 
     let _ = end_block.move_after(else_block);
     codegen.builder.position_at_end(end_block);
-    codegen.enclosing_block = Some(end_block);
+    codegen.current_block = Some(end_block);
 
-    codegen.enclosing_block = Some(end_block);
+    codegen.current_block = Some(end_block);
 
     let mut types: Vec<DataType> = opt.types.clone();
     types.insert(0, crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::I32.to_string()).unwrap().clone());

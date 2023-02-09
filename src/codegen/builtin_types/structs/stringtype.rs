@@ -67,9 +67,9 @@ fn string_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: 
 
     let len: u32 = arr.get_type().len();
 
-    let end_block: inkwell::basic_block::BasicBlock = codegen.context.append_basic_block(codegen.enclosing_block.unwrap().get_parent().unwrap(), "end");
-    let then_block: inkwell::basic_block::BasicBlock = codegen.context.append_basic_block(codegen.enclosing_block.unwrap().get_parent().unwrap(), "then");
-    let else_block: inkwell::basic_block::BasicBlock = codegen.context.append_basic_block(codegen.enclosing_block.unwrap().get_parent().unwrap(), "else");
+    let end_block: inkwell::basic_block::BasicBlock = codegen.context.append_basic_block(codegen.current_block.unwrap().get_parent().unwrap(), "end");
+    let then_block: inkwell::basic_block::BasicBlock = codegen.context.append_basic_block(codegen.current_block.unwrap().get_parent().unwrap(), "then");
+    let else_block: inkwell::basic_block::BasicBlock = codegen.context.append_basic_block(codegen.current_block.unwrap().get_parent().unwrap(), "else");
 
     let lhs: inkwell::values::IntValue = if std::mem::size_of::<usize>() == std::mem::size_of::<u32>() {
         codegen.inkwell_types.i32tp.const_int(len.into(), false)
@@ -83,7 +83,7 @@ fn string_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: 
     //
     
     codegen.builder.position_at_end(then_block);
-    codegen.enclosing_block = Some(then_block);
+    codegen.current_block = Some(then_block);
 
     let itmptr: inkwell::values::PointerValue = unsafe { codegen.builder.build_in_bounds_gep(ptr, &[codegen.inkwell_types.i32tp.const_zero(), args.get(1).unwrap().data.unwrap().into_int_value()], "itmptr") };
     
@@ -96,7 +96,7 @@ fn string_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: 
     //
 
     codegen.builder.position_at_end(else_block);
-    codegen.enclosing_block = Some(else_block);
+    codegen.current_block = Some(else_block);
 
     let res_none: Data = enums::optionaltype::optional_none(codegen, opt.types.clone());
     
@@ -106,9 +106,9 @@ fn string_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: 
 
     let _ = end_block.move_after(else_block);
     codegen.builder.position_at_end(end_block);
-    codegen.enclosing_block = Some(end_block);
+    codegen.current_block = Some(end_block);
 
-    codegen.enclosing_block = Some(end_block);
+    codegen.current_block = Some(end_block);
 
 
     let mut types: Vec<DataType> = opt.types.clone();

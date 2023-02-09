@@ -8,14 +8,14 @@ declare i32 @printf(i8* nocapture readonly, ...) local_unnamed_addr #0
 ; Function Attrs: noinline noreturn nounwind optnone
 define void @_main() local_unnamed_addr #1 !dbg !4 {
 entry:
+  %inplace_ptr = alloca { [15 x i8] }, !dbg !8
+  %String = alloca { [15 x i8] }, !dbg !8
   br label %loop_head, !dbg !8
 
 loop_head:                                        ; preds = %loop_then, %entry
   br label %loop_then, !dbg !8
 
 loop_then:                                        ; preds = %loop_head
-  %inplace_ptr = alloca { [15 x i8] }, !dbg !8
-  %String = alloca { [15 x i8] }, !dbg !8
   %arr = getelementptr inbounds { [15 x i8] }, { [15 x i8] }* %String, i32 0, i32 0, !dbg !8
   store [15 x i8] c"Hello, world!\0A\00", [15 x i8]* %arr, !dbg !8
   %string = load { [15 x i8] }, { [15 x i8] }* %String, !dbg !8
