@@ -73,6 +73,7 @@ fn array_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &
     //
     
     codegen.builder.position_at_end(then_block);
+    codegen.enclosing_block = Some(then_block);
 
     let ptr: inkwell::values::PointerValue = codegen.builder.build_struct_gep(args.get(0).unwrap().data.unwrap().into_pointer_value(), 0 as u32, "arr").expect("GEP Error");
     
@@ -87,6 +88,7 @@ fn array_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &
     //
 
     codegen.builder.position_at_end(else_block);
+    codegen.enclosing_block = Some(else_block);
 
     let res_none: Data = enums::optionaltype::optional_none(codegen, opt.types.clone());
     
@@ -96,6 +98,7 @@ fn array_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &
 
     let _ = end_block.move_after(else_block);
     codegen.builder.position_at_end(end_block);
+    codegen.enclosing_block = Some(end_block);
 
     codegen.enclosing_block = Some(end_block);
 

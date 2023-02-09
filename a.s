@@ -34,65 +34,65 @@ _main:                                  # @_main
 .LBB0_2:                                # %loop_then
                                         #   in Loop: Header=BB0_1 Depth=1
 	movq	%rsp, %rax
-	movq	%rax, %rcx
-	addq	$-16, %rcx
-	movq	%rcx, %rsp
-	movb	$0, -2(%rax)
-	movb	$10, -3(%rax)
-	movb	$33, -4(%rax)
-	movb	$100, -5(%rax)
-	movb	$108, -6(%rax)
-	movb	$114, -7(%rax)
-	movb	$111, -8(%rax)
-	movb	$119, -9(%rax)
-	movb	$32, -10(%rax)
-	movb	$44, -11(%rax)
-	movb	$111, -12(%rax)
-	movb	$108, -13(%rax)
-	movb	$108, -14(%rax)
-	movb	$101, -15(%rax)
-	movb	$72, -16(%rax)
-	movb	-16(%rax), %cl
-	movb	%cl, -43(%rbp)          # 1-byte Spill
-	movb	-15(%rax), %cl
-	movb	%cl, -42(%rbp)          # 1-byte Spill
-	movb	-14(%rax), %cl
-	movb	%cl, -41(%rbp)          # 1-byte Spill
-	movb	-13(%rax), %r10b
-	movb	-12(%rax), %r11b
-	movb	-11(%rax), %r14b
-	movb	-10(%rax), %r15b
-	movb	-9(%rax), %r12b
-	movb	-8(%rax), %r13b
-	movb	-7(%rax), %r9b
-	movb	-6(%rax), %bl
-	movb	-5(%rax), %r8b
-	movb	-4(%rax), %sil
-	movb	-3(%rax), %dl
-	movb	-2(%rax), %cl
-	movq	%rsp, %rdi
-	movq	%rdi, %rax
-	addq	$-16, %rax
-	movq	%rax, %rsp
-	movb	%cl, -2(%rdi)
-	movb	%dl, -3(%rdi)
-	movb	%sil, -4(%rdi)
-	movb	%r8b, -5(%rdi)
-	movb	%bl, -6(%rdi)
-	movb	%r9b, -7(%rdi)
-	movb	%r13b, -8(%rdi)
-	movb	%r12b, -9(%rdi)
-	movb	%r15b, -10(%rdi)
-	movb	%r14b, -11(%rdi)
-	movb	%r11b, -12(%rdi)
-	movb	%r10b, -13(%rdi)
+	movq	%rax, %r8
+	addq	$-16, %r8
+	movq	%r8, %rsp
+	movq	%rsp, %rcx
+	movq	%rcx, %rdx
+	addq	$-16, %rdx
+	movq	%rdx, %rsp
+	movb	$0, -2(%rcx)
+	movb	$10, -3(%rcx)
+	movb	$33, -4(%rcx)
+	movb	$100, -5(%rcx)
+	movb	$108, -6(%rcx)
+	movb	$114, -7(%rcx)
+	movb	$111, -8(%rcx)
+	movb	$119, -9(%rcx)
+	movb	$32, -10(%rcx)
+	movb	$44, -11(%rcx)
+	movb	$111, -12(%rcx)
+	movb	$108, -13(%rcx)
+	movb	$108, -14(%rcx)
+	movb	$101, -15(%rcx)
+	movb	$72, -16(%rcx)
+	movb	-16(%rcx), %dl
+	movb	%dl, -43(%rbp)          # 1-byte Spill
+	movb	-15(%rcx), %dl
+	movb	%dl, -42(%rbp)          # 1-byte Spill
+	movb	-14(%rcx), %dl
+	movb	%dl, -41(%rbp)          # 1-byte Spill
+	movb	-13(%rcx), %r10b
+	movb	-12(%rcx), %r11b
+	movb	-11(%rcx), %r14b
+	movb	-10(%rcx), %r15b
+	movb	-9(%rcx), %r12b
+	movb	-8(%rcx), %r13b
+	movb	-7(%rcx), %r9b
+	movb	-6(%rcx), %bl
+	movb	-5(%rcx), %dil
+	movb	-4(%rcx), %sil
+	movb	-3(%rcx), %dl
+	movb	-2(%rcx), %cl
+	movb	%cl, -2(%rax)
+	movb	%dl, -3(%rax)
+	movb	%sil, -4(%rax)
+	movb	%dil, -5(%rax)
+	movb	%bl, -6(%rax)
+	movb	%r9b, -7(%rax)
+	movb	%r13b, -8(%rax)
+	movb	%r12b, -9(%rax)
+	movb	%r15b, -10(%rax)
+	movb	%r14b, -11(%rax)
+	movb	%r11b, -12(%rax)
+	movb	%r10b, -13(%rax)
 	movb	-41(%rbp), %cl          # 1-byte Reload
-	movb	%cl, -14(%rdi)
+	movb	%cl, -14(%rax)
 	movb	-42(%rbp), %cl          # 1-byte Reload
-	movb	%cl, -15(%rdi)
+	movb	%cl, -15(%rax)
 	movb	-43(%rbp), %cl          # 1-byte Reload
-	movb	%cl, -16(%rdi)
-	movq	%rax, %rdi
+	movb	%cl, -16(%rax)
+	movq	%r8, %rdi
 	movb	$0, %al
 	callq	printf
 	jmp	.LBB0_1

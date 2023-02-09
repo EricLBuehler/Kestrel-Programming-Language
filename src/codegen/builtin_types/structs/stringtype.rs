@@ -83,6 +83,7 @@ fn string_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: 
     //
     
     codegen.builder.position_at_end(then_block);
+    codegen.enclosing_block = Some(then_block);
 
     let itmptr: inkwell::values::PointerValue = unsafe { codegen.builder.build_in_bounds_gep(ptr, &[codegen.inkwell_types.i32tp.const_zero(), args.get(1).unwrap().data.unwrap().into_int_value()], "itmptr") };
     
@@ -95,6 +96,7 @@ fn string_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: 
     //
 
     codegen.builder.position_at_end(else_block);
+    codegen.enclosing_block = Some(else_block);
 
     let res_none: Data = enums::optionaltype::optional_none(codegen, opt.types.clone());
     
@@ -104,6 +106,7 @@ fn string_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: 
 
     let _ = end_block.move_after(else_block);
     codegen.builder.position_at_end(end_block);
+    codegen.enclosing_block = Some(end_block);
 
     codegen.enclosing_block = Some(end_block);
 
@@ -143,11 +146,11 @@ fn string_new<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: 
 
     let struct_tp: inkwell::types::StructType = codegen.context.struct_type(&[data.data.unwrap().get_type()], false);
 
-    let ptr: inkwell::values::PointerValue = codegen.builder.build_alloca(struct_tp, "String");
+    let ptr: inkwell::values::PointerValue = CodeGen::alloca(codegen, struct_tp, "String");
 
     let itmptr: inkwell::values::PointerValue = codegen.builder.build_struct_gep(ptr, 0 as u32, "arr").expect("GEP Error");
     codegen.builder.build_store(itmptr, data.data.unwrap());
-
+    
     let data: Data = Data {
         data: Some(codegen.builder.build_load(ptr, "string")),
         tp: crate::codegen::CodeGen::datatypes_get(codegen, &String::from("String")).unwrap().clone(),

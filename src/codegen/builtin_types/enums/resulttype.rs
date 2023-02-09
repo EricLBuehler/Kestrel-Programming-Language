@@ -2,13 +2,13 @@ use crate::codegen::{self, CodeGen};
 use crate::codegen::types::*;
 
 #[allow(dead_code)]
-pub fn result_ok<'a>(codegen: &codegen::CodeGen<'a>, data: Option<inkwell::values::BasicValueEnum>, types_raw: Vec<DataType<'a>>) -> Data<'a> {
+pub fn result_ok<'a>(codegen: &mut codegen::CodeGen<'a>, data: Option<inkwell::values::BasicValueEnum>, types_raw: Vec<DataType<'a>>) -> Data<'a> {
     let result: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &String::from("Result")).unwrap().clone();
  
     let mut types: Vec<DataType> = types_raw.clone();
     types.insert(0, crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::I32.to_string()).unwrap().clone());
 
-    let st: inkwell::values::PointerValue = codegen.builder.build_alloca(CodeGen::build_struct_tp_from_types(&codegen.context, &codegen.inkwell_types, &types, &codegen.cur_module.datatypes).into_struct_type(), "enum_st");
+    let st: inkwell::values::PointerValue = CodeGen::alloca(codegen, CodeGen::build_struct_tp_from_types(&codegen.context, &codegen.inkwell_types, &types, &codegen.cur_module.datatypes).into_struct_type(), "enum_st");
 
     debug_assert_eq!(result.names.as_ref().unwrap().get(0).unwrap(), &String::from("Ok"));
     let id: inkwell::values::PointerValue = codegen.builder.build_struct_gep(st, 0, "variant_id").expect("GEP Error");
@@ -27,13 +27,13 @@ pub fn result_ok<'a>(codegen: &codegen::CodeGen<'a>, data: Option<inkwell::value
 }
 
 #[allow(dead_code)]
-pub fn result_err<'a>(codegen: &codegen::CodeGen<'a>, data: Option<inkwell::values::BasicValueEnum>, types_raw: Vec<DataType<'a>>) -> Data<'a> {
+pub fn result_err<'a>(codegen: &mut codegen::CodeGen<'a>, data: Option<inkwell::values::BasicValueEnum>, types_raw: Vec<DataType<'a>>) -> Data<'a> {
     let result: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &String::from("Result")).unwrap().clone();
  
     let mut types: Vec<DataType> = types_raw.clone();
     types.insert(0, crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::I32.to_string()).unwrap().clone());
 
-    let st: inkwell::values::PointerValue = codegen.builder.build_alloca(CodeGen::build_struct_tp_from_types(&codegen.context, &codegen.inkwell_types, &types, &codegen.cur_module.datatypes).into_struct_type(), "enum_st");
+    let st: inkwell::values::PointerValue = CodeGen::alloca(codegen, CodeGen::build_struct_tp_from_types(&codegen.context, &codegen.inkwell_types, &types, &codegen.cur_module.datatypes).into_struct_type(), "enum_st");
 
     debug_assert_eq!(result.names.as_ref().unwrap().get(1).unwrap(), &String::from("Err"));
     let id: inkwell::values::PointerValue = codegen.builder.build_struct_gep(st, 0, "variant_id").expect("GEP Error");

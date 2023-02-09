@@ -92,6 +92,7 @@ pub struct CodeGen<'ctx> {
     loop_flow_broken: bool,
     cur_module: modules::Module<'ctx>,
     datatypes: std::collections::HashMap<String, crate::codegen::types::DataType<'ctx>>,
+    alloc_head: Option<inkwell::values::InstructionValue<'ctx>>,
 }
 
 //Codegen functions
@@ -153,6 +154,26 @@ impl<'ctx> CodeGen<'ctx> {
         res+=arrtp.len().to_string().as_str();
         res+="]";
         return res;
+    }
+
+    pub fn alloca<T: BasicType<'ctx>>(codegen: &mut CodeGen<'ctx>, ty: T, name: &str) -> inkwell::values::PointerValue<'ctx> {
+        if codegen.alloc_head.is_some() {
+            codegen.builder.position_at(codegen.enclosing_block.unwrap(), codegen.alloc_head.as_ref().unwrap());
+            let ptr = codegen.builder.build_alloca(ty, name);
+            codegen.builder.position_at_end(codegen.enclosing_block.unwrap());
+            codegen.alloc_head=ptr.as_instruction();
+            return ptr;
+        }
+        else if codegen.enclosing_block.unwrap().get_first_instruction().is_some() {
+            codegen.builder.position_before(codegen.enclosing_block.unwrap().get_first_instruction().as_ref().unwrap());
+            let ptr = codegen.builder.build_alloca(ty, name);
+            codegen.builder.position_at_end(codegen.enclosing_block.unwrap());
+            codegen.alloc_head=ptr.as_instruction();
+            return ptr;
+        }
+        let ptr = codegen.builder.build_alloca(ty, name);
+        codegen.alloc_head=ptr.as_instruction();
+        return ptr;
     }
 
     fn get_anytp_from_tp(ctx: &'ctx Context, types: &InkwellTypes<'ctx>, tp: types::DataType<'ctx>, datatypes: &std::collections::HashMap<String, types::DataType<'ctx>>) -> Option<inkwell::types::AnyTypeEnum<'ctx>> {
@@ -640,7 +661,7 @@ impl<'ctx> CodeGen<'ctx> {
                 node.data.letn.as_ref().unwrap().tp.as_ref().unwrap().isdyn {
                 let right: types::Data = self.compile_expr(&node.data.letn.as_ref().unwrap().expr.as_ref().unwrap(), BorrowOptions{ give_ownership: true, get_ptr: false, mut_borrow: false}, false, false);
                 
-                let ptr: inkwell::values::PointerValue = self.builder.build_alloca(inkwell::types::BasicTypeEnum::StructType(*self.inkwell_types.dynptrtp), name.as_str());
+                let ptr: inkwell::values::PointerValue = Self::alloca(self, inkwell::types::BasicTypeEnum::StructType(*self.inkwell_types.dynptrtp), name.as_str());
 
                 let typ: types::Type = Self::get_type_from_data(self.cur_module.types.clone(), &right);
                 let (dyntp, _) = Self::get_llvm_from_type(&self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.cur_module.datatypes, &self.datatypes, &self.traits, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
@@ -666,7 +687,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.builder.build_store(idptr, self.inkwell_types.i32tp.const_int(*self.cur_module.namespaces.structid.get(&right.tp.name).unwrap() as u64, false));
 
                 let itmptr = self.builder.build_struct_gep(ptr, 1u32, "item").expect("GEP error");
-                let structptr: inkwell::values::PointerValue = self.builder.build_alloca(right.data.unwrap().get_type(), "struct_ptr");
+                let structptr: inkwell::values::PointerValue = Self::alloca(self, right.data.unwrap().get_type(), "struct_ptr");
                 self.builder.build_store(structptr, right.data.unwrap());
                 self.builder.build_store(itmptr, self.builder.build_pointer_cast(structptr, itmptr.get_type().get_element_type().into_pointer_type(), "st_bitcast"));
 
@@ -692,7 +713,7 @@ impl<'ctx> CodeGen<'ctx> {
                     }
 
                     
-                    let ptr: inkwell::values::PointerValue = self.builder.build_alloca(right.data.unwrap().get_type(), name.as_str());
+                    let ptr: inkwell::values::PointerValue = Self::alloca(self, right.data.unwrap().get_type(), name.as_str());
                         
                     self.builder.build_store(ptr, right.data.unwrap());
 
@@ -711,7 +732,7 @@ impl<'ctx> CodeGen<'ctx> {
             
             if  node.data.letn.as_ref().unwrap().tp != None &&
                 node.data.letn.as_ref().unwrap().tp.as_ref().unwrap().isdyn {                
-                let ptr: inkwell::values::PointerValue = self.builder.build_alloca(inkwell::types::BasicTypeEnum::StructType(*self.inkwell_types.dynptrtp), name.as_str());
+                let ptr: inkwell::values::PointerValue = Self::alloca(self, inkwell::types::BasicTypeEnum::StructType(*self.inkwell_types.dynptrtp), name.as_str());
 
                 let (dyntp, _) = Self::get_llvm_from_type(&self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.cur_module.datatypes, &self.datatypes, &self.traits, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
 
@@ -721,7 +742,7 @@ impl<'ctx> CodeGen<'ctx> {
                 let (tp, inktp) = Self::get_llvm_from_type(&self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.cur_module.datatypes, &self.datatypes, &self.traits, self.info, &node.data.letn.as_ref().unwrap().tp.as_ref().unwrap(), node);
 
                 if tp.tp != types::BasicDataType::Void{
-                    let ptr: inkwell::values::PointerValue = self.builder.build_alloca(Self::get_basic_from_any(inktp).unwrap(), name.as_str());
+                    let ptr: inkwell::values::PointerValue = Self::alloca(self, Self::get_basic_from_any(inktp).unwrap(), name.as_str());
     
                     let rt_tp: types::DataType = tp.clone();
                     if node.data.letn.as_ref().unwrap().tp != None {
@@ -1131,6 +1152,7 @@ impl<'ctx> CodeGen<'ctx> {
         func.add_attribute(inkwell::attributes::AttributeLoc::Function, attr);
         
         self.builder.position_at_end(basic_block); 
+        self.enclosing_block = Some(basic_block);
         
         //Setup locals
         let prev_locals = self.cur_module.namespaces.locals.to_owned();
@@ -1156,7 +1178,7 @@ impl<'ctx> CodeGen<'ctx> {
                     self.cur_module.namespaces.locals.last_mut().unwrap().insert(name.to_string(), (Some(argv.unwrap().into_pointer_value()), tp.clone(), mutability.get(idx_mut).unwrap().clone(), types::DataOwnership {owned: false, transferred: Some(node.pos.clone()), mut_borrowed: tp.mutability.last().unwrap() == &types::DataMutablility::Mutable}, node.pos.clone(), InitializationStatus::Initialized));
                 }
                 else {
-                    ptr = self.builder.build_alloca(argv.unwrap().get_type(), name.as_str());
+                    ptr = Self::alloca(self, argv.unwrap().get_type(), name.as_str());
                 
                     self.builder.build_store(ptr, argv.unwrap());
 
@@ -1198,7 +1220,6 @@ impl<'ctx> CodeGen<'ctx> {
         let manager = inkwell::passes::PassManager::create(&self.module);
         manager.add_cfg_simplification_pass();
         pass_manager_builder.populate_function_pass_manager(&manager);
-
 
         unsafe { func.run_in_pass_manager(&manager); }
         
@@ -1413,120 +1434,6 @@ impl<'ctx> CodeGen<'ctx> {
                 errors::raise_error(&fmt, errors::ErrorType::StructAttrNotFound, &node.pos, self.info);
             }
         }
-        else if false && node.data.call.as_ref().unwrap().name.tp == parser::NodeType::MULTINAMESPACE {
-            let attr: &String = &node.data.call.as_ref().unwrap().name.data.nameattr.as_ref().unwrap().attrs.last().unwrap().to_owned();
-
-            let base: types::Data = self.build_namespaceload(&node.data.call.as_ref().unwrap().name.data.nameattr.as_ref().unwrap().name, false, false, None, BorrowOptions{ give_ownership: false, get_ptr: true, mut_borrow: false}, true);
-            dbg!(&base);
-            if base.tp.is_dyn {
-                let idptr: inkwell::values::PointerValue = self.builder.build_struct_gep(base.data.unwrap().into_pointer_value(), 0u32, "id_ptr").expect("GEP error");
-
-                let vtable: inkwell::values::PointerValue = unsafe { self.builder.build_in_bounds_gep(self.cur_module.vtables.unwrap().as_pointer_value(), &[self.builder.build_load(idptr, "id").into_int_value(), self.inkwell_types.i32tp.const_zero()], "vtable") };
-                
-                let idx: usize = self.traits.get(&base.tp.name).unwrap().trait_sig.as_ref().unwrap().iter().position(|x| &x.name == attr).unwrap();
-                
-                let method: inkwell::values::PointerValue = self.builder.build_load( unsafe { self.builder.build_in_bounds_gep(vtable, &[self.inkwell_types.i32tp.const_int(idx as u64, false), self.inkwell_types.i32tp.const_zero()], "method_ptr") }, "method").into_pointer_value();
-
-                let mut mtp: types::DataType = Self::datatypes_get(self, &types::BasicDataType::Func.to_string()).unwrap().clone();
-
-                let mut tsig: Option<types::TemplateTraitSignature> = None;
-                for sig in self.traits.get(&base.tp.name).unwrap().trait_sig.as_ref().unwrap() {
-                    if &sig.name == attr {
-                        tsig = Some(sig.clone());
-                        break;
-                    }
-                }
-
-                if tsig.is_none() {
-                    let fmt: String = format!("Type '{}' has no method '{}'.", base.tp, attr);
-                    errors::raise_error(&fmt, errors::ErrorType::StructAttrNotFound, &node.pos, self.info);
-                }
-
-                let func_args = tsig.unwrap().args;
-
-                let mut datatypes: Vec<types::DataType> = Vec::new();
-                let mut names: Vec<String> = Vec::new();
-                
-                for arg in &func_args.args {
-                    let (data, _) = Self::get_llvm_from_type(&self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.cur_module.datatypes, &self.datatypes, &self.traits, self.info, &arg, node);
-                    
-                    if data.tp != types::BasicDataType::Void {
-                        names.push(String::from(""));
-                    }   
-
-                    datatypes.push(data);                  
-                }
-                
-                let rettp_full: (types::DataType, inkwell::types::AnyTypeEnum) = Self::get_llvm_from_type(&self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.cur_module.datatypes, &self.datatypes, &self.traits, self.info, &func_args.rettp.last().unwrap(), node);
-                let rettp_tp: types::DataType = rettp_full.0;
-
-                mtp.types = datatypes;
-                mtp.names = Some(names);
-                mtp.rettp = Some(Box::new(rettp_tp));
-                
-                args.push(types::Data {
-                    data: Some(inkwell::values::BasicValueEnum::PointerValue(method)),
-                    tp: mtp,
-                    owned: true,
-                });
-
-                args.push(types::Data {
-                    data: Some(self.builder.build_load(base.data.unwrap().into_pointer_value(), "instance")),
-                    tp: base.tp.clone(),
-                    owned: base.owned,
-                });
-
-                tp_name = Self::datatypes_get(self, &types::BasicDataType::Func.to_string()).unwrap().clone().name.clone();
-                
-                tp = Some(Self::get_type_from_data(self.cur_module.types.clone(), args.first().unwrap()));
-            }
-            else if base.tp.methods.get(attr).is_some() {
-                let method: &types::Method = base.tp.methods.get(attr).unwrap();
-                if method.tp == types::MethodType::Fn {
-                    let data: types::Data = types::Data {
-                        data: Some(inkwell::values::BasicValueEnum::PointerValue(method.func.unwrap())),
-                        tp: method.functp.clone(),
-                        owned: true,
-                    };
-
-                    args.push(data.clone());
-                    if method.isinstance {
-                        args.push(types::Data {
-                            data: Some(self.builder.build_load(base.data.unwrap().into_pointer_value(), &base.tp.name)),
-                            tp: base.tp.clone(),
-                            owned: base.owned,
-                        });
-                    }
-
-                    tp_name = method.functp.name.clone();
-                    
-                    tp = Some(Self::get_type_from_data(self.cur_module.types.clone(), &data));
-                }
-                else {
-                    let data: types::Data = types::Data {
-                        data: None,
-                        tp: method.functp.to_owned(),
-                        owned: true,
-                    };
-
-                    tp_name = method.functp.name.clone();
-
-                    tp = Some(Self::get_type_from_data(self.cur_module.types.clone(), &data.clone()));
-
-                    args.push(data);
-                    if method.isinstance {
-                        args.push(base.clone());
-                    }
-                }
-            }
-            else if self.cur_module.namespaces.template_functions_sig.contains_key(&(base.tp.name.clone()+"."+node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().attr.to_owned().as_str()).to_owned()) {
-                have_template_method = true;
-            }
-            else{
-                let fmt: String = format!("Type '{}' has no method '{}'.", base.tp, attr);
-                errors::raise_error(&fmt, errors::ErrorType::StructAttrNotFound, &node.pos, self.info);
-            }
-        }
         else if node.data.call.as_ref().unwrap().name.tp == parser::NodeType::IDENTIFIER &&
                 self.cur_module.namespaces.template_functions_sig.contains_key(&node.data.call.as_ref().unwrap().name.data.identifier.as_ref().unwrap().name) {
             // Do nothing yet
@@ -1541,7 +1448,6 @@ impl<'ctx> CodeGen<'ctx> {
         if args.first().unwrap().tp.types.len() > 0 && args.first().unwrap().tp.tp == types::BasicDataType::WrapperFunc {
             for (arg, tp) in izip![&node.data.call.as_ref().unwrap().args, &args.first().unwrap().tp.types.clone()]{
                 let v: types::Data = self.compile_expr(arg, BorrowOptions{ give_ownership: true, get_ptr: tp.is_ref, mut_borrow: false}, false, false); 
-                
                 if v.tp.tp != types::BasicDataType::Struct || v.tp.is_ref || tp.is_ref {
                     args.push(v);
                 }
@@ -1747,7 +1653,7 @@ impl<'ctx> CodeGen<'ctx> {
                 errors::raise_error(&fmt, errors::ErrorType::MissingTrait, &node.pos, self.info);
             }
         };
-
+        
         let data: types::Data = self.call_trait(t, args, node);
 
         return data;
@@ -1996,7 +1902,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
         }
         
-        let ptr: inkwell::values::PointerValue = self.builder.build_alloca(s.1.unwrap().into_struct_type(), name.as_str());
+        let ptr: inkwell::values::PointerValue = Self::alloca(self, s.1.unwrap().into_struct_type(), name.as_str());
         
         for member in &node.data.initst.as_ref().unwrap().members_vec {
             if members.get(member).unwrap().data.is_some() {
@@ -2056,7 +1962,7 @@ impl<'ctx> CodeGen<'ctx> {
             ptr = base.data.unwrap().into_pointer_value();
         }
         else {
-            ptr = self.builder.build_alloca(base.data.unwrap().get_type(), "inplace_attr");
+            ptr = Self::alloca(self, base.data.unwrap().get_type(), "inplace_attr");
             self.builder.build_store(ptr, base.data.unwrap());
         }
 
@@ -2129,7 +2035,7 @@ impl<'ctx> CodeGen<'ctx> {
             ptr = base.data.unwrap().into_pointer_value();
         }
         else {
-            ptr = self.builder.build_alloca(base.data.unwrap().get_type(), "inplace_attr");
+            ptr = Self::alloca(self, base.data.unwrap().get_type(), "inplace_attr");
             self.builder.build_store(ptr, base.data.unwrap());
         }
 
@@ -2228,7 +2134,7 @@ impl<'ctx> CodeGen<'ctx> {
         let firstdatatp: types::DataType = data_elem.first().unwrap().tp.clone();
 
         let arraytp: inkwell::types::ArrayType = firsttp.array_type(elements.len() as u32);
-        let array: inkwell::values::PointerValue = self.builder.build_alloca(arraytp, "arr");
+        let array: inkwell::values::PointerValue = Self::alloca(self, arraytp, "arr");
 
         for element in data_elem {
             let ptr: inkwell::values::PointerValue = unsafe { self.builder.build_gep(array, &[self.inkwell_types.i8tp.const_int(0, false), self.inkwell_types.i8tp.const_int(0, false)], &element.tp.name) };
@@ -2558,7 +2464,7 @@ impl<'ctx> CodeGen<'ctx> {
             let mut types: Vec<types::DataType> = tp.types.to_owned();
             types.insert(0, Self::datatypes_get(self, &types::BasicDataType::I32.to_string()).unwrap().clone());
     
-            let st: inkwell::values::PointerValue = self.builder.build_alloca(Self::build_struct_tp_from_types(&self.context, &self.inkwell_types, &types, &self.cur_module.datatypes).into_struct_type(), "enum_st");
+            let st: inkwell::values::PointerValue = Self::alloca(self, Self::build_struct_tp_from_types(&self.context, &self.inkwell_types, &types, &self.cur_module.datatypes).into_struct_type(), "enum_st");
     
             let id: inkwell::values::PointerValue = self.builder.build_struct_gep(st, 0, "variant_id").expect("GEP Error");
             self.builder.build_store(id, self.inkwell_types.i32tp.const_int(idx as u64, false));
@@ -2650,7 +2556,8 @@ impl<'ctx> CodeGen<'ctx> {
 
         let mut idx: usize = 0;
         for ifn in &node.data.ifn.as_ref().unwrap().ifs {
-            self.builder.position_at_end(enclosing_block);    
+            self.builder.position_at_end(enclosing_block);  
+            self.enclosing_block = Some(enclosing_block);  
             let right: types::Data = self.compile_expr(&ifn.0, BorrowOptions{ give_ownership: false, get_ptr: false, mut_borrow: false}, false, false);
             
             let mut args: Vec<types::Data> = Vec::new();
@@ -2700,6 +2607,7 @@ impl<'ctx> CodeGen<'ctx> {
             self.builder.build_conditional_branch(data.data.unwrap().into_int_value(), then_block, elseif_block);
 
             self.builder.position_at_end(then_block);
+            self.enclosing_block = Some(then_block);
             
             self.cur_module.namespaces.locals.push(std::collections::HashMap::new());
 
@@ -2772,6 +2680,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         if node.data.ifn.as_ref().unwrap().else_opt.is_some() {
             self.builder.position_at_end(else_block);
+            self.enclosing_block = Some(else_block);
             
             self.cur_module.namespaces.locals.push(std::collections::HashMap::new());
 
@@ -2834,6 +2743,7 @@ impl<'ctx> CodeGen<'ctx> {
         }
         else {
             self.builder.position_at_end(else_block);
+            self.enclosing_block = Some(else_block);
             self.builder.build_unconditional_branch(end_block);
         }
 
@@ -2877,6 +2787,7 @@ impl<'ctx> CodeGen<'ctx> {
         self.enclosing_block = Some(end_block);
 
         self.builder.position_at_end(end_block);
+        self.enclosing_block = Some(end_block);
 
         if rettp.as_ref().unwrap().tp == types::BasicDataType::Void {
             let data: types::Data = types::Data {
@@ -2915,12 +2826,14 @@ impl<'ctx> CodeGen<'ctx> {
         self.builder.build_unconditional_branch(loop_block);
 
         self.builder.position_at_end(loop_block);
+        self.enclosing_block = Some(loop_block);
 
         self.compile(&node.data.loopn.as_ref().unwrap().block, true, true);
 
         self.builder.build_unconditional_branch(loop_block);
 
         self.builder.position_at_end(end_block);
+        self.enclosing_block = Some(end_block);
 
         self.end_block = end_block_old;
         self.start_block = start_block_old;
@@ -2986,7 +2899,8 @@ impl<'ctx> CodeGen<'ctx> {
 
         self.builder.build_unconditional_branch(loop_block);
 
-        self.builder.position_at_end(loop_block);            
+        self.builder.position_at_end(loop_block);     
+        self.enclosing_block = Some(loop_block);       
 
         let right: types::Data = self.compile_expr(&node.data.loopn.as_ref().unwrap().expr.as_ref().unwrap(), BorrowOptions{ give_ownership: false, get_ptr: false, mut_borrow: false}, false, false);
       
@@ -3021,12 +2935,14 @@ impl<'ctx> CodeGen<'ctx> {
         self.builder.build_conditional_branch(data.data.unwrap().into_int_value(), loop_then_block, end_block);
 
         self.builder.position_at_end(loop_then_block);
+        self.enclosing_block = Some(loop_then_block);
 
         self.compile(&node.data.loopn.as_ref().unwrap().block, true, true);
 
         self.builder.build_unconditional_branch(loop_block);
 
         self.builder.position_at_end(end_block);
+        self.enclosing_block = Some(end_block);
 
         self.end_block = end_block_old;
         self.start_block = start_block_old;
@@ -3199,6 +3115,7 @@ impl<'ctx> CodeGen<'ctx> {
         for (pattern, name, block) in &node.data.matchn.as_ref().unwrap().patterns {
             if pattern.is_some() {
                 self.builder.position_at_end(else_block);
+                self.enclosing_block = Some(else_block);
 
                 let pattern_block_old = pattern_block.clone();
 
@@ -3224,6 +3141,7 @@ impl<'ctx> CodeGen<'ctx> {
                 self.builder.build_conditional_branch(self.builder.build_int_compare(inkwell::IntPredicate::EQ, expr.data.unwrap().into_int_value(), self.builder.build_load(id_ptr, "id").into_int_value(), &("compare_".to_owned()+&index.to_string())), pattern_block_old, else_block);
                 
                 self.builder.position_at_end(pattern_block_old);
+                self.enclosing_block = Some(pattern_block_old);
     
 
 
@@ -3304,6 +3222,7 @@ impl<'ctx> CodeGen<'ctx> {
                 }
                 
                 self.builder.position_at_end(default_block);
+                self.enclosing_block = Some(default_block);
     
 
 
@@ -3515,7 +3434,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         types.insert(0, Self::datatypes_get(self, &types::BasicDataType::I32.to_string()).unwrap().clone());
 
-        let st: inkwell::values::PointerValue = self.builder.build_alloca(Self::build_struct_tp_from_types(&self.context, &self.inkwell_types, &types, &self.cur_module.datatypes).into_struct_type(), "enum_st");
+        let st: inkwell::values::PointerValue = Self::alloca(self, Self::build_struct_tp_from_types(&self.context, &self.inkwell_types, &types, &self.cur_module.datatypes).into_struct_type(), "enum_st");
 
         let id: inkwell::values::PointerValue = self.builder.build_struct_gep(st, 0, "variant_id").expect("GEP Error");
         self.builder.build_store(id, self.inkwell_types.i32tp.const_int(idx as u64, false));
@@ -3898,7 +3817,7 @@ impl<'ctx> CodeGen<'ctx> {
         };
         
         let res: types::Data = if raw.data.is_some() && !raw.data.unwrap().is_pointer_value() && (borrow_options.get_ptr || get_enum_id) {
-            let ptr = self.builder.build_alloca(raw.data.unwrap().get_type(), "inplace_ptr");
+            let ptr = Self::alloca(self, raw.data.unwrap().get_type(), "inplace_ptr");
             self.builder.build_store(ptr, raw.data.unwrap());
             types::Data {
                 data: Some(inkwell::values::BasicValueEnum::PointerValue(ptr)),
@@ -4232,6 +4151,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
         loop_flow_broken: false,
         cur_module,
         datatypes: std::collections::HashMap::new(),
+        alloc_head: None,
     };
     
     //Pass manager (optimizer)
@@ -4278,6 +4198,7 @@ pub fn generate_code(module_name: &str, source_name: &str, nodes: Vec<parser::No
     realmain.add_attribute(inkwell::attributes::AttributeLoc::Function, attr);
     
     codegen.builder.position_at_end(basic_block);
+    codegen.enclosing_block = Some(basic_block);
 
     codegen.builder.build_call(*main, &[], "res");
 

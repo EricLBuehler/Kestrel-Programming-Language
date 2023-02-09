@@ -1,3 +1,5 @@
 fn main() {
-    while true{std::out::print(String::new("Hello, world!\n"))}
+    while true {
+        std::out::print(String::new("Hello, world!\n"))
+    }
 }
