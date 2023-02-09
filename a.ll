@@ -8,14 +8,14 @@ declare i32 @printf(i8* nocapture readonly, ...) local_unnamed_addr #0
 ; Function Attrs: noinline nounwind optnone
 define void @_main() local_unnamed_addr #1 !dbg !4 {
 entry:
-  %String = alloca { [15 x i8] }, !dbg !8
-  %arr = getelementptr inbounds { [15 x i8] }, { [15 x i8] }* %String, i32 0, i32 0, !dbg !8
-  store [15 x i8] c"Hello, world!\\n", [15 x i8]* %arr, !dbg !8
-  %string = load { [15 x i8] }, { [15 x i8] }* %String, !dbg !8
-  %inplace_ptr = alloca { [15 x i8] }, !dbg !8
-  store { [15 x i8] } %string, { [15 x i8] }* %inplace_ptr, !dbg !8
-  %data = getelementptr inbounds { [15 x i8] }, { [15 x i8] }* %inplace_ptr, i32 0, i32 0, !dbg !8
-  %arr_bitcast = bitcast [15 x i8]* %data to i8*, !dbg !8
+  %String = alloca { [14 x i8] }, !dbg !8
+  %arr = getelementptr inbounds { [14 x i8] }, { [14 x i8] }* %String, i32 0, i32 0, !dbg !8
+  store [14 x i8] c"Hello, world!\0A", [14 x i8]* %arr, !dbg !8
+  %string = load { [14 x i8] }, { [14 x i8] }* %String, !dbg !8
+  %inplace_ptr = alloca { [14 x i8] }, !dbg !8
+  store { [14 x i8] } %string, { [14 x i8] }* %inplace_ptr, !dbg !8
+  %data = getelementptr inbounds { [14 x i8] }, { [14 x i8] }* %inplace_ptr, i32 0, i32 0, !dbg !8
+  %arr_bitcast = bitcast [14 x i8]* %data to i8*, !dbg !8
   %printf_call = call i32 (i8*, ...) @printf(i8* %arr_bitcast), !dbg !8
   ret void, !dbg !8
 }

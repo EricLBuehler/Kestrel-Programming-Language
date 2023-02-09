@@ -49,6 +49,12 @@ pub enum TokenType {
     SEMICOLON,
 }
 
+macro_rules! hashmap {
+    ($($k:expr => $v:expr),* $(,)?) => {{
+        core::convert::From::from([$(($k, $v),)*])
+    }};
+}
+
 pub struct Lexer<'life> {
     pub idx: usize,
     pub data: &'life [u8],
@@ -670,9 +676,19 @@ fn make_string(lexer: &mut Lexer) -> Token {
 
     let line: usize = lexer.line;
 
+    let escape_codes: std::collections::HashMap<u8, u8> = hashmap!(b'n' => b'\n', b't' => b'\t');
+
     advance(lexer);
 
     while lexer.current!=b'"'{
+        if lexer.current == b'\\' {
+            advance(lexer);
+            if escape_codes.contains_key(&lexer.current) {
+                data.push(escape_codes.get(&lexer.current).unwrap().clone());
+                advance(lexer);
+                continue;
+            }
+        }
         data.push(lexer.current);
         advance(lexer);
     }
@@ -681,7 +697,7 @@ fn make_string(lexer: &mut Lexer) -> Token {
 
     if data.len() > 0 {
         for itm in String::from_utf8(data.clone()).unwrap().chars() {
-            end += unicode_width::UnicodeWidthChar::width(itm).unwrap();
+            end += unicode_width::UnicodeWidthChar::width(itm).unwrap_or(0);
         }
     }
 
