@@ -2163,6 +2163,7 @@ impl<'ctx> CodeGen<'ctx> {
         for c in data {
             arrdata.push(self.inkwell_types.i8tp.const_int(c as u64, false));
         }
+        arrdata.push(self.inkwell_types.i8tp.const_zero());
 
         let array: inkwell::values::ArrayValue = self.inkwell_types.i8tp.const_array(&arrdata[..]);
 

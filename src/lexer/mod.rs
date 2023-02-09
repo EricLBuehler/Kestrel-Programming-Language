@@ -676,7 +676,7 @@ fn make_string(lexer: &mut Lexer) -> Token {
 
     let line: usize = lexer.line;
 
-    let escape_codes: std::collections::HashMap<u8, u8> = hashmap!(b'n' => b'\n', b't' => b'\t');
+    let escape_codes: std::collections::HashMap<u8, u8> = hashmap!(b'n' => b'\n', b't' => b'\t', b'0' => b'\0');
 
     advance(lexer);
 

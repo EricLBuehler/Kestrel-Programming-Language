@@ -30,8 +30,7 @@ _main:                                  # @_main
 	.cfi_offset %r14, -32
 	.cfi_offset %r15, -24
 	.cfi_offset %rbp, -16
-	leaq	24(%rsp), %rdi
-.Ltmp0:
+	movb	$0, 22(%rsp)
 	movb	$10, 21(%rsp)
 	movb	$33, 20(%rsp)
 	movb	$100, 19(%rsp)
@@ -46,7 +45,7 @@ _main:                                  # @_main
 	movb	$108, 10(%rsp)
 	movb	$101, 9(%rsp)
 	movb	$72, 8(%rsp)
-	movb	8(%rsp), %sil
+	movb	8(%rsp), %dil
 	movb	9(%rsp), %r8b
 	movb	10(%rsp), %r9b
 	movb	11(%rsp), %r10b
@@ -60,6 +59,8 @@ _main:                                  # @_main
 	movb	19(%rsp), %cl
 	movb	20(%rsp), %bl
 	movb	21(%rsp), %dl
+	movb	22(%rsp), %sil
+	movb	%sil, 38(%rsp)
 	movb	%dl, 37(%rsp)
 	movb	%bl, 36(%rsp)
 	movb	%cl, 35(%rsp)
@@ -73,7 +74,8 @@ _main:                                  # @_main
 	movb	%r10b, 27(%rsp)
 	movb	%r9b, 26(%rsp)
 	movb	%r8b, 25(%rsp)
-	movb	%sil, 24(%rsp)
+	movb	%dil, 24(%rsp)
+	leaq	24(%rsp), %rdi
 	movb	$0, %al
 	callq	printf
 	addq	$40, %rsp
@@ -91,7 +93,7 @@ _main:                                  # @_main
 	popq	%rbp
 	.cfi_def_cfa_offset 8
 	retq
-.Ltmp1:
+.Ltmp0:
 .Lfunc_end0:
 	.size	_main, .Lfunc_end0-_main
 	.cfi_endproc
