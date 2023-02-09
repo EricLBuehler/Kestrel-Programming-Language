@@ -10,6 +10,88 @@ _main:                                  # @_main
 	.cfi_sections .debug_frame
 	.cfi_startproc
 # %bb.0:                                # %entry
+	pushq	%rbp
+	.cfi_def_cfa_offset 16
+	pushq	%r15
+	.cfi_def_cfa_offset 24
+	pushq	%r14
+	.cfi_def_cfa_offset 32
+	pushq	%r13
+	.cfi_def_cfa_offset 40
+	pushq	%r12
+	.cfi_def_cfa_offset 48
+	pushq	%rbx
+	.cfi_def_cfa_offset 56
+	subq	$40, %rsp
+	.cfi_def_cfa_offset 96
+	.cfi_offset %rbx, -56
+	.cfi_offset %r12, -48
+	.cfi_offset %r13, -40
+	.cfi_offset %r14, -32
+	.cfi_offset %r15, -24
+	.cfi_offset %rbp, -16
+	movb	$110, 22(%rsp)
+	movb	$92, 21(%rsp)
+	movb	$33, 20(%rsp)
+	movb	$100, 19(%rsp)
+	movb	$108, 18(%rsp)
+	movb	$114, 17(%rsp)
+	movb	$111, 16(%rsp)
+	movb	$119, 15(%rsp)
+	movb	$32, 14(%rsp)
+	movb	$44, 13(%rsp)
+	movb	$111, 12(%rsp)
+	movb	$108, 11(%rsp)
+	movb	$108, 10(%rsp)
+	movb	$101, 9(%rsp)
+	movb	$72, 8(%rsp)
+	movb	8(%rsp), %dil
+	movb	9(%rsp), %r8b
+	movb	10(%rsp), %r9b
+	movb	11(%rsp), %r10b
+	movb	12(%rsp), %r11b
+	movb	13(%rsp), %bpl
+	movb	14(%rsp), %r14b
+	movb	15(%rsp), %r15b
+	movb	16(%rsp), %r12b
+	movb	17(%rsp), %r13b
+	movb	18(%rsp), %al
+	movb	19(%rsp), %cl
+	movb	20(%rsp), %bl
+	movb	21(%rsp), %dl
+	movb	22(%rsp), %sil
+	movb	%sil, 38(%rsp)
+	movb	%dl, 37(%rsp)
+	movb	%bl, 36(%rsp)
+	movb	%cl, 35(%rsp)
+	movb	%al, 34(%rsp)
+	movb	%r13b, 33(%rsp)
+	movb	%r12b, 32(%rsp)
+	movb	%r15b, 31(%rsp)
+	movb	%r14b, 30(%rsp)
+	movb	%bpl, 29(%rsp)
+	movb	%r11b, 28(%rsp)
+	movb	%r10b, 27(%rsp)
+	movb	%r9b, 26(%rsp)
+	movb	%r8b, 25(%rsp)
+	movb	%dil, 24(%rsp)
+	leaq	24(%rsp), %rdi
+	movb	$0, %al
+	callq	printf
+	addq	$40, %rsp
+	.cfi_def_cfa_offset 56
+	popq	%rbx
+	.cfi_def_cfa_offset 48
+	popq	%r12
+	.cfi_def_cfa_offset 40
+	popq	%r13
+	.cfi_def_cfa_offset 32
+	popq	%r14
+	.cfi_def_cfa_offset 24
+	popq	%r15
+	.cfi_def_cfa_offset 16
+	popq	%rbp
+	.cfi_def_cfa_offset 8
 	retq
 .Ltmp0:
 .Lfunc_end0:

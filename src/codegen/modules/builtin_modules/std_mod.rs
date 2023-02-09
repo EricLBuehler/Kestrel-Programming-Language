@@ -10,13 +10,15 @@ macro_rules! hashmap {
 }
 
 fn std_print<'a>(codegen: &mut CodeGen<'a>, args: Vec<Data<'a>>, pos: &crate::parser::Position) -> Data<'a> {
-    if  args.get(0).unwrap().tp != BasicDataType::Array &&
-        args.get(0).unwrap().tp.arrtp.unwrap().get_element_type() != inkwell::types::BasicTypeEnum::IntType(*codegen.inkwell_types.i8tp)  {
-        let fmt: String = format!("invalid types for print, expected i8[], got '{}'.", args.get(0).unwrap().tp);
+    if  args.get(0).unwrap().tp != crate::codegen::CodeGen::datatypes_get(codegen, &String::from("String")).unwrap().clone()  {
+        let fmt: String = format!("invalid types for print, expected String, got '{}'.", args.get(0).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
     }
 
-    codegen.builder.build_call(inkwell::values::CallableValue::try_from(codegen.cur_module.modules.get("std").unwrap().namespaces.functions.get("printf").unwrap().0.as_global_value().as_pointer_value()).unwrap(), &[inkwell::values::BasicMetadataValueEnum::ArrayValue(args.get(0).unwrap().data.unwrap().into_array_value())], "printf_call");
+    let ptr: inkwell::values::PointerValue = codegen.builder.build_struct_gep(args.get(0).unwrap().data.unwrap().into_pointer_value(), 0, "data").expect("GEP Error");
+    let bitcast: inkwell::values::BasicValueEnum = codegen.builder.build_bitcast(ptr, codegen.inkwell_types.i8tp.ptr_type(inkwell::AddressSpace::from(0u16)), "arr_bitcast");
+    
+    codegen.builder.build_call(inkwell::values::CallableValue::try_from(codegen.cur_module.modules.get("std").unwrap().namespaces.functions.get("printf").unwrap().0.as_global_value().as_pointer_value()).unwrap(), &[bitcast.into()], "printf_call");
 
     let data: Data = Data {
         data: None,
@@ -74,7 +76,10 @@ pub fn init_std(codegen: &mut CodeGen) {
     newfntype.name = String::from("print");
     newfntype.names = Some(vec![String::from("str")]);
     newfntype.rettp = Some(Box::new(crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Void.to_string()).unwrap().clone()));
-    newfntype.types = vec![crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Array.to_string()).unwrap().clone()];
+    
+    let mut str_tp: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &String::from("String")).unwrap().clone();
+    str_tp.is_ref = true;
+    newfntype.types = vec![str_tp];
 
     methods.insert(String::from("print"), Method {
         tp: MethodType::Builtin,

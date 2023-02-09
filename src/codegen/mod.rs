@@ -430,7 +430,7 @@ impl<'ctx> CodeGen<'ctx> {
     }
 
     fn get_type_from_data(types: std::collections::HashMap<String, types::Type<'ctx>>, data: &types::Data) -> types::Type<'ctx> {
-        return types.get(&data.tp.to_string()).unwrap().clone();
+        return types.get(&data.tp.name).unwrap().clone();
     }
 
     fn get_basicmeta_from_any(tp: inkwell::types::AnyTypeEnum<'ctx>) -> Option<inkwell::types::BasicMetadataTypeEnum> {
@@ -1301,7 +1301,7 @@ impl<'ctx> CodeGen<'ctx> {
 
         let mut have_template_method: bool = false;
 
-        if node.data.call.as_ref().unwrap().name.tp == parser::NodeType::ATTR {
+        if  node.data.call.as_ref().unwrap().name.tp == parser::NodeType::ATTR {
             let attr: &String = &node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().attr;
 
             let base: types::Data = self.compile_expr(&node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().name, BorrowOptions{ give_ownership: false, get_ptr: true, mut_borrow: false}, false, false);
@@ -1391,14 +1391,125 @@ impl<'ctx> CodeGen<'ctx> {
                     tp = Some(Self::get_type_from_data(self.cur_module.types.clone(), &data));
                 }
                 else {
-                    let mut tp_: types::DataType = Self::datatypes_get(self, &types::BasicDataType::WrapperFunc.to_string()).unwrap().clone();
-                    tp_.wrapperfn = method.builtin;
-                    tp_name = tp_.name.clone();
                     let data: types::Data = types::Data {
                         data: None,
-                        tp: tp_,
+                        tp: method.functp.to_owned(),
                         owned: true,
                     };
+
+                    tp = Some(Self::get_type_from_data(self.cur_module.types.clone(), &data.clone()));
+
+                    args.push(data);
+                    if method.isinstance {
+                        args.push(base.clone());
+                    }
+                }
+            }
+            else if self.cur_module.namespaces.template_functions_sig.contains_key(&(base.tp.name.clone()+"."+node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().attr.to_owned().as_str()).to_owned()) {
+                have_template_method = true;
+            }
+            else{
+                let fmt: String = format!("Type '{}' has no method '{}'.", base.tp, attr);
+                errors::raise_error(&fmt, errors::ErrorType::StructAttrNotFound, &node.pos, self.info);
+            }
+        }
+        else if false && node.data.call.as_ref().unwrap().name.tp == parser::NodeType::MULTINAMESPACE {
+            let attr: &String = &node.data.call.as_ref().unwrap().name.data.nameattr.as_ref().unwrap().attrs.last().unwrap().to_owned();
+
+            let base: types::Data = self.build_namespaceload(&node.data.call.as_ref().unwrap().name.data.nameattr.as_ref().unwrap().name, false, false, None, BorrowOptions{ give_ownership: false, get_ptr: true, mut_borrow: false}, true);
+            dbg!(&base);
+            if base.tp.is_dyn {
+                let idptr: inkwell::values::PointerValue = self.builder.build_struct_gep(base.data.unwrap().into_pointer_value(), 0u32, "id_ptr").expect("GEP error");
+
+                let vtable: inkwell::values::PointerValue = unsafe { self.builder.build_in_bounds_gep(self.cur_module.vtables.unwrap().as_pointer_value(), &[self.builder.build_load(idptr, "id").into_int_value(), self.inkwell_types.i32tp.const_zero()], "vtable") };
+                
+                let idx: usize = self.traits.get(&base.tp.name).unwrap().trait_sig.as_ref().unwrap().iter().position(|x| &x.name == attr).unwrap();
+                
+                let method: inkwell::values::PointerValue = self.builder.build_load( unsafe { self.builder.build_in_bounds_gep(vtable, &[self.inkwell_types.i32tp.const_int(idx as u64, false), self.inkwell_types.i32tp.const_zero()], "method_ptr") }, "method").into_pointer_value();
+
+                let mut mtp: types::DataType = Self::datatypes_get(self, &types::BasicDataType::Func.to_string()).unwrap().clone();
+
+                let mut tsig: Option<types::TemplateTraitSignature> = None;
+                for sig in self.traits.get(&base.tp.name).unwrap().trait_sig.as_ref().unwrap() {
+                    if &sig.name == attr {
+                        tsig = Some(sig.clone());
+                        break;
+                    }
+                }
+
+                if tsig.is_none() {
+                    let fmt: String = format!("Type '{}' has no method '{}'.", base.tp, attr);
+                    errors::raise_error(&fmt, errors::ErrorType::StructAttrNotFound, &node.pos, self.info);
+                }
+
+                let func_args = tsig.unwrap().args;
+
+                let mut datatypes: Vec<types::DataType> = Vec::new();
+                let mut names: Vec<String> = Vec::new();
+                
+                for arg in &func_args.args {
+                    let (data, _) = Self::get_llvm_from_type(&self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.cur_module.datatypes, &self.datatypes, &self.traits, self.info, &arg, node);
+                    
+                    if data.tp != types::BasicDataType::Void {
+                        names.push(String::from(""));
+                    }   
+
+                    datatypes.push(data);                  
+                }
+                
+                let rettp_full: (types::DataType, inkwell::types::AnyTypeEnum) = Self::get_llvm_from_type(&self.context, &self.cur_module.namespaces, &self.inkwell_types, &self.cur_module.datatypes, &self.datatypes, &self.traits, self.info, &func_args.rettp.last().unwrap(), node);
+                let rettp_tp: types::DataType = rettp_full.0;
+
+                mtp.types = datatypes;
+                mtp.names = Some(names);
+                mtp.rettp = Some(Box::new(rettp_tp));
+                
+                args.push(types::Data {
+                    data: Some(inkwell::values::BasicValueEnum::PointerValue(method)),
+                    tp: mtp,
+                    owned: true,
+                });
+
+                args.push(types::Data {
+                    data: Some(self.builder.build_load(base.data.unwrap().into_pointer_value(), "instance")),
+                    tp: base.tp.clone(),
+                    owned: base.owned,
+                });
+
+                tp_name = Self::datatypes_get(self, &types::BasicDataType::Func.to_string()).unwrap().clone().name.clone();
+                
+                tp = Some(Self::get_type_from_data(self.cur_module.types.clone(), args.first().unwrap()));
+            }
+            else if base.tp.methods.get(attr).is_some() {
+                let method: &types::Method = base.tp.methods.get(attr).unwrap();
+                if method.tp == types::MethodType::Fn {
+                    let data: types::Data = types::Data {
+                        data: Some(inkwell::values::BasicValueEnum::PointerValue(method.func.unwrap())),
+                        tp: method.functp.clone(),
+                        owned: true,
+                    };
+
+                    args.push(data.clone());
+                    if method.isinstance {
+                        args.push(types::Data {
+                            data: Some(self.builder.build_load(base.data.unwrap().into_pointer_value(), &base.tp.name)),
+                            tp: base.tp.clone(),
+                            owned: base.owned,
+                        });
+                    }
+
+                    tp_name = method.functp.name.clone();
+                    
+                    tp = Some(Self::get_type_from_data(self.cur_module.types.clone(), &data));
+                }
+                else {
+                    let data: types::Data = types::Data {
+                        data: None,
+                        tp: method.functp.to_owned(),
+                        owned: true,
+                    };
+
+                    tp_name = method.functp.name.clone();
 
                     tp = Some(Self::get_type_from_data(self.cur_module.types.clone(), &data.clone()));
 
@@ -1426,18 +1537,37 @@ impl<'ctx> CodeGen<'ctx> {
             args.push(callable);
             tp = Some(Self::get_type_from_data(self.cur_module.types.clone(), &args.first().unwrap()));
         }
-
-        for arg in &node.data.call.as_ref().unwrap().args{
-            let v: types::Data = self.compile_expr(arg, BorrowOptions{ give_ownership: true, get_ptr: false, mut_borrow: false}, false, false); 
-            if v.tp.tp != types::BasicDataType::Struct || v.tp.is_ref {
-                args.push(v);
+        
+        if args.first().unwrap().tp.types.len() > 0 && args.first().unwrap().tp.tp == types::BasicDataType::WrapperFunc {
+            for (arg, tp) in izip![&node.data.call.as_ref().unwrap().args, &args.first().unwrap().tp.types.clone()]{
+                let v: types::Data = self.compile_expr(arg, BorrowOptions{ give_ownership: true, get_ptr: tp.is_ref, mut_borrow: false}, false, false); 
+                
+                if v.tp.tp != types::BasicDataType::Struct || v.tp.is_ref || tp.is_ref {
+                    args.push(v);
+                }
+                else {
+                    args.push(types::Data {
+                        data: Some(self.builder.build_load(v.data.unwrap().into_pointer_value(), &v.tp.name)),
+                        tp: v.tp.clone(),
+                        owned: v.owned,
+                    });
+                }
             }
-            else {
-                args.push(types::Data {
-                    data: Some(self.builder.build_load(v.data.unwrap().into_pointer_value(), &v.tp.name)),
-                    tp: v.tp.clone(),
-                    owned: v.owned,
-                });
+        }
+        else {
+            for arg in &node.data.call.as_ref().unwrap().args {
+                let v: types::Data = self.compile_expr(arg, BorrowOptions{ give_ownership: true, get_ptr: false, mut_borrow: false}, false, false); 
+                
+                if v.tp.tp != types::BasicDataType::Struct || v.tp.is_ref {
+                    args.push(v);
+                }
+                else {
+                    args.push(types::Data {
+                        data: Some(self.builder.build_load(v.data.unwrap().into_pointer_value(), &v.tp.name)),
+                        tp: v.tp.clone(),
+                        owned: v.owned,
+                    });
+                }
             }
         }
 
@@ -2487,6 +2617,7 @@ impl<'ctx> CodeGen<'ctx> {
                 else {
                     let mut tp_: types::DataType = Self::datatypes_get(self, &types::BasicDataType::WrapperFunc.to_string()).unwrap().clone();
                     tp_.wrapperfn = method.builtin;
+                    tp_.types = method.functp.types.clone();                    
                     let data: types::Data = types::Data {
                         data: None,
                         tp: tp_,
@@ -3451,6 +3582,7 @@ impl<'ctx> CodeGen<'ctx> {
                     else {
                         let mut tp_: types::DataType = Self::datatypes_get(self, &types::BasicDataType::WrapperFunc.to_string()).unwrap().clone();
                         tp_.wrapperfn = method.builtin;
+                        tp_.types = method.functp.types.clone();
                         let data: types::Data = types::Data {
                             data: None,
                             tp: tp_,
