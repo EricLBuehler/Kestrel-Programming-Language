@@ -12,85 +12,85 @@ _main:                                  # @_main
 # %bb.0:                                # %entry
 	pushq	%rbp
 	.cfi_def_cfa_offset 16
-	.cfi_offset %rbp, -16
-	movq	%rsp, %rbp
-	.cfi_def_cfa_register %rbp
-.Ltmp0:
 	pushq	%r15
+	.cfi_def_cfa_offset 24
 	pushq	%r14
+	.cfi_def_cfa_offset 32
 	pushq	%r13
+	.cfi_def_cfa_offset 40
 	pushq	%r12
+	.cfi_def_cfa_offset 48
 	pushq	%rbx
-	pushq	%rax
+	.cfi_def_cfa_offset 56
+	subq	$40, %rsp
+	.cfi_def_cfa_offset 96
 	.cfi_offset %rbx, -56
 	.cfi_offset %r12, -48
 	.cfi_offset %r13, -40
 	.cfi_offset %r14, -32
 	.cfi_offset %r15, -24
-	jmp	.LBB0_1
-.LBB0_1:                                # %loop_head
-                                        # =>This Inner Loop Header: Depth=1
-	jmp	.LBB0_2
-.LBB0_2:                                # %loop_then
-                                        #   in Loop: Header=BB0_1 Depth=1
-	movq	%rsp, %rax
-	movq	%rax, %rcx
-	addq	$-16, %rcx
-	movq	%rcx, %rsp
-	movb	$10, -3(%rax)
-	movb	$33, -4(%rax)
-	movb	$100, -5(%rax)
-	movb	$108, -6(%rax)
-	movb	$114, -7(%rax)
-	movb	$111, -8(%rax)
-	movb	$119, -9(%rax)
-	movb	$32, -10(%rax)
-	movb	$44, -11(%rax)
-	movb	$111, -12(%rax)
-	movb	$108, -13(%rax)
-	movb	$108, -14(%rax)
-	movb	$101, -15(%rax)
-	movb	$72, -16(%rax)
-	movb	-16(%rax), %cl
-	movb	%cl, -42(%rbp)          # 1-byte Spill
-	movb	-15(%rax), %cl
-	movb	%cl, -41(%rbp)          # 1-byte Spill
-	movb	-14(%rax), %r9b
-	movb	-13(%rax), %r10b
-	movb	-12(%rax), %r11b
-	movb	-11(%rax), %r14b
-	movb	-10(%rax), %r15b
-	movb	-9(%rax), %r12b
-	movb	-8(%rax), %r13b
-	movb	-7(%rax), %r8b
-	movb	-6(%rax), %bl
-	movb	-5(%rax), %sil
-	movb	-4(%rax), %dl
-	movb	-3(%rax), %cl
-	movq	%rsp, %rdi
-	movq	%rdi, %rax
-	addq	$-16, %rax
-	movq	%rax, %rsp
-	movb	%cl, -3(%rdi)
-	movb	%dl, -4(%rdi)
-	movb	%sil, -5(%rdi)
-	movb	%bl, -6(%rdi)
-	movb	%r8b, -7(%rdi)
-	movb	%r13b, -8(%rdi)
-	movb	%r12b, -9(%rdi)
-	movb	%r15b, -10(%rdi)
-	movb	%r14b, -11(%rdi)
-	movb	%r11b, -12(%rdi)
-	movb	%r10b, -13(%rdi)
-	movb	%r9b, -14(%rdi)
-	movb	-41(%rbp), %cl          # 1-byte Reload
-	movb	%cl, -15(%rdi)
-	movb	-42(%rbp), %cl          # 1-byte Reload
-	movb	%cl, -16(%rdi)
-	movq	%rax, %rdi
+	.cfi_offset %rbp, -16
+	leaq	24(%rsp), %rdi
+.Ltmp0:
+	movb	$10, 21(%rsp)
+	movb	$33, 20(%rsp)
+	movb	$100, 19(%rsp)
+	movb	$108, 18(%rsp)
+	movb	$114, 17(%rsp)
+	movb	$111, 16(%rsp)
+	movb	$119, 15(%rsp)
+	movb	$32, 14(%rsp)
+	movb	$44, 13(%rsp)
+	movb	$111, 12(%rsp)
+	movb	$108, 11(%rsp)
+	movb	$108, 10(%rsp)
+	movb	$101, 9(%rsp)
+	movb	$72, 8(%rsp)
+	movb	8(%rsp), %sil
+	movb	9(%rsp), %r8b
+	movb	10(%rsp), %r9b
+	movb	11(%rsp), %r10b
+	movb	12(%rsp), %r11b
+	movb	13(%rsp), %bpl
+	movb	14(%rsp), %r14b
+	movb	15(%rsp), %r15b
+	movb	16(%rsp), %r12b
+	movb	17(%rsp), %r13b
+	movb	18(%rsp), %al
+	movb	19(%rsp), %cl
+	movb	20(%rsp), %bl
+	movb	21(%rsp), %dl
+	movb	%dl, 37(%rsp)
+	movb	%bl, 36(%rsp)
+	movb	%cl, 35(%rsp)
+	movb	%al, 34(%rsp)
+	movb	%r13b, 33(%rsp)
+	movb	%r12b, 32(%rsp)
+	movb	%r15b, 31(%rsp)
+	movb	%r14b, 30(%rsp)
+	movb	%bpl, 29(%rsp)
+	movb	%r11b, 28(%rsp)
+	movb	%r10b, 27(%rsp)
+	movb	%r9b, 26(%rsp)
+	movb	%r8b, 25(%rsp)
+	movb	%sil, 24(%rsp)
 	movb	$0, %al
 	callq	printf
-	jmp	.LBB0_1
+	addq	$40, %rsp
+	.cfi_def_cfa_offset 56
+	popq	%rbx
+	.cfi_def_cfa_offset 48
+	popq	%r12
+	.cfi_def_cfa_offset 40
+	popq	%r13
+	.cfi_def_cfa_offset 32
+	popq	%r14
+	.cfi_def_cfa_offset 24
+	popq	%r15
+	.cfi_def_cfa_offset 16
+	popq	%rbp
+	.cfi_def_cfa_offset 8
+	retq
 .Ltmp1:
 .Lfunc_end0:
 	.size	_main, .Lfunc_end0-_main
@@ -108,6 +108,10 @@ main:                                   # @main
                                         # kill: killed $rsi
                                         # kill: killed $edi
 	callq	_main
+	xorl	%eax, %eax
+	popq	%rcx
+	.cfi_def_cfa_offset 8
+	retq
 .Lfunc_end1:
 	.size	main, .Lfunc_end1-main
 	.cfi_endproc
@@ -198,7 +202,7 @@ main:                                   # @main
 	.quad	.Lfunc_begin0           # DW_AT_low_pc
 	.long	.Lfunc_end0-.Lfunc_begin0 # DW_AT_high_pc
 	.byte	1                       # DW_AT_frame_base
-	.byte	86
+	.byte	87
 	.long	.Linfo_string3          # DW_AT_linkage_name
 	.long	.Linfo_string4          # DW_AT_name
 	.long	70                      # DW_AT_type

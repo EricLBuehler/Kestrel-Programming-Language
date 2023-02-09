@@ -5,15 +5,9 @@ target triple = "x86_64-unknown-linux-gnu"
 ; Function Attrs: nofree nounwind
 declare i32 @printf(i8* nocapture readonly, ...) local_unnamed_addr #0
 
-; Function Attrs: noinline noreturn nounwind optnone
+; Function Attrs: noinline nounwind optnone
 define void @_main() local_unnamed_addr #1 !dbg !4 {
 entry:
-  br label %loop_head, !dbg !8
-
-loop_head:                                        ; preds = %loop_then, %entry
-  br label %loop_then, !dbg !8
-
-loop_then:                                        ; preds = %loop_head
   %String = alloca { [14 x i8] }, !dbg !8
   %arr = getelementptr inbounds { [14 x i8] }, { [14 x i8] }* %String, i32 0, i32 0, !dbg !8
   store [14 x i8] c"Hello, world!\0A", [14 x i8]* %arr, !dbg !8
@@ -23,18 +17,18 @@ loop_then:                                        ; preds = %loop_head
   %data = getelementptr inbounds { [14 x i8] }, { [14 x i8] }* %inplace_ptr, i32 0, i32 0, !dbg !8
   %arr_bitcast = bitcast [14 x i8]* %data to i8*, !dbg !8
   %printf_call = call i32 (i8*, ...) @printf(i8* %arr_bitcast), !dbg !8
-  br label %loop_head, !dbg !8
+  ret void, !dbg !8
 }
 
-; Function Attrs: noinline noreturn nounwind optnone
+; Function Attrs: noinline nounwind optnone
 define i32 @main(i32 %0, i8** %1) local_unnamed_addr #1 {
 entry:
   call void @_main(), !dbg !8
-  unreachable
+  ret i32 0, !dbg !8
 }
 
 attributes #0 = { nofree nounwind }
-attributes #1 = { noinline noreturn nounwind optnone }
+attributes #1 = { noinline nounwind optnone }
 
 !llvm.module.flags = !{!0}
 !llvm.dbg.cu = !{!1}
