@@ -18,7 +18,7 @@ fn bool_add<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &p
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -36,7 +36,7 @@ fn bool_mul<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &p
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -54,7 +54,7 @@ fn bool_sub<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &p
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -72,7 +72,7 @@ fn bool_div<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &p
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -89,7 +89,7 @@ fn bool_neg<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -101,7 +101,7 @@ fn bool_bool<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: 
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -119,7 +119,7 @@ fn bool_eq<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &pa
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -137,7 +137,7 @@ fn bool_lt<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &pa
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -155,7 +155,7 @@ fn bool_gt<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &pa
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -173,7 +173,7 @@ fn bool_le<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &pa
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -191,7 +191,7 @@ fn bool_ge<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &pa
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -209,7 +209,7 @@ fn bool_ne<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &pa
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -219,9 +219,9 @@ pub fn init_bool(codegen: &mut codegen::CodeGen) {
 
     let tp: DataType = new_datatype(BasicDataType::Bool, BasicDataType::Bool.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new());
 
-    codegen.datatypes.insert(BasicDataType::Bool.to_string(), tp.clone());
+    codegen.cur_module.datatypes.insert(BasicDataType::Bool.to_string(), tp.clone());
     
-    codegen.datatypes.insert(String::from("bool"), tp.clone()); //Alias        
+    codegen.cur_module.datatypes.insert(String::from("bool"), tp.clone()); //Alias        
 
     traits.insert(TraitType::Add.to_string(), builtin_types::create_trait_func(bool_add, 2, TraitType::Add, tp.clone()));
     traits.insert(TraitType::Mul.to_string(), builtin_types::create_trait_func(bool_mul, 2, TraitType::Mul, tp.clone()));

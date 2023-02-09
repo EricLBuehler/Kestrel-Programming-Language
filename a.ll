@@ -2,57 +2,25 @@
 source_filename = "program.ke"
 target triple = "x86_64-unknown-linux-gnu"
 
+; Function Attrs: nofree nounwind
+declare i32 @printf(i8* nocapture readonly, ...) local_unnamed_addr #0
+
 ; Function Attrs: noinline nounwind optnone
-define { i32, i32, i64 } @f() local_unnamed_addr #0 !dbg !4 {
+define void @_main() local_unnamed_addr #1 !dbg !4 {
 entry:
-  %enum_st = alloca { i32, i32, i64 }, !dbg !8
-  %variant_id = getelementptr inbounds { i32, i32, i64 }, { i32, i32, i64 }* %enum_st, i32 0, i32 0, !dbg !8
-  store i32 0, i32* %variant_id, !dbg !8
-  %variant_data = getelementptr inbounds { i32, i32, i64 }, { i32, i32, i64 }* %enum_st, i32 0, i32 1, !dbg !8
-  store i32 100, i32* %variant_data, !dbg !8
-  %load_variant = load { i32, i32, i64 }, { i32, i32, i64 }* %enum_st, !dbg !8
-  ret { i32, i32, i64 } %load_variant, !dbg !8
+  %printf_call = call i32 (i8*, ...) @printf([3 x i8] c"ABC"), !dbg !8
+  ret void, !dbg !8
 }
 
 ; Function Attrs: noinline nounwind optnone
-define void @_main() local_unnamed_addr #0 !dbg !10 {
+define i32 @main(i32 %0, i8** %1) local_unnamed_addr #1 {
 entry:
-  %res = call { i32, i32, i64 } @f(), !dbg !14
-  %inplace_ptr = alloca { i32, i32, i64 }, !dbg !14
-  store { i32, i32, i64 } %res, { i32, i32, i64 }* %inplace_ptr, !dbg !14
-  %idptr = getelementptr inbounds { i32, i32, i64 }, { i32, i32, i64 }* %inplace_ptr, i32 0, i32 0, !dbg !14
-  %id = load i32, i32* %idptr, !dbg !14
-  %enum_st = alloca { i32, i32, i64 }, !dbg !14
-  %variant_id = getelementptr inbounds { i32, i32, i64 }, { i32, i32, i64 }* %enum_st, i32 0, i32 0, !dbg !14
-  store i32 0, i32* %variant_id, !dbg !14
-  %variant_data = getelementptr inbounds { i32, i32, i64 }, { i32, i32, i64 }* %enum_st, i32 0, i32 1, !dbg !14
-  store i32 0, i32* %variant_data, !dbg !14
-  %id_ptr = getelementptr inbounds { i32, i32, i64 }, { i32, i32, i64 }* %enum_st, i32 0, i32 0, !dbg !14
-  %data_ptr = getelementptr inbounds { i32, i32, i64 }, { i32, i32, i64 }* %enum_st, i32 0, i32 1, !dbg !14
-  %id1 = load i32, i32* %id_ptr, !dbg !14
-  %compare_1 = icmp eq i32 %id, %id1, !dbg !14
-  br i1 %compare_1, label %pattern_0, label %default, !dbg !14
-
-pattern_0:                                        ; preds = %entry
-  %v = load i32, i32* %data_ptr, !dbg !14
-  %i32sum = add i32 %v, 1, !dbg !14
-  br label %end, !dbg !14
-
-default:                                          ; preds = %entry
-  br label %end, !dbg !14
-
-end:                                              ; preds = %default, %pattern_0
-  ret void, !dbg !14
+  call void @_main(), !dbg !8
+  ret i32 0, !dbg !8
 }
 
-; Function Attrs: noinline nounwind optnone
-define i32 @main(i32 %0, i8** %1) local_unnamed_addr #0 {
-entry:
-  call void @_main(), !dbg !14
-  ret i32 0, !dbg !14
-}
-
-attributes #0 = { noinline nounwind optnone }
+attributes #0 = { nofree nounwind }
+attributes #1 = { noinline nounwind optnone }
 
 !llvm.module.flags = !{!0}
 !llvm.dbg.cu = !{!1}
@@ -61,15 +29,9 @@ attributes #0 = { noinline nounwind optnone }
 !1 = distinct !DICompileUnit(language: DW_LANG_C, file: !2, producer: "Kestrel", isOptimized: true, runtimeVersion: 0, emissionKind: FullDebug, enums: !3, splitDebugInlining: false)
 !2 = !DIFile(filename: "program.ke", directory: ".")
 !3 = !{}
-!4 = distinct !DISubprogram(name: "f", linkageName: "f", scope: null, file: !2, type: !5, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
+!4 = distinct !DISubprogram(name: "main", linkageName: "_main", scope: null, file: !2, type: !5, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
 !5 = !DISubroutineType(flags: DIFlagPublic, types: !6)
 !6 = !{!7}
-!7 = !DIBasicType(name: "{ i32, i32, i64 }", size: 16, flags: DIFlagPublic)
+!7 = !DIBasicType(name: "void", size: 16, flags: DIFlagPublic)
 !8 = !DILocation(line: 0, scope: !9)
 !9 = distinct !DILexicalBlock(scope: !4, file: !2)
-!10 = distinct !DISubprogram(name: "main", linkageName: "_main", scope: null, file: !2, line: 4, type: !11, scopeLine: 4, flags: DIFlagPublic, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !1, retainedNodes: !3)
-!11 = !DISubroutineType(flags: DIFlagPublic, types: !12)
-!12 = !{!13}
-!13 = !DIBasicType(name: "void", size: 16, flags: DIFlagPublic)
-!14 = !DILocation(line: 4, scope: !15)
-!15 = distinct !DILexicalBlock(scope: !10, file: !2, line: 4)

@@ -2,7 +2,7 @@
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum Precedence {
     Lowest,
-    Dot,
+    Attr,
     To,
     Assign,
     LogicalOr,   

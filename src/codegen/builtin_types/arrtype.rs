@@ -21,7 +21,7 @@ fn arr_length<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: 
         else {
             codegen.inkwell_types.i64tp.const_int(len.into(), false)
         })),
-        tp: codegen.datatypes.get("usize").unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, "usize").unwrap().clone(),
         owned: true,
     };
 }
@@ -31,7 +31,7 @@ fn array_bool<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos:
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -42,7 +42,7 @@ fn array_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &
         errors::raise_error(&fmt, errors::ErrorType::ArgumentCountMismatch, pos, codegen.info);
     } 
 
-    if &args.get(1).unwrap().tp != codegen.datatypes.get(&String::from("usize")).unwrap() {
+    if args.get(1).unwrap().tp != crate::codegen::CodeGen::datatypes_get(codegen, &String::from("usize")).unwrap() {
         let fmt: String = format!("Invalid types for Array.get, expected 'usize', got '{}'.", args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
     }
@@ -52,8 +52,8 @@ fn array_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
     }
 
-    let mut opt: DataType = codegen.datatypes.get(&String::from("Optional")).unwrap().clone();
-    opt.types = vec![args.first().unwrap().tp.types.first().unwrap().clone(), codegen.datatypes.get(&BasicDataType::I32.to_string()).unwrap().clone()];
+    let mut opt: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &String::from("Optional")).unwrap().clone();
+    opt.types = vec![args.first().unwrap().tp.types.first().unwrap().clone(), crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::I32.to_string()).unwrap().clone()];
 
     let len: u32 = args.get(0).unwrap().tp.arrtp.unwrap().len();
 
@@ -100,9 +100,9 @@ fn array_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &
     codegen.enclosing_block = Some(end_block);
 
     let mut types: Vec<DataType> = opt.types.clone();
-    types.insert(0, codegen.datatypes.get(&BasicDataType::I32.to_string()).unwrap().clone());
+    types.insert(0, crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::I32.to_string()).unwrap().clone());
 
-    let phi: inkwell::values::PhiValue = codegen.builder.build_phi(inkwell::types::BasicTypeEnum::StructType(CodeGen::build_struct_tp_from_types(&codegen.context, &codegen.inkwell_types, &types, &codegen.datatypes).into_struct_type()), "check_phi");
+    let phi: inkwell::values::PhiValue = codegen.builder.build_phi(inkwell::types::BasicTypeEnum::StructType(CodeGen::build_struct_tp_from_types(&codegen.context, &codegen.inkwell_types, &types, &codegen.cur_module.datatypes).into_struct_type()), "check_phi");
 
     phi.add_incoming(&[(&codegen.builder.build_load(res_some.data.unwrap().into_pointer_value(), "some_case"), then_block)]);
     phi.add_incoming(&[(&codegen.builder.build_load(res_none.data.unwrap().into_pointer_value(), "none_case"), else_block)]);
@@ -122,14 +122,14 @@ pub fn init_array(codegen: &mut codegen::CodeGen) {
 
     traits.insert(TraitType::Bool.to_string(), builtin_types::create_trait_func(array_bool, 1, TraitType::Bool, tp.clone()));
     
-    codegen.datatypes.insert(BasicDataType::Array.to_string(), tp);
+    codegen.cur_module.datatypes.insert(BasicDataType::Array.to_string(), tp);
 
     //length()
-    let mut lengthfntp: DataType = codegen.datatypes.get(&BasicDataType::Func.to_string()).unwrap().clone();
+    let mut lengthfntp: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Func.to_string()).unwrap().clone();
     lengthfntp.name = String::from("length");
     lengthfntp.names = Some(vec![String::from("self")]);
-    lengthfntp.rettp = Some(Box::new(codegen.datatypes.get("usize").unwrap().clone()));
-    lengthfntp.types = vec![codegen.datatypes.get(&BasicDataType::Array.to_string()).unwrap().clone()];
+    lengthfntp.rettp = Some(Box::new(crate::codegen::CodeGen::datatypes_get(codegen, "usize").unwrap().clone()));
+    lengthfntp.types = vec![crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Array.to_string()).unwrap().clone()];
 
     methods.insert(String::from("length"), Method {
         tp: MethodType::Builtin,
@@ -141,11 +141,11 @@ pub fn init_array(codegen: &mut codegen::CodeGen) {
     //
 
     //length()
-    let mut lengthfntp: DataType = codegen.datatypes.get(&BasicDataType::Func.to_string()).unwrap().clone();
+    let mut lengthfntp: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Func.to_string()).unwrap().clone();
     lengthfntp.name = String::from("get");
     lengthfntp.names = Some(vec![String::from("self")]);
-    lengthfntp.rettp = Some(Box::new(codegen.datatypes.get(&BasicDataType::Unknown.to_string()).unwrap().clone()));
-    lengthfntp.types = vec![codegen.datatypes.get(&BasicDataType::Array.to_string()).unwrap().clone()];
+    lengthfntp.rettp = Some(Box::new(crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Unknown.to_string()).unwrap().clone()));
+    lengthfntp.types = vec![crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Array.to_string()).unwrap().clone()];
 
     methods.insert(String::from("get"), Method {
         tp: MethodType::Builtin,
@@ -156,10 +156,10 @@ pub fn init_array(codegen: &mut codegen::CodeGen) {
     });
     //
 
-    let mut alt_tp: DataType = codegen.datatypes.get(&BasicDataType::Array.to_string()).unwrap().clone();
+    let mut alt_tp: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Array.to_string()).unwrap().clone();
     alt_tp.methods = methods;
 
-    codegen.datatypes.insert(BasicDataType::Array.to_string(), alt_tp);
+    codegen.cur_module.datatypes.insert(BasicDataType::Array.to_string(), alt_tp);
 
 
     builtin_types::add_simple_type(codegen, traits, BasicDataType::Array, BasicDataType::Array.to_string().as_str());

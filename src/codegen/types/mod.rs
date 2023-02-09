@@ -267,6 +267,12 @@ pub struct Type<'a> {
     pub basictype: BasicDataType,
 }
 
+impl<'a> std::fmt::Debug for Type<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Type {}", self.basictype)
+    }
+}
+
 #[derive(Clone)]
 pub struct Trait<'a> {
     pub nargs: usize,

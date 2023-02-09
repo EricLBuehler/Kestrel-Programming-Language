@@ -1,6 +1,30 @@
 use crate::codegen::{CodeGen, Namespaces, ForwardDeclarationType};
 use crate::codegen::modules::*;
 use crate::codegen::types::*;
+use crate::errors;
+
+macro_rules! hashmap {
+    ($($k:expr => $v:expr),* $(,)?) => {{
+        core::convert::From::from([$(($k, $v),)*])
+    }};
+}
+
+fn std_print<'a>(codegen: &mut CodeGen<'a>, args: Vec<Data<'a>>, pos: &crate::parser::Position) -> Data<'a> {
+    if  args.get(0).unwrap().tp != BasicDataType::Array &&
+        args.get(0).unwrap().tp.arrtp.unwrap().get_element_type() != inkwell::types::BasicTypeEnum::IntType(*codegen.inkwell_types.i8tp)  {
+        let fmt: String = format!("invalid types for print, expected i8[], got '{}'.", args.get(0).unwrap().tp);
+        errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
+    }
+
+    codegen.builder.build_call(inkwell::values::CallableValue::try_from(codegen.cur_module.modules.get("std").unwrap().namespaces.functions.get("printf").unwrap().0.as_global_value().as_pointer_value()).unwrap(), &[inkwell::values::BasicMetadataValueEnum::ArrayValue(args.get(0).unwrap().data.unwrap().into_array_value())], "printf_call");
+
+    let data: Data = Data {
+        data: None,
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Void.to_string()).unwrap().clone(),
+        owned: true,
+    };
+    return data;
+}
 
 pub fn init_std(codegen: &mut CodeGen) {
     //std module
@@ -20,39 +44,54 @@ pub fn init_std(codegen: &mut CodeGen) {
         name: String::from("std"),
         namespaces,
         modules: std::collections::HashMap::new(),
+        types: std::collections::HashMap::new(),
+        datatypes: std::collections::HashMap::new(),
+        vtables: None,
+        vtables_vec: Vec::new(),
     };
     //
-
-    //out module
-    let mut out_functions = std::collections::HashMap::new();
-
+    
     //printf
-    let mut fntp: DataType = codegen.datatypes.get(&BasicDataType::Func.to_string()).unwrap().clone();
-    fntp.name = String::from("printf");
-    fntp.names = Some(vec![String::from("arg")]);
-    fntp.rettp = Some(Box::new(codegen.datatypes.get(&BasicDataType::I32.to_string()).unwrap().clone()));
-    fntp.types = vec![codegen.datatypes.get(&BasicDataType::Array.to_string()).unwrap().clone()];
+    let mut printftp: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Func.to_string()).unwrap().clone();
+    printftp.name = String::from("printf");
+    printftp.names = Some(vec![String::from("arg")]);
+    printftp.rettp = Some(Box::new(crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::I32.to_string()).unwrap().clone()));
+    printftp.types = vec![crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Array.to_string()).unwrap().clone()];
 
-    out_functions.insert(String::from("printf"), (codegen.module.add_function("printf", codegen.inkwell_types.i32tp.fn_type(&[inkwell::types::BasicMetadataTypeEnum::PointerType(codegen.inkwell_types.i8tp.ptr_type(inkwell::AddressSpace::from(0u16)))], true), Some(inkwell::module::Linkage::External)), fntp, ForwardDeclarationType::Real));
+    module.namespaces.functions.insert(String::from("printf"), (codegen.module.add_function("printf", codegen.inkwell_types.i32tp.fn_type(&[inkwell::types::BasicMetadataTypeEnum::PointerType(codegen.inkwell_types.i8tp.ptr_type(inkwell::AddressSpace::from(0u16)))], true), Some(inkwell::module::Linkage::External)), printftp.clone(), ForwardDeclarationType::Real));
     //
-    let namespaces: Namespaces = Namespaces {
-        locals: Vec::new(),
-        functions: out_functions,
-        structs: std::collections::HashMap::new(),
-        template_functions_sig: std::collections::HashMap::new(),
-        template_functions: Vec::new(),
-        structid: std::collections::HashMap::new(),
-        structid_from: std::collections::HashMap::new(),
-        structid_max: -1,
-        generic_enums: std::collections::HashMap::new(),
-    };
 
-    let out: Module = Module { 
-        name: String::from("out"),
-        namespaces,
-        modules: std::collections::HashMap::new(),
-    };
-    module.modules.insert(out.name.clone(), out);
+    //Add out
+    let mut tp: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Struct.to_string()).unwrap().clone();
+    tp.name = String::from("out");
+    tp.names = Some(vec![String::from("print")]);
+    tp.types = vec![printftp.clone()];
+    tp.mutability = vec![DataMutablility::Immutable];
+    let mut methods: std::collections::HashMap<String, Method> = std::collections::HashMap::new();
+
+    //print()
+    let mut newfntype: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Func.to_string()).unwrap().clone();
+    newfntype.name = String::from("print");
+    newfntype.names = Some(vec![String::from("str")]);
+    newfntype.rettp = Some(Box::new(crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Void.to_string()).unwrap().clone()));
+    newfntype.types = vec![crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Array.to_string()).unwrap().clone()];
+
+    methods.insert(String::from("print"), Method {
+        tp: MethodType::Builtin,
+        builtin: Some(std_print),
+        func: None,
+        functp: newfntype,
+        isinstance: false,
+    });
+    //
+    tp.methods = methods;
+
+    module.namespaces.structid.insert(String::from("out"), module.namespaces.structid_max);
+    module.namespaces.structid_from.insert(module.namespaces.structid_max, String::from("out"));
+    module.namespaces.structid_max += 1;
+
+    module.datatypes.insert(String::from("out"), tp.clone());
+    module.namespaces.structs.insert(String::from("out"), (tp, Some(inkwell::types::AnyTypeEnum::StructType(codegen.context.struct_type(&[], false))), hashmap!{String::from("print") => 0}, ForwardDeclarationType::Real));
     //
 
     codegen.cur_module.modules.insert(module.name.clone(), module);

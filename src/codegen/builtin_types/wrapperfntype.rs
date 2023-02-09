@@ -11,7 +11,7 @@ fn wrapperfn_call<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, p
 fn wrapperfn_bool<'a>(codegen: &mut codegen::CodeGen<'a>, _args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {  
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(codegen.inkwell_types.booltp.const_int(0, false))),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -24,7 +24,7 @@ pub fn init_wrapperfn(codegen: &mut codegen::CodeGen) {
 
     traits.insert(TraitType::Bool.to_string(), builtin_types::create_trait_func(wrapperfn_bool, 1, TraitType::Bool, tp.clone()));
     
-    codegen.datatypes.insert(BasicDataType::WrapperFunc.to_string(), tp.clone());
+    codegen.cur_module.datatypes.insert(BasicDataType::WrapperFunc.to_string(), tp.clone());
 
     builtin_types::add_simple_type(codegen, traits, BasicDataType::WrapperFunc, BasicDataType::WrapperFunc.to_string().as_str());
 }

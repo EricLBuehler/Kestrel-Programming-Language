@@ -25,7 +25,7 @@ fn u128_add<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &p
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::U128.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::U128.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -43,7 +43,7 @@ fn u128_mul<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &p
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::U128.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::U128.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -62,7 +62,7 @@ fn u128_sub<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &p
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::U128.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::U128.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -80,7 +80,7 @@ fn u128_div<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &p
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::U128.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::U128.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -96,7 +96,7 @@ fn u128_bool<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: 
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -114,7 +114,7 @@ fn u128_eq<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &pa
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -132,7 +132,7 @@ fn u128_lt<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &pa
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -150,7 +150,7 @@ fn u128_gt<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &pa
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -168,7 +168,7 @@ fn u128_le<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &pa
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -186,7 +186,7 @@ fn u128_ge<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &pa
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -204,7 +204,7 @@ fn u128_ne<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &pa
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -214,7 +214,7 @@ pub fn init_u128(codegen: &mut codegen::CodeGen) {
 
     let tp: DataType = new_datatype(BasicDataType::U128, BasicDataType::U128.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new());
 
-    codegen.datatypes.insert(BasicDataType::U128.to_string(), tp.clone());
+    codegen.cur_module.datatypes.insert(BasicDataType::U128.to_string(), tp.clone());
 
     traits.insert(TraitType::Add.to_string(), builtin_types::create_trait_func(u128_add, 2, TraitType::Add, tp.clone()));
     traits.insert(TraitType::Mul.to_string(), builtin_types::create_trait_func(u128_mul, 2, TraitType::Mul, tp.clone()));

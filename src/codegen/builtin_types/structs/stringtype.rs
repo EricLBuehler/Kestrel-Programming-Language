@@ -22,7 +22,7 @@ fn string_length<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, po
         else {
             codegen.inkwell_types.i64tp.const_int(len.into(), false)
         })),
-        tp: codegen.datatypes.get("usize").unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, "usize").unwrap().clone(),
         owned: true,
     };
 }
@@ -36,10 +36,10 @@ fn string_get_array<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>,
     let itmptr: inkwell::values::PointerValue = codegen.builder.build_struct_gep(args.get(0).unwrap().data.unwrap().into_pointer_value(), 0 as u32, "arr").expect("GEP Error");
     let arr: inkwell::values::ArrayValue = codegen.builder.build_load(itmptr, "arr").into_array_value();
 
-    let mut tp: DataType = codegen.datatypes.get(&BasicDataType::Array.to_string()).unwrap().clone();
+    let mut tp: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Array.to_string()).unwrap().clone();
     tp.name = codegen::CodeGen::array_repr(arr.get_type());
     tp.arrtp = Some(arr.get_type());
-    tp.types = vec![codegen.datatypes.get(&crate::codegen::types::BasicDataType::U8.to_string()).unwrap().clone()];
+    tp.types = vec![crate::codegen::CodeGen::datatypes_get(codegen, &crate::codegen::types::BasicDataType::U8.to_string()).unwrap().clone()];
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::ArrayValue(arr)),
@@ -54,13 +54,13 @@ fn string_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: 
         errors::raise_error(&fmt, errors::ErrorType::ArgumentCountMismatch, pos, codegen.info);
     } 
 
-    if &args.get(1).unwrap().tp != codegen.datatypes.get(&String::from("usize")).unwrap() {
+    if args.get(1).unwrap().tp != crate::codegen::CodeGen::datatypes_get(codegen, &String::from("usize")).unwrap() {
         let fmt: String = format!("Invalid types for String.get, expected 'usize', got '{}'.", args.get(1).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
     }
 
-    let mut opt: DataType = codegen.datatypes.get(&String::from("Optional")).unwrap().clone();
-    opt.types = vec![codegen.datatypes.get(&BasicDataType::U8.to_string()).unwrap().clone(), codegen.datatypes.get(&BasicDataType::I32.to_string()).unwrap().clone()];
+    let mut opt: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &String::from("Optional")).unwrap().clone();
+    opt.types = vec![crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::U8.to_string()).unwrap().clone(), crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::I32.to_string()).unwrap().clone()];
 
     let ptr: inkwell::values::PointerValue = codegen.builder.build_struct_gep(args.get(0).unwrap().data.unwrap().into_pointer_value(), 0 as u32, "arr").expect("GEP Error");
     let arr: inkwell::values::ArrayValue = codegen.builder.build_load(ptr, "load_arr").into_array_value();
@@ -109,9 +109,9 @@ fn string_get<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: 
 
 
     let mut types: Vec<DataType> = opt.types.clone();
-    types.insert(0, codegen.datatypes.get(&BasicDataType::I32.to_string()).unwrap().clone());
+    types.insert(0, crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::I32.to_string()).unwrap().clone());
 
-    let phi: inkwell::values::PhiValue = codegen.builder.build_phi(inkwell::types::BasicTypeEnum::StructType(CodeGen::build_struct_tp_from_types(&codegen.context, &codegen.inkwell_types, &types, &codegen.datatypes).into_struct_type()), "check_phi");
+    let phi: inkwell::values::PhiValue = codegen.builder.build_phi(inkwell::types::BasicTypeEnum::StructType(CodeGen::build_struct_tp_from_types(&codegen.context, &codegen.inkwell_types, &types, &codegen.cur_module.datatypes).into_struct_type()), "check_phi");
 
     phi.add_incoming(&[(&codegen.builder.build_load(res_some.data.unwrap().into_pointer_value(), "some_case"), then_block)]);
     phi.add_incoming(&[(&codegen.builder.build_load(res_none.data.unwrap().into_pointer_value(), "none_case"), else_block)]);
@@ -136,7 +136,7 @@ fn string_new<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: 
         errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, pos, codegen.info);
     }
 
-    if data.tp.types.first().unwrap() != codegen.datatypes.get(&BasicDataType::I8.to_string()).unwrap() {
+    if *data.tp.types.first().unwrap() != crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::I8.to_string()).unwrap() {
         let fmt: String = format!("Expected array of i8.");
         errors::raise_error(&fmt, errors::ErrorType::TypeMismatch, pos, codegen.info);
     }
@@ -150,7 +150,7 @@ fn string_new<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: 
 
     let data: Data = Data {
         data: Some(codegen.builder.build_load(ptr, "string")),
-        tp: codegen.datatypes.get(&String::from("String")).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &String::from("String")).unwrap().clone(),
         owned: true,
     };
     return data;
@@ -159,18 +159,18 @@ fn string_new<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: 
 pub fn init_string(codegen: &mut codegen::CodeGen) {
     let mut methods: HashMap<String, Method> = HashMap::new();
 
-    let mut tp: DataType = codegen.datatypes.get(&BasicDataType::Struct.to_string()).unwrap().clone();
+    let mut tp: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Struct.to_string()).unwrap().clone();
     tp.name = String::from("String");
     tp.names = Some(vec![String::from("arr")]);
-    tp.types = vec![codegen.datatypes.get(&String::from("char")).unwrap().clone()];
+    tp.types = vec![crate::codegen::CodeGen::datatypes_get(codegen, &String::from("char")).unwrap().clone()];
     tp.mutability = vec![DataMutablility::Immutable];
 
     //length()
-    let mut lengthfntp: DataType = codegen.datatypes.get(&BasicDataType::Func.to_string()).unwrap().clone();
+    let mut lengthfntp: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Func.to_string()).unwrap().clone();
     lengthfntp.name = String::from("length");
     lengthfntp.names = Some(vec![String::from("self")]);
-    lengthfntp.rettp = Some(Box::new(codegen.datatypes.get("usize").unwrap().clone()));
-    lengthfntp.types = vec![codegen.datatypes.get(&BasicDataType::Array.to_string()).unwrap().clone()];
+    lengthfntp.rettp = Some(Box::new(crate::codegen::CodeGen::datatypes_get(codegen, "usize").unwrap().clone()));
+    lengthfntp.types = vec![crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Array.to_string()).unwrap().clone()];
 
     methods.insert(String::from("length"), Method {
         tp: MethodType::Builtin,
@@ -182,11 +182,11 @@ pub fn init_string(codegen: &mut codegen::CodeGen) {
     //
 
     //get_array()
-    let mut lengthfntp: DataType = codegen.datatypes.get(&BasicDataType::Func.to_string()).unwrap().clone();
+    let mut lengthfntp: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Func.to_string()).unwrap().clone();
     lengthfntp.name = String::from("get_array");
     lengthfntp.names = Some(vec![String::from("self")]);
-    lengthfntp.rettp = Some(Box::new(codegen.datatypes.get(&BasicDataType::Array.to_string()).unwrap().clone()));
-    lengthfntp.types = vec![codegen.datatypes.get(&BasicDataType::Array.to_string()).unwrap().clone()];
+    lengthfntp.rettp = Some(Box::new(crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Array.to_string()).unwrap().clone()));
+    lengthfntp.types = vec![crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Array.to_string()).unwrap().clone()];
 
     methods.insert(String::from("get_array"), Method {
         tp: MethodType::Builtin,
@@ -198,11 +198,11 @@ pub fn init_string(codegen: &mut codegen::CodeGen) {
     //
 
     //get()
-    let mut lengthfntp: DataType = codegen.datatypes.get(&BasicDataType::Func.to_string()).unwrap().clone();
+    let mut lengthfntp: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Func.to_string()).unwrap().clone();
     lengthfntp.name = String::from("get");
     lengthfntp.names = Some(vec![String::from("self"), String::from("index")]);
-    lengthfntp.rettp = Some(Box::new(codegen.datatypes.get(&crate::codegen::types::BasicDataType::U8.to_string()).unwrap().clone()));
-    lengthfntp.types = vec![codegen.datatypes.get(&BasicDataType::Array.to_string()).unwrap().clone(), codegen.datatypes.get(&String::from("usize")).unwrap().clone()];
+    lengthfntp.rettp = Some(Box::new(crate::codegen::CodeGen::datatypes_get(codegen, &crate::codegen::types::BasicDataType::U8.to_string()).unwrap().clone()));
+    lengthfntp.types = vec![crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Array.to_string()).unwrap().clone(), crate::codegen::CodeGen::datatypes_get(codegen, &String::from("usize")).unwrap().clone()];
 
     methods.insert(String::from("get"), Method {
         tp: MethodType::Builtin,
@@ -214,11 +214,11 @@ pub fn init_string(codegen: &mut codegen::CodeGen) {
     //
 
     //new()
-    let mut newfntype: DataType = codegen.datatypes.get(&BasicDataType::Func.to_string()).unwrap().clone();
+    let mut newfntype: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Func.to_string()).unwrap().clone();
     newfntype.name = String::from("new");
     newfntype.names = Some(vec![String::from("arr")]);
     newfntype.rettp = Some(Box::new(tp.clone()));
-    newfntype.types = vec![codegen.datatypes.get(&BasicDataType::Array.to_string()).unwrap().clone()];
+    newfntype.types = vec![crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Array.to_string()).unwrap().clone()];
 
     methods.insert(String::from("new"), Method {
         tp: MethodType::Builtin,
@@ -234,7 +234,7 @@ pub fn init_string(codegen: &mut codegen::CodeGen) {
 
     tp.methods = methods;
 
-    codegen.datatypes.insert(String::from("String"), tp.clone());
+    codegen.cur_module.datatypes.insert(String::from("String"), tp.clone());
     codegen.cur_module.namespaces.structs.insert(String::from("String"), (tp, None, idxmapping, codegen::ForwardDeclarationType::Real));
     codegen::builtin_types::add_simple_type(codegen, std::collections::HashMap::new(), BasicDataType::Struct, &String::from("String"));
 

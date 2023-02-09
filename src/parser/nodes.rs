@@ -360,6 +360,20 @@ impl std::fmt::Display for MatchNode {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct NamespaceAttrNode{
+    pub name: crate::parser::Node,
+    pub attrs: Vec<String>,
+    pub expr: Option<crate::parser::Node>,
+    pub template_types: Option<Vec<crate::parser::Type>>,
+}
+
+impl std::fmt::Display for NamespaceAttrNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{:?}", self.name, self.attrs)
+    }    
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct NodeData {
     pub binary: Option<BinaryNode>,
     pub num: Option<NumNode>,
@@ -384,4 +398,5 @@ pub struct NodeData {
     pub traitn: Option<TraitNode>,
     pub is: Option<IsNode>,
     pub matchn: Option<MatchNode>,
+    pub nameattr: Option<NamespaceAttrNode>,
 }

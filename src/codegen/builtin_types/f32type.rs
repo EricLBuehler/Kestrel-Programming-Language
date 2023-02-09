@@ -25,7 +25,7 @@ fn f32_add<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &pa
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::FloatValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::F32.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::F32.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -43,7 +43,7 @@ fn f32_mul<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &pa
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::FloatValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::F32.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::F32.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -61,7 +61,7 @@ fn f32_sub<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &pa
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::FloatValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::F32.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::F32.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -79,7 +79,7 @@ fn f32_div<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &pa
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::FloatValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::F32.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::F32.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -96,7 +96,7 @@ fn f32_neg<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &p
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::FloatValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::F32.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::F32.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -108,7 +108,7 @@ fn f32_bool<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -126,7 +126,7 @@ fn f32_eq<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &par
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -144,7 +144,7 @@ fn f32_lt<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &par
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -162,7 +162,7 @@ fn f32_gt<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &par
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -180,7 +180,7 @@ fn f32_le<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &par
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -198,7 +198,7 @@ fn f32_ge<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &par
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -216,7 +216,7 @@ fn f32_ne<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &par
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -226,7 +226,7 @@ pub fn init_f32(codegen: &mut codegen::CodeGen) {
     
     let tp: DataType = new_datatype(BasicDataType::F32, BasicDataType::F32.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new());
 
-    codegen.datatypes.insert(BasicDataType::F32.to_string(), tp.clone());
+    codegen.cur_module.datatypes.insert(BasicDataType::F32.to_string(), tp.clone());
 
     traits.insert(TraitType::Add.to_string(), builtin_types::create_trait_func(f32_add, 2, TraitType::Add, tp.clone()));
     traits.insert(TraitType::Mul.to_string(), builtin_types::create_trait_func(f32_mul, 2, TraitType::Mul, tp.clone()));

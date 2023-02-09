@@ -69,6 +69,7 @@ pub enum NodeType {
     GENERICENUM,
     MUTREF,
     STMT,
+    MULTINAMESPACE,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -154,6 +155,7 @@ impl std::fmt::Display for Node {
             NodeType::VOID => write!(f, "void"),
             NodeType::IS => write!(f, "{}", self.data.is.as_ref().unwrap() ),
             NodeType::MATCH => write!(f, "{}", self.data.matchn.as_ref().unwrap() ),
+            NodeType::MULTINAMESPACE => write!(f, "{}", self.data.nameattr.as_ref().unwrap() ),
         }
     }    
 }
@@ -313,8 +315,9 @@ impl<'a> Parser<'a> {
             TokenType::NE => {
                 Precedence::Equals
             }
-            TokenType::DOT => {
-                Precedence::Dot
+            TokenType::DOT |
+            TokenType::DOUBLECOLON => {
+                Precedence::Attr
             }
 
             _ => {
@@ -509,6 +512,15 @@ impl<'a> Parser<'a> {
                     self.advance();
                 }
 
+                TokenType::DOUBLECOLON => {
+                    self.advance();
+                    let attr: String = self.current.data.clone();
+
+                    left = self.generate_namespace(attr, left.to_owned(), left.pos);
+
+                    self.advance();
+                }
+
                 TokenType::KEYWORD => {
                     if self.current.data=="as" {
                         left = self.generate_as(left);
@@ -563,6 +575,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
         let pos = Position {
@@ -643,6 +656,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
     
         let n: Node = self.create_node(NodeType::BINARY, nodedat, pos);
@@ -679,6 +693,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
         let pos = Position {
@@ -770,6 +785,7 @@ impl<'a> Parser<'a> {
                 traitn: None,
                 is: None,
                 matchn: None,
+                nameattr: None,
             };
         
             n = self.create_node(NodeType::INITSTRUCT, nodedat, pos);
@@ -843,6 +859,7 @@ impl<'a> Parser<'a> {
                 traitn: None,
                 is: None,
                 matchn: None,
+                nameattr: None,
             };
         
             n = self.create_node(NodeType::NAMESPACE, nodedat, pos.clone());
@@ -929,6 +946,7 @@ impl<'a> Parser<'a> {
                 traitn: None,
                 is: None,
                 matchn: None,
+                nameattr: None,
             };
         
             n = self.create_node(NodeType::GENERICENUM, nodedat, pos.clone());
@@ -975,6 +993,7 @@ impl<'a> Parser<'a> {
                 traitn: None,
                 is: None,
                 matchn: None,
+                nameattr: None,
             };
         
             return self.create_node(NodeType::ATTRASSIGN, nodedat, pos.clone());
@@ -1013,10 +1032,87 @@ impl<'a> Parser<'a> {
                 traitn: None,
                 is: None,
                 matchn: None,
+                nameattr: None,
             };
         
             return self.create_node(NodeType::ATTR, nodedat, pos.clone());
         }
+    }
+    
+    fn generate_namespace(&mut self, attr: String, left: Node, mut pos: Position) -> Node {
+
+        let mut attrs: Vec<String> = vec![attr];
+
+        if self.next_is_type(TokenType::DOUBLECOLON) {
+            self.advance();
+        }
+
+        let mut expr: Option<Node> = None;
+
+        while self.current_is_type(TokenType::DOUBLECOLON) {
+            self.advance();
+            if !self.current_is_type(TokenType::IDENTIFIER) {
+                self.raise_error("Expected identifier.", ErrorType::InvalidTok);
+            }
+            attrs.push(self.current.data.clone());
+            self.advance();
+            if self.next_is_type(TokenType::LT) {
+                self.advance();
+                self.advance();
+
+                expr = Some(self.expr(Precedence::Comparison));
+                
+                if !self.current_is_type(TokenType::GT) {
+                    self.raise_error("Expected right angle bracket.", ErrorType::InvalidTok);
+                }
+
+                if self.next_is_type(TokenType::DOUBLECOLON) {
+                    self.raise_error("Unexpected doublecolon.", ErrorType::InvalidTok);
+                }
+                break;
+            }
+            else {
+                expr = None;
+            }
+        }
+
+        pos.endcol = self.current.endcol;
+
+        let attr: nodes::NamespaceAttrNode = nodes::NamespaceAttrNode{
+            name: left,
+            attrs,
+            expr,
+            template_types: None,
+        };
+    
+        let nodedat: nodes::NodeData = nodes::NodeData {
+            binary: None,
+            num: None,
+            letn: None,
+            identifier: None,
+            func: None,
+            assign: None,
+            call: None,
+            ret: None,
+            to: None,
+            unary: None,
+            st: None,
+            initst: None,
+            attr: None,
+            attrassign: None,
+            str: None,
+            arr: None,
+            impln: None,
+            ifn: None,
+            loopn: None,
+            enumn: None,
+            traitn: None,
+            is: None,
+            matchn: None,
+            nameattr: Some(attr),
+        };
+    
+        return self.create_node(NodeType::MULTINAMESPACE, nodedat, pos.clone());
     }
 
     fn generate_assign(&mut self, left: Node) -> Node{
@@ -1063,6 +1159,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
     
         let n: Node = self.create_node(NodeType::ASSIGN, nodedat, pos);
@@ -1090,7 +1187,8 @@ impl<'a> Parser<'a> {
 
         if  left.tp != NodeType::IDENTIFIER &&
             left.tp != NodeType::ATTR &&
-            left.tp != NodeType::NAMESPACE {
+            left.tp != NodeType::NAMESPACE &&
+            left.tp != NodeType::MULTINAMESPACE {
             self.raise_error_pos("Expected name", ErrorType::InvalidTok, left);
         }
 
@@ -1146,6 +1244,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
     
         let n: Node = self.create_node(NodeType::CALL, nodedat, pos);
@@ -1181,6 +1280,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
         let pos = Position {
@@ -1223,6 +1323,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
         let pos = Position {
@@ -1265,6 +1366,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
         let pos = Position {
@@ -1307,6 +1409,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
         let pos = Position {
@@ -1349,6 +1452,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
         let pos = Position {
@@ -1391,6 +1495,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
         let pos = Position {
@@ -1433,6 +1538,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
         let pos = Position {
@@ -1475,6 +1581,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
         let pos = Position {
@@ -1517,6 +1624,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
         let pos = Position {
@@ -1572,6 +1680,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
     
         let n: Node = self.create_node(NodeType::AS, nodedat, pos);
@@ -1608,6 +1717,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
         let pos = Position {
@@ -1650,6 +1760,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
         let pos = Position {
@@ -1703,6 +1814,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
         self.backadvance();
@@ -1761,6 +1873,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
     
         let n: Node = self.create_node(NodeType::UNARY, nodedat, pos);
@@ -1803,6 +1916,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
     
         let n: Node = self.create_node(NodeType::STRING, nodedat, pos);
@@ -1847,6 +1961,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
         let pos = Position {
@@ -1917,6 +2032,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
     
         let n: Node = self.create_node(NodeType::ARRAY, nodedat, pos);
@@ -1949,6 +2065,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
     
@@ -2003,6 +2120,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: Some(is),
             matchn: None,
+            nameattr: None,
         };
     
         let n: Node = self.create_node(NodeType::IS, nodedat, pos);
@@ -2086,6 +2204,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
         
         if nodedat.letn.as_ref().unwrap().expr.is_some() {
@@ -2539,6 +2658,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
         let n: Node = self.create_node(NodeType::FUNC, nodedat, pos);
@@ -2592,6 +2712,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
         if nodedat.ret.as_ref().unwrap().expr.is_some() {
@@ -2719,6 +2840,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
     
@@ -2826,6 +2948,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
     
@@ -2966,6 +3089,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
     
@@ -3032,6 +3156,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
     
@@ -3069,6 +3194,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
         let pos = Position {
@@ -3113,6 +3239,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
         let pos = Position {
@@ -3190,6 +3317,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
     
@@ -3316,6 +3444,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
     
@@ -3532,6 +3661,7 @@ impl<'a> Parser<'a> {
             traitn: Some(traitn),
             is: None,
             matchn: None,
+            nameattr: None,
         };
 
     
@@ -3673,6 +3803,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: Some(matchn),
+            nameattr: None,
         };
 
     
@@ -3712,6 +3843,7 @@ impl<'a> Parser<'a> {
             traitn: None,
             is: None,
             matchn: None,
+            nameattr: None,
         };
     
         let n: Node = self.create_node(NodeType::STMT, nodedat, left.pos);

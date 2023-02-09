@@ -35,7 +35,7 @@ pub fn add_simple_type<'a>(codegen: &mut codegen::CodeGen<'a>, traits: HashMap<S
         basictype,
     };
 
-    codegen.types.insert(String::from(name), tp);
+    codegen.cur_module.types.insert(String::from(name), tp);
 }
 
 pub fn create_trait_func<'a>(function: fn(&mut codegen::CodeGen<'a>, Vec<Data<'a>>, &crate::parser::Position) -> Data<'a>, nargs: usize, traittype: TraitType, rettp: DataType<'a>) -> Trait<'a>{
@@ -84,7 +84,7 @@ pub fn int_issigned(val: DataType) -> bool {
 }
 
 pub fn init(codegen: &mut codegen::CodeGen) {
-    codegen.datatypes.insert(String::from(types::BasicDataType::Unknown.to_string()), types::new_datatype(BasicDataType::Unknown, BasicDataType::Unknown.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new()));
+    codegen.cur_module.datatypes.insert(String::from(types::BasicDataType::Unknown.to_string()), types::new_datatype(BasicDataType::Unknown, BasicDataType::Unknown.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new()));
 
     i32type::init_i32(codegen);
     u32type::init_u32(codegen);

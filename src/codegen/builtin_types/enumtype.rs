@@ -18,7 +18,7 @@ fn enum_eq<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &pa
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -36,7 +36,7 @@ fn enum_ne<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &pa
 
     return Data {
         data: Some(inkwell::values::BasicValueEnum::IntValue(res)),
-        tp: codegen.datatypes.get(&BasicDataType::Bool.to_string()).unwrap().clone(),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Bool.to_string()).unwrap().clone(),
         owned: true,
     };
 }
@@ -46,7 +46,7 @@ pub fn init_enum(codegen: &mut codegen::CodeGen) {
     
     let tp: DataType = new_datatype(BasicDataType::Enum, BasicDataType::Enum.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new());
 
-    codegen.datatypes.insert(BasicDataType::Enum.to_string(), tp.clone());
+    codegen.cur_module.datatypes.insert(BasicDataType::Enum.to_string(), tp.clone());
 
     traits.insert(TraitType::Eq.to_string(), builtin_types::create_trait_func(enum_eq, 2, TraitType::Eq, tp.clone()));
     traits.insert(TraitType::Ne.to_string(), builtin_types::create_trait_func(enum_ne, 2, TraitType::Ne, tp.clone()));
