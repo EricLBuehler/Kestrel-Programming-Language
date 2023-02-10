@@ -72,22 +72,23 @@ pub fn init_std(codegen: &mut CodeGen) {
     let mut methods: std::collections::HashMap<String, Method> = std::collections::HashMap::new();
 
     //print()
-    let mut newfntype: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Func.to_string()).unwrap().clone();
-    newfntype.name = String::from("print");
-    newfntype.names = Some(vec![String::from("str")]);
-    newfntype.rettp = Some(Box::new(crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::I32.to_string()).unwrap().clone()));
+    let mut printfntp: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::WrapperFunc.to_string()).unwrap().clone();
+    printfntp.names = Some(vec![String::from("str")]);
+    printfntp.rettp = Some(Box::new(crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::I32.to_string()).unwrap().clone()));
     
     let mut str_tp: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &String::from("String")).unwrap().clone();
     str_tp.is_ref = true;
-    newfntype.types = vec![str_tp];
+    printfntp.types = vec![str_tp];
+    printfntp.wrapperfn = Some(std_print);
 
     methods.insert(String::from("print"), Method {
         tp: MethodType::Builtin,
         builtin: Some(std_print),
         func: None,
-        functp: newfntype,
+        functp: printfntp,
         isinstance: false,
         isinstanceptr: false,
+        ismutinstanceptr: false,
     });
     //
     tp.methods = methods;

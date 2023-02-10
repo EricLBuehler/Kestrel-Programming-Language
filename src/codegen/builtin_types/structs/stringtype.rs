@@ -169,11 +169,11 @@ pub fn init_string(codegen: &mut codegen::CodeGen) {
     tp.mutability = vec![DataMutablility::Immutable];
 
     //length()
-    let mut lengthfntp: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Func.to_string()).unwrap().clone();
-    lengthfntp.name = String::from("length");
+    let mut lengthfntp: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::WrapperFunc.to_string()).unwrap().clone();
     lengthfntp.names = Some(vec![String::from("self")]);
     lengthfntp.rettp = Some(Box::new(crate::codegen::CodeGen::datatypes_get(codegen, "usize").unwrap().clone()));
     lengthfntp.types = vec![crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Array.to_string()).unwrap().clone()];
+    lengthfntp.wrapperfn = Some(string_length);
 
     methods.insert(String::from("length"), Method {
         tp: MethodType::Builtin,
@@ -182,49 +182,53 @@ pub fn init_string(codegen: &mut codegen::CodeGen) {
         functp: lengthfntp,
         isinstance: true,
         isinstanceptr: false,
+        ismutinstanceptr: false,
     });
     //
 
     //get_array()
-    let mut lengthfntp: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Func.to_string()).unwrap().clone();
-    lengthfntp.name = String::from("get_array");
-    lengthfntp.names = Some(vec![String::from("self")]);
-    lengthfntp.rettp = Some(Box::new(crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Array.to_string()).unwrap().clone()));
-    lengthfntp.types = vec![crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Array.to_string()).unwrap().clone()];
+    let mut getarrfntp: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::WrapperFunc.to_string()).unwrap().clone();
+    getarrfntp.names = Some(vec![String::from("self")]);
+    getarrfntp.rettp = Some(Box::new(crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Array.to_string()).unwrap().clone()));
+    getarrfntp.types = vec![crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Array.to_string()).unwrap().clone()];
+    getarrfntp.wrapperfn = Some(string_get_array);
 
     methods.insert(String::from("get_array"), Method {
         tp: MethodType::Builtin,
         builtin: Some(string_get_array),
         func: None,
-        functp: lengthfntp,
+        functp: getarrfntp,
         isinstance: true,
         isinstanceptr: false,
+        ismutinstanceptr: false,
     });
     //
 
     //get()
-    let mut lengthfntp: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Func.to_string()).unwrap().clone();
-    lengthfntp.name = String::from("get");
-    lengthfntp.names = Some(vec![String::from("self"), String::from("index")]);
-    lengthfntp.rettp = Some(Box::new(crate::codegen::CodeGen::datatypes_get(codegen, &crate::codegen::types::BasicDataType::U8.to_string()).unwrap().clone()));
-    lengthfntp.types = vec![crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Array.to_string()).unwrap().clone(), crate::codegen::CodeGen::datatypes_get(codegen, &String::from("usize")).unwrap().clone()];
+    let mut getfntp: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::WrapperFunc.to_string()).unwrap().clone();
+    getfntp.names = Some(vec![String::from("self"), String::from("index")]);
+    getfntp.rettp = Some(Box::new(crate::codegen::CodeGen::datatypes_get(codegen, &crate::codegen::types::BasicDataType::U8.to_string()).unwrap().clone()));
+    getfntp.types = vec![crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Array.to_string()).unwrap().clone(), crate::codegen::CodeGen::datatypes_get(codegen, &String::from("usize")).unwrap().clone()];
+    getfntp.wrapperfn = Some(string_get);
 
     methods.insert(String::from("get"), Method {
         tp: MethodType::Builtin,
         builtin: Some(string_get),
         func: None,
-        functp: lengthfntp,
+        functp: getfntp,
         isinstance: true,
         isinstanceptr: false,
+        ismutinstanceptr: false,
     });
     //
 
     //new()
-    let mut newfntype: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Func.to_string()).unwrap().clone();
+    let mut newfntype: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::WrapperFunc.to_string()).unwrap().clone();
     newfntype.name = String::from("new");
     newfntype.names = Some(vec![String::from("arr")]);
     newfntype.rettp = Some(Box::new(tp.clone()));
     newfntype.types = vec![crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::Array.to_string()).unwrap().clone()];
+    newfntype.wrapperfn = Some(string_new);
 
     methods.insert(String::from("new"), Method {
         tp: MethodType::Builtin,
@@ -233,6 +237,7 @@ pub fn init_string(codegen: &mut codegen::CodeGen) {
         functp: newfntype,
         isinstance: false,
         isinstanceptr: false,
+        ismutinstanceptr: false,
     });
     //
 

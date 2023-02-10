@@ -405,6 +405,7 @@ pub struct Method<'a> {
     pub functp: DataType<'a>,
     pub isinstance: bool,
     pub isinstanceptr: bool,
+    pub ismutinstanceptr: bool,
 }
 
 impl<'a> std::fmt::Debug for Method<'a> {

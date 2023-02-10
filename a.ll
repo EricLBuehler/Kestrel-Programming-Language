@@ -2,44 +2,41 @@
 source_filename = "program.ke"
 target triple = "x86_64-unknown-linux-gnu"
 
-; Function Attrs: nofree nounwind
-declare i32 @printf(i8* nocapture readonly, ...) local_unnamed_addr #0
-
 ; Function Attrs: noinline nounwind optnone
-define void @_main() local_unnamed_addr #1 !dbg !4 {
+define void @_main() local_unnamed_addr #0 !dbg !4 {
 entry:
-  %format = alloca [3 x i8], !dbg !8
-  %String = alloca { [20 x i8] }, !dbg !8
-  %inplace_ptr = alloca i128, !dbg !8
-  store i128 123456789, i128* %inplace_ptr, !dbg !8
-  %bitcast_value = bitcast i128* %inplace_ptr to <{ i64, i64 }>*, !dbg !8
-  %lo_ptr = getelementptr inbounds <{ i64, i64 }>, <{ i64, i64 }>* %bitcast_value, i32 0, i32 0, !dbg !8
-  %lo = load i64, i64* %lo_ptr, !dbg !8
-  %hi_ptr = getelementptr inbounds <{ i64, i64 }>, <{ i64, i64 }>* %bitcast_value, i32 0, i32 1, !dbg !8
-  %hi = load i64, i64* %hi_ptr, !dbg !8
-  %arr = getelementptr inbounds { [20 x i8] }, { [20 x i8] }* %String, i32 0, i32 0, !dbg !8
-  %data_ptr = getelementptr inbounds [20 x i8], [20 x i8]* %arr, i32 0, i32 0, !dbg !8
-  store [3 x i8] c"%u\00", [3 x i8]* %format, !dbg !8
-  %data_ptr1 = getelementptr inbounds [3 x i8], [3 x i8]* %format, i32 0, i32 0, !dbg !8
-  %sprintf_call = call i32 (i8*, i8*, ...) @sprintf(i8* %data_ptr, i8* %data_ptr1, i64 %lo, i64 %hi), !dbg !8
-  %data = getelementptr inbounds { [20 x i8] }, { [20 x i8] }* %String, i32 0, i32 0, !dbg !8
-  %data_ptr2 = getelementptr inbounds [20 x i8], [20 x i8]* %data, i32 0, i32 0, !dbg !8
-  %printf_call = call i32 (i8*, ...) @printf(i8* %data_ptr2), !dbg !8
+  %enum_st3 = alloca { i32, i32 }, !dbg !8
+  %enum_st = alloca { i32, i32 }, !dbg !8
+  %arr = alloca [3 x i32], !dbg !8
+  %i32 = getelementptr [3 x i32], [3 x i32]* %arr, i8 0, i8 0, !dbg !8
+  store i32 1, i32* %i32, !dbg !8
+  %i321 = getelementptr [3 x i32], [3 x i32]* %arr, i8 0, i8 1, !dbg !8
+  store i32 2, i32* %i321, !dbg !8
+  %i322 = getelementptr [3 x i32], [3 x i32]* %arr, i8 0, i8 2, !dbg !8
+  store i32 3, i32* %i322, !dbg !8
+  br label %then, !dbg !8
+
+then:                                             ; preds = %entry
+  %itmptr = getelementptr inbounds [3 x i32], [3 x i32]* %arr, i32 0, i64 1, !dbg !8
+  store i32 2, i32* %itmptr, !dbg !8
+  %variant_id = getelementptr inbounds { i32, i32 }, { i32, i32 }* %enum_st, i32 0, i32 0, !dbg !8
+  store i32 0, i32* %variant_id, !dbg !8
+  br label %end, !dbg !8
+
+end:                                              ; preds = %then
+  %some_case = load { i32, i32 }, { i32, i32 }* %enum_st, !dbg !8
+  %none_case = load { i32, i32 }, { i32, i32 }* %enum_st3, !dbg !8
   ret void, !dbg !8
 }
 
-; Function Attrs: nofree nounwind
-declare i32 @sprintf(i8* noalias nocapture, i8* nocapture readonly, ...) local_unnamed_addr #0
-
 ; Function Attrs: noinline nounwind optnone
-define i32 @main(i32 %0, i8** %1) local_unnamed_addr #1 {
+define i32 @main(i32 %0, i8** %1) local_unnamed_addr #0 {
 entry:
   call void @_main(), !dbg !8
   ret i32 0, !dbg !8
 }
 
-attributes #0 = { nofree nounwind }
-attributes #1 = { noinline nounwind optnone }
+attributes #0 = { noinline nounwind optnone }
 
 !llvm.module.flags = !{!0}
 !llvm.dbg.cu = !{!1}

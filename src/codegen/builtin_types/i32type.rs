@@ -266,7 +266,6 @@ pub fn init_i32(codegen: &mut codegen::CodeGen) {
 
     //to_string
     let mut tostrfntp: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::WrapperFunc.to_string()).unwrap().clone();
-    tostrfntp.name = BasicDataType::WrapperFunc.to_string();
     tostrfntp.names = Some(vec![String::from("self")]);
     tostrfntp.rettp = Some(Box::new(tp.clone()));
     tostrfntp.wrapperfn = Some(i32_string);
@@ -278,6 +277,7 @@ pub fn init_i32(codegen: &mut codegen::CodeGen) {
         functp: tostrfntp,
         isinstance: true,
         isinstanceptr: false,
+        ismutinstanceptr: false,
     });
     //
 

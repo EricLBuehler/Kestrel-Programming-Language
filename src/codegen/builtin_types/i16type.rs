@@ -268,7 +268,6 @@ pub fn init_i16(codegen: &mut codegen::CodeGen) {
 
     //to_string
     let mut tostrfntp: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::WrapperFunc.to_string()).unwrap().clone();
-    tostrfntp.name = BasicDataType::WrapperFunc.to_string();
     tostrfntp.names = Some(vec![String::from("self")]);
     tostrfntp.rettp = Some(Box::new(crate::codegen::CodeGen::datatypes_get(codegen, &crate::codegen::types::BasicDataType::I32.to_string()).unwrap().clone()));
     tostrfntp.wrapperfn = Some(i16_string);
@@ -280,6 +279,7 @@ pub fn init_i16(codegen: &mut codegen::CodeGen) {
         functp: tostrfntp,
         isinstance: true,
         isinstanceptr: false,
+        ismutinstanceptr: false,
     });
     //
 

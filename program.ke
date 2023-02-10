@@ -1,3 +1,4 @@
 fn main() {
-    std::out::print((123456789u128).to_string())
+    let arr = [1,2,3]
+    arr.set(1usize, 2)
 }

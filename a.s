@@ -10,27 +10,15 @@ _main:                                  # @_main
 	.cfi_sections .debug_frame
 	.cfi_startproc
 # %bb.0:                                # %entry
-	subq	$56, %rsp
-	.cfi_def_cfa_offset 64
-	leaq	13(%rsp), %rsi
-.Ltmp0:
-	movq	$0, 24(%rsp)
-	movq	$123456789, 16(%rsp)    # imm = 0x75BCD15
-	movq	16(%rsp), %rdx
-	movq	24(%rsp), %rcx
-	leaq	32(%rsp), %rdi
-	movb	$0, 15(%rsp)
-	movb	$117, 14(%rsp)
-	movb	$37, 13(%rsp)
-	movb	$0, %al
-	callq	sprintf
-	leaq	32(%rsp), %rdi
-	movb	$0, %al
-	callq	printf
-	addq	$56, %rsp
-	.cfi_def_cfa_offset 8
+	movl	$1, -28(%rsp)
+	movl	$2, -24(%rsp)
+	movl	$3, -20(%rsp)
+# %bb.1:                                # %then
+	movl	$2, -24(%rsp)
+	movl	$0, -16(%rsp)
+# %bb.2:                                # %end
 	retq
-.Ltmp1:
+.Ltmp0:
 .Lfunc_end0:
 	.size	_main, .Lfunc_end0-_main
 	.cfi_endproc

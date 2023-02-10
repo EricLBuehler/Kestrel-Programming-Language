@@ -697,7 +697,7 @@ impl<'ctx> CodeGen<'ctx> {
             }
             else { 
                 let right: types::Data = self.compile_expr(&node.data.letn.as_ref().unwrap().expr.as_ref().unwrap(), BorrowOptions{ give_ownership: true, get_ptr: false, mut_borrow: false}, false, false);
-                if right.data.is_some(){
+                if right.data.is_some() && !(right.tp.tp == types::BasicDataType::Array && right.data.unwrap().is_pointer_value()){
                     let rt_tp: types::DataType = right.tp.clone();
 
                     if node.data.letn.as_ref().unwrap().tp != None {
@@ -719,6 +719,9 @@ impl<'ctx> CodeGen<'ctx> {
                     self.builder.build_store(ptr, right.data.unwrap());
 
                     self.cur_module.namespaces.locals.last_mut().unwrap().insert(name, (Some(ptr), right.tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));
+                }
+                else if right.tp.tp == types::BasicDataType::Array && right.data.unwrap().is_pointer_value() {
+                    self.cur_module.namespaces.locals.last_mut().unwrap().insert(name, (Some(right.data.as_ref().unwrap().into_pointer_value()), right.tp.clone(), node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));                    
                 }
                 else {
                     self.cur_module.namespaces.locals.last_mut().unwrap().insert(name, (None, right.tp, node.data.letn.as_ref().unwrap().mutability, types::DataOwnership {owned: true, transferred: None, mut_borrowed: false}, node.pos.clone(), InitializationStatus::Initialized));            
@@ -1074,6 +1077,7 @@ impl<'ctx> CodeGen<'ctx> {
                 functp: dtp.clone(),
                 isinstance: isinstance,
                 isinstanceptr: false,
+                ismutinstanceptr: false,
             });
 
             self.cur_module.namespaces.structs.insert(structnm.to_owned(), (s.0, s.1, s.2, s.3));
@@ -1435,6 +1439,10 @@ impl<'ctx> CodeGen<'ctx> {
                     }
                     else if method.isinstanceptr {
                         args.push(base.clone());
+                    }
+                    else if method.ismutinstanceptr {
+                        let base_alt: types::Data = self.compile_expr(&node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().name, BorrowOptions{ give_ownership: false, get_ptr: true, mut_borrow: true}, false, false);
+                        args.push(base_alt.clone());
                     }
                 }
             }
@@ -2148,9 +2156,11 @@ impl<'ctx> CodeGen<'ctx> {
         let arraytp: inkwell::types::ArrayType = firsttp.array_type(elements.len() as u32);
         let array: inkwell::values::PointerValue = Self::alloca(self, arraytp, "arr");
 
+        let mut idx: usize = 0;
         for element in data_elem {
-            let ptr: inkwell::values::PointerValue = unsafe { self.builder.build_gep(array, &[self.inkwell_types.i8tp.const_int(0, false), self.inkwell_types.i8tp.const_int(0, false)], &element.tp.name) };
+            let ptr: inkwell::values::PointerValue = unsafe { self.builder.build_gep(array, &[self.inkwell_types.i8tp.const_int(0, false), self.inkwell_types.i8tp.const_int(idx as u64, false)], &element.tp.name) };
             self.builder.build_store(ptr, element.data.unwrap());
+            idx+=1;
         }        
 
         let mut tp: types::DataType = Self::datatypes_get(self, &types::BasicDataType::Array.to_string()).unwrap().clone();
@@ -2382,6 +2392,7 @@ impl<'ctx> CodeGen<'ctx> {
                     functp: functp.clone(),
                     isinstance: true,
                     isinstanceptr: false,
+                    ismutinstanceptr: false,
                 });
 
                 self.cur_module.namespaces.structs.insert(structnm.to_owned(), (s.0, s.1, s.2, s.3));  
