@@ -181,6 +181,7 @@ pub fn init_string(codegen: &mut codegen::CodeGen) {
         func: None,
         functp: lengthfntp,
         isinstance: true,
+        isinstanceptr: false,
     });
     //
 
@@ -197,6 +198,7 @@ pub fn init_string(codegen: &mut codegen::CodeGen) {
         func: None,
         functp: lengthfntp,
         isinstance: true,
+        isinstanceptr: false,
     });
     //
 
@@ -213,6 +215,7 @@ pub fn init_string(codegen: &mut codegen::CodeGen) {
         func: None,
         functp: lengthfntp,
         isinstance: true,
+        isinstanceptr: false,
     });
     //
 
@@ -229,6 +232,7 @@ pub fn init_string(codegen: &mut codegen::CodeGen) {
         func: None,
         functp: newfntype,
         isinstance: false,
+        isinstanceptr: false,
     });
     //
 

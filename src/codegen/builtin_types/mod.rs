@@ -86,6 +86,8 @@ pub fn int_issigned(val: DataType) -> bool {
 pub fn init(codegen: &mut codegen::CodeGen) {
     codegen.cur_module.datatypes.insert(String::from(types::BasicDataType::Unknown.to_string()), types::new_datatype(BasicDataType::Unknown, BasicDataType::Unknown.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new()));
 
+    functype::init_func(codegen);
+    wrapperfntype::init_wrapperfn(codegen);
     i32type::init_i32(codegen);
     u32type::init_u32(codegen);
     i8type::init_i8(codegen);
@@ -102,10 +104,8 @@ pub fn init(codegen: &mut codegen::CodeGen) {
     f64type::init_f64(codegen);
 
     voidtype::init_void(codegen);
-    functype::init_func(codegen);
     arrtype::init_array(codegen);
     structtype::init_struct(codegen);
-    wrapperfntype::init_wrapperfn(codegen);
     enumtype::init_enum(codegen);
 }
 

@@ -140,6 +140,7 @@ pub fn init_array(codegen: &mut codegen::CodeGen) {
         func: None,
         functp: lengthfntp,
         isinstance: true,
+        isinstanceptr: false,
     });
     //
 
@@ -156,6 +157,7 @@ pub fn init_array(codegen: &mut codegen::CodeGen) {
         func: None,
         functp: lengthfntp,
         isinstance: true,
+        isinstanceptr: false,
     });
     //
 

@@ -1,5 +1,3 @@
 fn main() {
-    while true {
-        std::out::print(String::new("Hello, world!\n"))
-    }
+    std::out::print((123456789u128).to_string())
 }

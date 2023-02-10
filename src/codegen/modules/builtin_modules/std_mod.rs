@@ -14,7 +14,7 @@ fn std_print<'a>(codegen: &mut CodeGen<'a>, args: Vec<Data<'a>>, pos: &crate::pa
         let fmt: String = format!("invalid types for print, expected String, got '{}'.", args.get(0).unwrap().tp);
         errors::raise_error(&fmt, errors::ErrorType::InvalidDataTypes, pos, codegen.info);
     }
-
+    
     let ptr: inkwell::values::PointerValue = codegen.builder.build_struct_gep(args.get(0).unwrap().data.unwrap().into_pointer_value(), 0, "data").expect("GEP Error");
     let data_ptr: inkwell::values::PointerValue = unsafe { codegen.builder.build_in_bounds_gep(ptr, &[codegen.inkwell_types.i32tp.const_zero(), codegen.inkwell_types.i32tp.const_zero()], "data_ptr") };
 
@@ -87,6 +87,7 @@ pub fn init_std(codegen: &mut CodeGen) {
         func: None,
         functp: newfntype,
         isinstance: false,
+        isinstanceptr: false,
     });
     //
     tp.methods = methods;

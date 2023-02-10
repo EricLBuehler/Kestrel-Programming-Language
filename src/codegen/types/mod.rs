@@ -404,6 +404,7 @@ pub struct Method<'a> {
     pub func: Option<inkwell::values::PointerValue<'a>>,
     pub functp: DataType<'a>,
     pub isinstance: bool,
+    pub isinstanceptr: bool,
 }
 
 impl<'a> std::fmt::Debug for Method<'a> {

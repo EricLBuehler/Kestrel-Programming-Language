@@ -1073,6 +1073,7 @@ impl<'ctx> CodeGen<'ctx> {
                 func: Some(func.as_global_value().as_pointer_value()),
                 functp: dtp.clone(),
                 isinstance: isinstance,
+                isinstanceptr: false,
             });
 
             self.cur_module.namespaces.structs.insert(structnm.to_owned(), (s.0, s.1, s.2, s.3));
@@ -1419,11 +1420,20 @@ impl<'ctx> CodeGen<'ctx> {
                         tp: method.functp.to_owned(),
                         owned: true,
                     };
+                    
+                    tp_name = method.functp.name.clone();
 
                     tp = Some(Self::get_type_from_data(self.cur_module.types.clone(), &data.clone()));
 
                     args.push(data);
                     if method.isinstance {
+                        args.push(types::Data {
+                            data: Some(self.builder.build_load(base.data.unwrap().into_pointer_value(), &base.tp.name)),
+                            tp: base.tp.clone(),
+                            owned: base.owned,
+                        });
+                    }
+                    else if method.isinstanceptr {
                         args.push(base.clone());
                     }
                 }
@@ -2371,6 +2381,7 @@ impl<'ctx> CodeGen<'ctx> {
                     func: Some(self.cur_module.namespaces.functions.get(&(structnm.to_owned() + "." + function.data.func.as_ref().unwrap().name.as_str())).unwrap().0.as_global_value().as_pointer_value()),
                     functp: functp.clone(),
                     isinstance: true,
+                    isinstanceptr: false,
                 });
 
                 self.cur_module.namespaces.structs.insert(structnm.to_owned(), (s.0, s.1, s.2, s.3));  

@@ -221,10 +221,65 @@ fn f64_ne<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, pos: &par
     };
 }
 
+fn f64_string<'a>(codegen: &mut codegen::CodeGen<'a>, args: Vec<Data<'a>>, _pos: &parser::Position) -> Data<'a> {
+    let selfv: inkwell::values::FloatValue = args.first().unwrap().data.unwrap().into_float_value();
+
+    //int sprintf(char* str, char* format)
+    let sprintf: inkwell::values::FunctionValue = codegen.module.add_function("sprintf", codegen.inkwell_types.i32tp.fn_type(&[inkwell::types::BasicMetadataTypeEnum::PointerType(codegen.inkwell_types.i8tp.ptr_type(inkwell::AddressSpace::from(0u16))), inkwell::types::BasicMetadataTypeEnum::PointerType(codegen.inkwell_types.i8tp.ptr_type(inkwell::AddressSpace::from(0u16)))], true), Some(inkwell::module::Linkage::External));
+    
+
+    let struct_tp: inkwell::types::StructType = codegen.context.struct_type(&[inkwell::types::BasicTypeEnum::ArrayType(codegen.inkwell_types.i8tp.array_type(20))], false);
+
+    let ptr: inkwell::values::PointerValue = codegen::CodeGen::alloca(codegen, struct_tp, "String");
+
+    let arrptr: inkwell::values::PointerValue = codegen.builder.build_struct_gep(ptr, 0 as u32, "arr").expect("GEP Error");
+    let data_ptr: inkwell::values::PointerValue = unsafe { codegen.builder.build_in_bounds_gep(arrptr, &[codegen.inkwell_types.i32tp.const_zero(), codegen.inkwell_types.i32tp.const_zero()], "data_ptr") };
+
+        
+    let arraytp: inkwell::types::ArrayType = codegen.inkwell_types.i8tp.array_type(3);
+
+    let mut arrdata: Vec<inkwell::values::IntValue> = Vec::new();
+    for c in b"%f" {
+        arrdata.push(codegen.inkwell_types.i8tp.const_int(c.clone() as u64, false));
+    }
+    arrdata.push(codegen.inkwell_types.i8tp.const_zero());
+
+    let array: inkwell::values::ArrayValue = codegen.inkwell_types.i8tp.const_array(&arrdata[..]);
+    let formatptr: inkwell::values::PointerValue = codegen::CodeGen::alloca(codegen, arraytp, "format");
+    codegen.builder.build_store(formatptr, array);
+    let format_ptr: inkwell::values::PointerValue = unsafe { codegen.builder.build_in_bounds_gep(formatptr, &[codegen.inkwell_types.i32tp.const_zero(), codegen.inkwell_types.i32tp.const_zero()], "data_ptr") };
+
+    codegen.builder.build_call(inkwell::values::CallableValue::try_from(sprintf.as_global_value().as_pointer_value()).unwrap(), &[inkwell::values::BasicMetadataValueEnum::PointerValue(data_ptr), inkwell::values::BasicMetadataValueEnum::PointerValue(format_ptr), inkwell::values::BasicMetadataValueEnum::FloatValue(selfv)], "sprintf_call");
+
+    let data: Data = Data {
+        data: Some(inkwell::values::BasicValueEnum::PointerValue(ptr)),
+        tp: crate::codegen::CodeGen::datatypes_get(codegen, &String::from("String")).unwrap().clone(),
+        owned: true,
+    };
+    return data;
+}
+
 pub fn init_f64(codegen: &mut codegen::CodeGen) {
     let mut traits: HashMap<String, Trait> = HashMap::new();
 
-    let tp: DataType = new_datatype(BasicDataType::F64, BasicDataType::F64.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new());
+    let mut tp: DataType = new_datatype(BasicDataType::F64, BasicDataType::F64.to_string(), None, Vec::new(), Vec::new(), None, false, None, std::collections::HashMap::new());
+
+    //to_string
+    let mut tostrfntp: DataType = crate::codegen::CodeGen::datatypes_get(codegen, &BasicDataType::WrapperFunc.to_string()).unwrap().clone();
+    tostrfntp.name = BasicDataType::WrapperFunc.to_string();
+    tostrfntp.names = Some(vec![String::from("self")]);
+    tostrfntp.rettp = Some(Box::new(crate::codegen::CodeGen::datatypes_get(codegen, &crate::codegen::types::BasicDataType::I32.to_string()).unwrap().clone()));
+    tostrfntp.wrapperfn = Some(f64_string);
+    
+    tp.methods.insert(String::from("to_string"), crate::codegen::types::Method {
+        tp: crate::codegen::types::MethodType::Builtin,
+        builtin: Some(f64_string),
+        func: None,
+        functp: tostrfntp,
+        isinstance: true,
+        isinstanceptr: false,
+    });
+    //
 
     codegen.cur_module.datatypes.insert(BasicDataType::F64.to_string(), tp.clone());
 
