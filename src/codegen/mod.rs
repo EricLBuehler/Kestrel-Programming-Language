@@ -1441,7 +1441,7 @@ impl<'ctx> CodeGen<'ctx> {
                         args.push(base.clone());
                     }
                     else if method.ismutinstanceptr {
-                        let base_alt: types::Data = self.compile_expr(&node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().name, BorrowOptions{ give_ownership: false, get_ptr: true, mut_borrow: true}, false, false);
+                        let base_alt: types::Data = self.compile_expr(&node.data.call.as_ref().unwrap().name.data.attr.as_ref().unwrap().name, BorrowOptions{ give_ownership: true, get_ptr: true, mut_borrow: true}, false, false);
                         args.push(base_alt.clone());
                     }
                 }
