@@ -208,7 +208,7 @@ impl<'a> Parser<'a> {
         };
     }
 
-    pub fn genreate_ast(&mut self)  -> Vec<Node> {        
+    pub fn generate_ast(&mut self)  -> Vec<Node> {        
         self.block()
     }
 

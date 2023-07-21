@@ -78,7 +78,7 @@ fn test_parser() {
 
     let mut parser: crate::parser::Parser = crate::parser::Parser::new(tokens, &file_info);
 
-    let nodes: Vec<crate::parser::Node> = parser.genreate_ast();
+    let nodes: Vec<crate::parser::Node> = parser.generate_ast();
 
     assert_eq!(nodes.len(), 1);
     assert_eq!(nodes.first().unwrap().tp, crate::parser::NodeType::FUNC);

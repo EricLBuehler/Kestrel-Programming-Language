@@ -18,7 +18,7 @@ The Kestrel Programming Language is a multi-paradigm, statically and strongly ty
 
 - **Algebraic type system** - Algebraic types allow less code to represent powerful constructs.
 
-## Depenendencies
+## Dependencies
 See [more](https://github.com/EricLBuehler/Kestrel-Programming-Language/blob/master/Cargo.toml) details.
 - ```inkwell``` (using ```llvm10-0```)
 

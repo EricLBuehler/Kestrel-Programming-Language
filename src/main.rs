@@ -18,8 +18,8 @@ fn main() {
         println!("usage: kestrel [--version | --help] [--err <error> | --warn <warning>] [<program> [--run]] ");
         println!("--version => view Kestrel version");
         println!("--help => view this information");
-        println!("--err => get the textual representaion of an error code");
-        println!("--warn => get the textual representaion of an warning code");
+        println!("--err => get the textual representation of an error code");
+        println!("--warn => get the textual representation of an warning code");
         println!("--run => run the program automatically after compilation");
         return;
     }
@@ -135,7 +135,7 @@ fn main() {
 
     let mut parser: parser::Parser = parser::Parser::new(tokens, &file_info);
 
-    let nodes: Vec<parser::Node> = parser.genreate_ast();
+    let nodes: Vec<parser::Node> = parser.generate_ast();
 
     let res: Result<(), Box<dyn std::error::Error>> = codegen::generate_code("module", filename.as_str(), nodes, &file_info);
 
